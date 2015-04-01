@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+include (CMakeFindDependencyMacro)
+include ("${CMAKE_CURRENT_LIST_DIR}/CeresTargets.cmake")
+
+set_and_check (CERES_INCLUDE_DIR "@PACKAGE_Ceres_INCLUDE_DIR@")
+
+find_dependency (glog 0.3)
+
+set (CERES_LIBRARIES ceres)
+set (CERES_INCLUDE_DIRS ${CERES_INCLUDE_DIR})
+
+check_required_components (Ceres)

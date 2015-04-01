@@ -140,9 +140,9 @@ ELSE (SCHUR_SPECIALIZATIONS)
 ENDIF (SCHUR_SPECIALIZATIONS)
 
 # Build the list of dependencies for Ceres based on the current configuration.
-IF (NOT MINIGLOG AND GLOG_FOUND)
-  LIST(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${GLOG_LIBRARIES})
-ENDIF (NOT MINIGLOG AND GLOG_FOUND)
+IF (NOT MINIGLOG AND glog_FOUND)
+  LIST(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${glog_LIBRARIES})
+ENDIF (NOT MINIGLOG AND glog_FOUND)
 
 IF (SUITESPARSE AND SUITESPARSE_FOUND)
   # Define version information for use in Solver::FullReport.
@@ -180,6 +180,41 @@ IF (MINIGLOG)
 ENDIF (MINIGLOG)
 
 ADD_LIBRARY(ceres ${CERES_LIBRARY_SOURCE})
+
+TARGET_INCLUDE_DIRECTORIES (ceres
+  PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal>"
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal/ceres>"
+  PRIVATE
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/internal
+  ${CMAKE_SOURCE_DIR}/internal/ceres
+)
+
+TARGET_INCLUDE_DIRECTORIES (ceres PUBLIC ${glog_INCLUDE_DIRS})
+
+# Eigen SparseQR generates various compiler warnings related to unused and
+# uninitialised local variables, which prevents Ceres compilation as we use
+# -Werror.  To avoid having to individually suppress these warnings around
+# the #include statments for Eigen headers across all GCC/Clang versions, we
+# tell CMake to treat Eigen headers as system headers.  This results in all
+# compiler warnings from them being suppressed.
+TARGET_INCLUDE_DIRECTORIES (ceres SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS})
+
+IF (SUITESPARSE)
+  TARGET_INCLUDE_DIRECTORIES (ceres PRIVATE ${SUITESPARSE_INCLUDE_DIRS})
+ENDIF (SUITESPARSE)
+
+IF (CXSPARSE)
+  TARGET_INCLUDE_DIRECTORIES (ceres PRIVATE ${CXSPARSE_INCLUDE_DIRS})
+ENDIF (CXSPARSE)
+
+IF (GFLAGS)
+  TARGET_INCLUDE_DIRECTORIES (ceres PRIVATE ${GFLAGS_INCLUDE_DIRS})
+ENDIF (GFLAGS)
+
 SET_TARGET_PROPERTIES(ceres PROPERTIES
   VERSION ${CERES_VERSION}
   SOVERSION ${CERES_VERSION_MAJOR}
@@ -203,24 +238,13 @@ IF (CXX11 AND COMPILER_HAS_CXX11_FLAG)
   ENDIF()
 ENDIF()
 
-IF (BUILD_SHARED_LIBS)
-  # When building a shared library, mark all external libraries as
-  # PRIVATE so they don't show up as a dependency.
-  TARGET_LINK_LIBRARIES(ceres
-        LINK_PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
-        LINK_PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
-ELSE (BUILD_SHARED_LIBS)
-  # When building a static library, all external libraries are
-  # PUBLIC(default) since the user needs to link to them.
-  # They will be listed in CeresTargets.cmake.
-  SET(CERES_LIBRARY_DEPENDENCIES
-        ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
-        ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
-  TARGET_LINK_LIBRARIES(ceres ${CERES_LIBRARY_DEPENDENCIES})
-ENDIF (BUILD_SHARED_LIBS)
+
+TARGET_LINK_LIBRARIES(ceres
+  PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
+  PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
 
 INSTALL(TARGETS ceres
-        EXPORT  CeresExport
+        EXPORT  CeresTargets
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         ARCHIVE DESTINATION lib${LIB_SUFFIX})
@@ -243,8 +267,8 @@ IF (BUILD_TESTING AND GFLAGS)
     TARGET_LINK_LIBRARIES(gtest ${GFLAGS_LIBRARIES} ceres)
     TARGET_LINK_LIBRARIES(test_util ceres gtest)
   ELSE (MINIGLOG)
-    TARGET_LINK_LIBRARIES(gtest ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
-    TARGET_LINK_LIBRARIES(test_util ceres gtest ${GLOG_LIBRARIES})
+    TARGET_LINK_LIBRARIES(gtest ${GFLAGS_LIBRARIES} ${glog_LIBRARIES})
+    TARGET_LINK_LIBRARIES(test_util ceres gtest ${glog_LIBRARIES})
   ENDIF (MINIGLOG)
 
   MACRO (CERES_TEST NAME)
