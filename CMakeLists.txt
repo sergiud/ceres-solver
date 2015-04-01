@@ -29,8 +29,8 @@
 # Authors: keir@google.com (Keir Mierle)
 #          alexs.mac@gmail.com (Alex Stewart)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
-CMAKE_POLICY(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+CMAKE_POLICY(VERSION 3.0)
 
 IF (COMMAND cmake_policy)
   CMAKE_POLICY(SET CMP0003 NEW)
@@ -108,6 +108,16 @@ SET(CERES_VERSION_PATCH 0)
 SET(CERES_VERSION
     ${CERES_VERSION_MAJOR}.${CERES_VERSION_MINOR}.${CERES_VERSION_PATCH})
 SET(CERES_ABI_VERSION 1.10.0)
+
+SET (CPACK_PACKAGE_NAME ceres-solver)
+SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY "")
+SET (CPACK_PACKAGE_VERSION_MAJOR ${CERES_VERSION_MAJOR})
+SET (CPACK_PACKAGE_VERSION_MINOR ${CERES_VERSION_MINOR})
+SET (CPACK_PACKAGE_VERSION_PATCH ${CERES_VERSION_PATCH})
+SET (CPACK_PACKAGE_VERSION ${CERES_VERSION})
+
+INCLUDE (CMakePackageConfigHelpers)
+INCLUDE (CPack)
 
 ENABLE_TESTING()
 
@@ -187,7 +197,7 @@ IF (IOS)
   # Apple claims that the BLAS call dsyrk_ is a private API, and will not allow you
   # to submit to the Apple Store if the symbol is present.
   UPDATE_CACHE_VARIABLE(LAPACK OFF)
-  
+
   MESSAGE(STATUS "Building for iOS: SuiteSparse, CXSparse, LAPACK, gflags, and OpenMP are not available.")
 
   UPDATE_CACHE_VARIABLE(BUILD_EXAMPLES OFF)
@@ -430,29 +440,29 @@ ENDIF (GFLAGS)
 # MiniGLog.
 IF (MINIGLOG)
   MESSAGE("-- Compiling minimal glog substitute into Ceres.")
-  SET(GLOG_INCLUDE_DIRS internal/ceres/miniglog)
-  MESSAGE("-- Using minimal glog substitute (include): ${GLOG_INCLUDE_DIRS}")
+  SET(glog_INCLUDE_DIRS internal/ceres/miniglog)
+  MESSAGE("-- Using minimal glog substitute (include): ${glog_INCLUDE_DIRS}")
 
   # Mark as advanced (remove from default GUI view) the glog search
   # variables in case user disables MINIGLOG, FindGlog did not find it, so
   # made search variables visible in GUI for user to set, but then user enables
   # MINIGLOG instead of setting them.
-  MARK_AS_ADVANCED(FORCE GLOG_INCLUDE_DIR
-                         GLOG_LIBRARY)
+  MARK_AS_ADVANCED(FORCE glog_INCLUDE_DIR
+                         glog_LIBRARY)
 ELSE (MINIGLOG)
-  HANDLE_LEGACY_INCLUDE_DEPENDENCY_HINT(GLOG_INCLUDE GLOG_INCLUDE_DIR_HINTS)
-  HANDLE_LEGACY_LIBRARY_DEPENDENCY_HINT(GLOG_LIB GLOG_LIBRARY_DIR_HINTS)
+  HANDLE_LEGACY_INCLUDE_DEPENDENCY_HINT(glog_INCLUDE glog_INCLUDE_DIR_HINTS)
+  HANDLE_LEGACY_LIBRARY_DEPENDENCY_HINT(glog_LIB glog_LIBRARY_DIR_HINTS)
 
   # Don't search with REQUIRED so that configuration continues if not found and
   # we can output an error messages explaining MINIGLOG option.
-  FIND_PACKAGE(Glog)
-  IF (GLOG_FOUND)
-    MESSAGE("-- Found Google Log header in: ${GLOG_INCLUDE_DIRS}")
-  ELSE (GLOG_FOUND)
-    MESSAGE(FATAL_ERROR "Can't find Google Log. Please set GLOG_INCLUDE_DIR & "
-      "GLOG_LIBRARY or enable MINIGLOG option to use minimal glog "
+  FIND_PACKAGE(glog)
+  IF (glog_FOUND)
+    MESSAGE("-- Found Google Log header in: ${glog_INCLUDE_DIRS}")
+  ELSE (Glog_FOUND)
+    MESSAGE(FATAL_ERROR "Can't find Google Log. Please set glog_INCLUDE_DIR & "
+      "glog_LIBRARY or enable MINIGLOG option to use minimal glog "
       "implementation.")
-  ENDIF (GLOG_FOUND)
+  ENDIF (glog_FOUND)
 ENDIF (MINIGLOG)
 
 IF (NOT SCHUR_SPECIALIZATIONS)
@@ -557,34 +567,6 @@ ELSE (SHARED_PTR_FOUND)
   MESSAGE(FATAL_ERROR "Unable to find shared_ptr.")
 ENDIF (SHARED_PTR_FOUND)
 
-INCLUDE_DIRECTORIES(
-  include
-  internal
-  internal/ceres
-  ${GLOG_INCLUDE_DIRS})
-# Eigen SparseQR generates various compiler warnings related to unused and
-# uninitialised local variables, which prevents Ceres compilation as we use
-# -Werror.  To avoid having to individually suppress these warnings around
-# the #include statments for Eigen headers across all GCC/Clang versions, we
-# tell CMake to treat Eigen headers as system headers.  This results in all
-# compiler warnings from them being suppressed.
-#
-# Note that this is *not* propagated to clients, ie CERES_INCLUDE_DIRS
-# used by clients after find_package(Ceres) does not identify Eigen as
-# as system headers.
-INCLUDE_DIRECTORIES(SYSTEM ${EIGEN_INCLUDE_DIRS})
-
-IF (SUITESPARSE)
-  INCLUDE_DIRECTORIES(${SUITESPARSE_INCLUDE_DIRS})
-ENDIF (SUITESPARSE)
-
-IF (CXSPARSE)
-  INCLUDE_DIRECTORIES(${CXSPARSE_INCLUDE_DIRS})
-ENDIF (CXSPARSE)
-
-IF (GFLAGS)
-  INCLUDE_DIRECTORIES(${GFLAGS_INCLUDE_DIRS})
-ENDIF (GFLAGS)
 
 IF (BUILD_SHARED_LIBS)
   MESSAGE("-- Building Ceres as a shared library.")
@@ -814,11 +796,10 @@ ADD_CUSTOM_TARGET(uninstall
 
 # Set relative install paths, which are appended to CMAKE_INSTALL_PREFIX to
 # generate the absolute install paths.
-IF (WIN32)
-  SET(RELATIVE_CMAKECONFIG_INSTALL_DIR CMake)
-ELSE ()
-  SET(RELATIVE_CMAKECONFIG_INSTALL_DIR share/Ceres)
-ENDIF ()
+SET(RELATIVE_CMAKECONFIG_INSTALL_DIR lib/cmake/Ceres)
+
+EXPORT (TARGETS ceres FILE CeresTargets.cmake)
+EXPORT (PACKAGE ceres)
 
 # This "exports" all targets which have been put into the export set
 # "CeresExport". This means that CMake generates a file with the given
@@ -827,8 +808,8 @@ ENDIF ()
 # in the export set, so when loaded later on CMake will create "imported"
 # library targets from these, which can be used in many ways in the same way
 # as a normal library target created via a normal ADD_LIBRARY().
-INSTALL(EXPORT CeresExport
-        DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR} FILE CeresTargets.cmake)
+INSTALL(EXPORT CeresTargets
+        DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 
 # Figure out the relative path from the installed Config.cmake file to the
 # install prefix (which may be at runtime different from the chosen
@@ -838,24 +819,27 @@ FILE(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
      ${CMAKE_INSTALL_PREFIX}/${RELATIVE_CMAKECONFIG_INSTALL_DIR}
      ${CMAKE_INSTALL_PREFIX})
 
-# Create a CeresConfig.cmake file. <name>Config.cmake files are searched by
-# FIND_PACKAGE() automatically. We configure that file so that we can put any
-# information we want in it, e.g. version numbers, include directories, etc.
-CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/cmake/CeresConfig.cmake.in"
-               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake" @ONLY)
+SET (Ceres_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Additionally, when CMake has found a CeresConfig.cmake, it can check for a
-# CeresConfigVersion.cmake in the same directory when figuring out the version
-# of the package when a version has been specified in the FIND_PACKAGE() call,
-# e.g. FIND_PACKAGE(Ceres [1.4.2] REQUIRED). The version argument is optional.
-CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/cmake/CeresConfigVersion.cmake.in"
-               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfigVersion.cmake" @ONLY)
+CONFIGURE_PACKAGE_CONFIG_FILE (
+  CeresConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake INSTALL_DESTINATION
+  lib/cmake/Ceres PATH_VARS Ceres_INCLUDE_DIR
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+WRITE_BASIC_PACKAGE_VERSION_FILE (CeresConfigVersion.cmake VERSION
+  ${CERES_VERSION} COMPATIBILITY SameMajorVersion)
+
+SET (Ceres_INCLUDE_DIR include)
+
+CONFIGURE_PACKAGE_CONFIG_FILE (
+  CeresConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CeresConfig.cmake
+  INSTALL_DESTINATION lib${LIB_SUFFIX}/cmake/Ceres PATH_VARS Ceres_INCLUDE_DIR
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
 # Install these files into the same directory as the generated exports-file,
 # we include the FindPackage scripts for libraries whose headers are included
 # in the public API of Ceres and should thus be present in CERES_INCLUDE_DIRS.
-INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake"
+INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CeresConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfigVersion.cmake"
-              "${CMAKE_SOURCE_DIR}/cmake/FindEigen.cmake"
-              "${CMAKE_SOURCE_DIR}/cmake/FindGlog.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
