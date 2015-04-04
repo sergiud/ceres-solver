@@ -208,7 +208,7 @@ IF (CXSPARSE)
 ENDIF (CXSPARSE)
 
 IF (GFLAGS)
-  TARGET_INCLUDE_DIRECTORIES (ceres PRIVATE ${GFLAGS_INCLUDE_DIRS})
+  TARGET_INCLUDE_DIRECTORIES (ceres PRIVATE ${gflags_INCLUDE_DIRS})
 ENDIF (GFLAGS)
 
 SET_TARGET_PROPERTIES(ceres PROPERTIES
@@ -231,7 +231,7 @@ IF (BUILD_TESTING AND GFLAGS)
   # The CERES_GFLAGS_NAMESPACE compile definition is NOT stored in
   # CERES_COMPILE_OPTIONS (and thus config.h) as Ceres itself does not
   # require gflags, only the tests and examples do.
-  ADD_DEFINITIONS(-DCERES_GFLAGS_NAMESPACE=${GFLAGS_NAMESPACE})
+  ADD_DEFINITIONS(-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
 
   ADD_LIBRARY(gtest gmock_gtest_all.cc gmock_main.cc)
   ADD_LIBRARY(test_util
@@ -242,10 +242,10 @@ IF (BUILD_TESTING AND GFLAGS)
   IF (MINIGLOG)
     # When using miniglog, it is compiled into Ceres, thus Ceres becomes
     # the library against which other libraries should link for logging.
-    TARGET_LINK_LIBRARIES(gtest ${GFLAGS_LIBRARIES} ceres)
+    TARGET_LINK_LIBRARIES(gtest ${gflags_LIBRARIES} ceres)
     TARGET_LINK_LIBRARIES(test_util ceres gtest)
   ELSE (MINIGLOG)
-    TARGET_LINK_LIBRARIES(gtest ${GFLAGS_LIBRARIES} ${glog_LIBRARIES})
+    TARGET_LINK_LIBRARIES(gtest ${gflags_LIBRARIES} ${glog_LIBRARIES})
     TARGET_LINK_LIBRARIES(test_util ceres gtest ${glog_LIBRARIES})
   ENDIF (MINIGLOG)
 
