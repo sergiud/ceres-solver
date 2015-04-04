@@ -79,40 +79,40 @@ IF (GFLAGS)
   # The CERES_GFLAGS_NAMESPACE compile definition is NOT stored in
   # CERES_COMPILE_OPTIONS (and thus config.h) as Ceres itself does not
   # require gflags, only the tests and examples do.
-  ADD_DEFINITIONS(-DCERES_GFLAGS_NAMESPACE=${GFLAGS_NAMESPACE})
+  ADD_DEFINITIONS(-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
 
   ADD_EXECUTABLE(powell powell.cc)
-  TARGET_LINK_LIBRARIES(powell ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(powell ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(nist nist.cc)
-  TARGET_LINK_LIBRARIES(nist ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(nist ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(more_garbow_hillstrom more_garbow_hillstrom.cc)
-  TARGET_LINK_LIBRARIES(more_garbow_hillstrom ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(more_garbow_hillstrom ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(circle_fit circle_fit.cc)
-  TARGET_LINK_LIBRARIES(circle_fit ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(circle_fit ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(bundle_adjuster
                  bundle_adjuster.cc
                  bal_problem.cc)
-  TARGET_LINK_LIBRARIES(bundle_adjuster ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(bundle_adjuster ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(libmv_bundle_adjuster
                  libmv_bundle_adjuster.cc)
-  TARGET_LINK_LIBRARIES(libmv_bundle_adjuster ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(libmv_bundle_adjuster ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(libmv_homography
                  libmv_homography.cc)
-  TARGET_LINK_LIBRARIES(libmv_homography ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(libmv_homography ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(denoising
                  denoising.cc
                  fields_of_experts.cc)
-  TARGET_LINK_LIBRARIES(denoising ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(denoising ceres ${gflags_LIBRARIES})
 
   ADD_EXECUTABLE(robot_pose_mle
                  robot_pose_mle.cc)
-  TARGET_LINK_LIBRARIES(robot_pose_mle ceres ${GFLAGS_LIBRARIES})
+  TARGET_LINK_LIBRARIES(robot_pose_mle ceres ${gflags_LIBRARIES})
 
 ENDIF (GFLAGS)

@@ -412,28 +412,28 @@ ENDIF(NOT SUITESPARSE AND NOT CXSPARSE AND NOT EIGENSPARSE)
 
 # GFlags.
 IF (GFLAGS)
-  HANDLE_LEGACY_INCLUDE_DEPENDENCY_HINT(GFLAGS_INCLUDE GFLAGS_INCLUDE_DIR_HINTS)
-  HANDLE_LEGACY_LIBRARY_DEPENDENCY_HINT(GFLAGS_LIB GFLAGS_LIBRARY_DIR_HINTS)
+  HANDLE_LEGACY_INCLUDE_DEPENDENCY_HINT(gflags_INCLUDE gflags_INCLUDE_DIR_HINTS)
+  HANDLE_LEGACY_LIBRARY_DEPENDENCY_HINT(gflags_LIB gflags_LIBRARIES_DIR_HINTS)
 
   # Don't search with REQUIRED as we can continue without gflags.
-  FIND_PACKAGE(Gflags)
-  IF (GFLAGS_FOUND)
-    MESSAGE("-- Found Google Flags header in: ${GFLAGS_INCLUDE_DIRS}, "
-      "in namespace: ${GFLAGS_NAMESPACE}")
-  ELSE (GFLAGS_FOUND)
+  FIND_PACKAGE(gflags)
+  IF (gflags_FOUND)
+    SET (gflags_NAMESPACE gflags)
+    MESSAGE("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}, "
+      "in namespace: ${gflags_NAMESPACE}")
+  ELSE (gflags_FOUND)
     MESSAGE("-- Did not find Google Flags (gflags), Building without gflags "
       "- no tests or tools will be built!")
     UPDATE_CACHE_VARIABLE(GFLAGS OFF)
-  ENDIF (GFLAGS_FOUND)
+  ENDIF (gflags_FOUND)
 ELSE (GFLAGS)
   MESSAGE("-- Google Flags disabled; no tests or tools will be built!")
   # Mark as advanced (remove from default GUI view) the gflags search
   # variables in case user enabled GFLAGS, FindGflags did not find it, so
   # made search variables visible in GUI for user to set, but then user disables
   # GFLAGS instead of setting them.
-  MARK_AS_ADVANCED(FORCE GFLAGS_INCLUDE_DIR
-                         GFLAGS_LIBRARY
-                         GFLAGS_NAMESPACE)
+  MARK_AS_ADVANCED(FORCE gflags_INCLUDE_DIR
+                         gflags_LIBRARIES)
 ENDIF (GFLAGS)
 
 # MiniGLog.
