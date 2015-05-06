@@ -377,18 +377,18 @@ ENDIF (SUITESPARSE)
 # CXSparse.
 IF (CXSPARSE)
   # Don't search with REQUIRED as we can continue without CXSparse.
-  FIND_PACKAGE(CXSparse)
-  IF (CXSPARSE_FOUND)
+  FIND_PACKAGE(CXSparse NO_MODULE)
+  IF (CXSparse_FOUND)
     # By default, if CXSparse and all dependencies are found, Ceres is
     # built with CXSparse support.
-    MESSAGE("-- Found CXSparse version: ${CXSPARSE_VERSION}, "
+    MESSAGE("-- Found CXSparse version: ${CXSparse_VERSION}, "
       "building with CXSparse.")
-  ELSE (CXSPARSE_FOUND)
+  ELSE (CXSparse_FOUND)
     # Disable use of CXSparse if it cannot be found and continue.
     MESSAGE("-- Did not find CXSparse, Building without CXSparse.")
     UPDATE_CACHE_VARIABLE(CXSPARSE OFF)
     LIST(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
-  ENDIF (CXSPARSE_FOUND)
+  ENDIF (CXSparse_FOUND)
 ELSE (CXSPARSE)
   MESSAGE("-- Building without CXSparse.")
   LIST(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
@@ -417,6 +417,7 @@ IF (GFLAGS)
 
   # Don't search with REQUIRED as we can continue without gflags.
   FIND_PACKAGE(gflags)
+
   IF (gflags_FOUND)
     SET (gflags_NAMESPACE gflags)
     MESSAGE("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}, "
