@@ -379,6 +379,7 @@ IF (CXSPARSE)
   # Don't search with REQUIRED as we can continue without CXSparse.
   FIND_PACKAGE(CXSparse NO_MODULE)
   IF (CXSparse_FOUND)
+    SET (CXSPARSE_DEPENDENCY "find_dependency (CXSparse ${CXSparse_VERSION})")
     # By default, if CXSparse and all dependencies are found, Ceres is
     # built with CXSparse support.
     MESSAGE("-- Found CXSparse version: ${CXSparse_VERSION}, "
@@ -460,6 +461,7 @@ ELSE (MINIGLOG)
   # we can output an error messages explaining MINIGLOG option.
   FIND_PACKAGE(glog)
   IF (glog_FOUND)
+    SET (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION})")
     MESSAGE("-- Found Google Log header in: ${glog_INCLUDE_DIRS}")
   ELSE (Glog_FOUND)
     MESSAGE(FATAL_ERROR "Can't find Google Log. Please set glog_INCLUDE_DIR & "
