@@ -419,11 +419,14 @@ IF (GFLAGS)
 
   # Don't search with REQUIRED as we can continue without gflags.
   FIND_PACKAGE(gflags)
+  INCLUDE (DetermineGflagsNamespace)
+
+  SET (CMAKE_REQUIRED_INCLUDES ${gflags_INCLUDE_DIR})
+
+  DETERMINE_GFLAGS_NAMESPACE (gflags_NAMESPACE)
 
   IF (gflags_FOUND)
-    SET (gflags_NAMESPACE gflags)
-    MESSAGE("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}, "
-      "in namespace: ${gflags_NAMESPACE}")
+    MESSAGE("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}")
   ELSE (gflags_FOUND)
     MESSAGE("-- Did not find Google Flags (gflags), Building without gflags "
       "- no tests or tools will be built!")
