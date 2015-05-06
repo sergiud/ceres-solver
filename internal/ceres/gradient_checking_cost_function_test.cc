@@ -226,7 +226,7 @@ TEST(GradientCheckingCostFunction, SmokeTest) {
 
     ScopedMockLog log;
     EXPECT_CALL(log, Log(_, _, _)).Times(AnyNumber());
-    EXPECT_CALL(log, Log(WARNING, _,
+    EXPECT_CALL(log, Log(GLOG_WARNING, _,
                          AllOf(HasSubstr("(1,0,2) Relative error worse than"),
                                HasSubstr("Fuzzy bananas"))));
 

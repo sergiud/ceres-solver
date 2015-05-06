@@ -145,7 +145,7 @@ TEST(LevenbergMarquardtStrategy, CorrectDiagonalToLinearSolver) {
   {
     ScopedMockLog log;
     EXPECT_CALL(log, Log(_, _, _)).Times(AnyNumber());
-    EXPECT_CALL(log, Log(WARNING, _,
+    EXPECT_CALL(log, Log(GLOG_WARNING, _,
                          HasSubstr("Failed to compute a step")));
 
     TrustRegionStrategy::Summary summary =

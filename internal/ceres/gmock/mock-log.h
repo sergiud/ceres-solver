@@ -47,7 +47,7 @@
 // Needed to make the scoped mock log tests work without modification.
 namespace ceres {
 namespace internal {
-using google::WARNING;
+using google::GLOG_WARNING;
 }  // namespace internal
 }  // namespace ceres
 
