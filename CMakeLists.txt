@@ -368,7 +368,6 @@ IF (SUITESPARSE)
     # Disable use of SuiteSparse if it cannot be found and continue.
     MESSAGE("-- Did not find all SuiteSparse dependencies, disabling "
       "SuiteSparse support.")
-    UPDATE_CACHE_VARIABLE(SUITESPARSE OFF)
     LIST(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
   ENDIF (SUITESPARSE_FOUND)
 ELSE (SUITESPARSE)
@@ -389,7 +388,6 @@ IF (CXSPARSE)
   ELSE (CXSparse_FOUND)
     # Disable use of CXSparse if it cannot be found and continue.
     MESSAGE("-- Did not find CXSparse, Building without CXSparse.")
-    UPDATE_CACHE_VARIABLE(CXSPARSE OFF)
     LIST(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
   ENDIF (CXSparse_FOUND)
 ELSE (CXSPARSE)
@@ -431,7 +429,6 @@ IF (GFLAGS)
   ELSE (gflags_FOUND)
     MESSAGE("-- Did not find Google Flags (gflags), Building without gflags "
       "- no tests or tools will be built!")
-    UPDATE_CACHE_VARIABLE(GFLAGS OFF)
   ENDIF (gflags_FOUND)
 ELSE (GFLAGS)
   MESSAGE("-- Google Flags disabled; no tests or tools will be built!")
