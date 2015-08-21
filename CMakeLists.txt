@@ -328,21 +328,14 @@ ELSE (LAPACK)
 ENDIF (LAPACK)
 
 # SuiteSparse.
-IF (SUITESPARSE AND NOT LAPACK)
-  # If user has disabled LAPACK, but left SUITESPARSE ON, turn it OFF,
-  # LAPACK controls whether Ceres will be linked, directly or indirectly
-  # via SuiteSparse to LAPACK.
-  MESSAGE("-- Disabling SuiteSparse as use of LAPACK has been disabled, "
-    "turn ON LAPACK to enable (optional) building with SuiteSparse.")
-  UPDATE_CACHE_VARIABLE(SUITESPARSE OFF)
-ENDIF (SUITESPARSE AND NOT LAPACK)
 IF (SUITESPARSE)
   # By default, if SuiteSparse and all dependencies are found, Ceres is
   # built with SuiteSparse support.
 
   # Check for SuiteSparse and dependencies.
-  FIND_PACKAGE(SuiteSparse)
-  IF (SUITESPARSE_FOUND)
+  FIND_PACKAGE(SuiteSparse NO_MODULE)
+
+  IF (SuiteSparse_FOUND)
     # On Ubuntu the system install of SuiteSparse (v3.4.0) up to at least
     # Ubuntu 13.10 cannot be used to link shared libraries.
     IF (BUILD_SHARED_LIBS AND
@@ -362,14 +355,14 @@ IF (SUITESPARSE)
 
     # By default, if all of SuiteSparse's dependencies are found, Ceres is
     # built with SuiteSparse support.
-    MESSAGE("-- Found SuiteSparse ${SUITESPARSE_VERSION}, "
+    MESSAGE("-- Found SuiteSparse ${SuiteSparse_VERSION}, "
             "building with SuiteSparse.")
   ELSE (SUITESPARSE_FOUND)
     # Disable use of SuiteSparse if it cannot be found and continue.
     MESSAGE("-- Did not find all SuiteSparse dependencies, disabling "
       "SuiteSparse support.")
     LIST(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
-  ENDIF (SUITESPARSE_FOUND)
+  ENDIF (SuiteSparse_FOUND)
 ELSE (SUITESPARSE)
   MESSAGE("-- Building without SuiteSparse.")
   LIST(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
