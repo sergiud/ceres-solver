@@ -5,6 +5,7 @@ macro(determine_gflags_namespace VARIABLE)
     else ()
       set (CHECK_INCLUDE_FILE_CXX_INCLUDE_DIRS)
     endif ()
+
     set(MACRO_CHECK_INCLUDE_FILE_FLAGS ${CMAKE_REQUIRED_FLAGS})
 
     set(_NAMESPACES gflags google)
@@ -25,17 +26,16 @@ int main(int argc, char**argv)
       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARGV2}")
     endif ()
 
+    set (_check_file
+        ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/DetermineGflagsNamespace.cxx)
+
     foreach (_namespace ${_NAMESPACES})
-      file (WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/DetermineGflagsNamespace.cxx
-        "${_check_code}")
+      file (WRITE "${_check_file}" "${_check_code}")
       try_compile (${VARIABLE}
-        ${CMAKE_BINARY_DIR}
-        ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/DetermineGflagsNamespace.cxx
-        COMPILE_DEFINITIONS ${CMAKE_REQUIRED_DEFINITIONS} -DGFLAGS_NAMESPACE=${_namespace}
-        LINK_LIBRARIES ${gflags_LIBRARIES}
-        CMAKE_FLAGS
-        -DCOMPILE_DEFINITIONS:STRING="${MACRO_CHECK_INCLUDE_FILE_FLAGS}"
-        "${CHECK_INCLUDE_FILE_CXX_INCLUDE_DIRS}"
+        "${CMAKE_BINARY_DIR}" "${_check_file}"
+        COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}" -DGFLAGS_NAMESPACE=${_namespace}
+        LINK_LIBRARIES "${gflags_LIBRARIES}"
+        CMAKE_FLAGS -DINCLUDE_DIRECTORIES:STRING="${gflags_INCLUDE_DIR}"
         OUTPUT_VARIABLE OUTPUT)
 
       if (${VARIABLE})
@@ -48,9 +48,9 @@ int main(int argc, char**argv)
       endif ()
     endforeach (_namespace)
 
-    if(${ARGC} EQUAL 3)
-      set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_SAVE})
-    endif()
+    if (${ARGC} EQUAL 3)
+      set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_SAVE})
+    endif ()
 
     if (${VARIABLE})
       if (NOT CMAKE_REQUIRED_QUIET)
