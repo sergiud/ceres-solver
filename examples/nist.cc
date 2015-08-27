@@ -115,6 +115,9 @@ DEFINE_int32(num_iterations, 10000, "Number of iterations");
 DEFINE_bool(nonmonotonic_steps, false, "Trust region algorithm can use"
             " nonmonotic steps");
 DEFINE_double(initial_trust_region_radius, 1e4, "Initial trust region radius");
+DEFINE_bool(use_numeric_diff, false,
+            "Use numeric differentiation instead of automatic "
+            "differentiation.");
 
 namespace ceres {
 namespace examples {
@@ -235,7 +238,7 @@ class NISTProblem {
     }
   }
 
-  Matrix initial_parameters(int start) const { return initial_parameters_.row(start); }
+  Matrix initial_parameters(int start) const { return initial_parameters_.row(start); }  // NOLINT
   Matrix final_parameters() const  { return final_parameters_; }
   Matrix predictor()        const { return predictor_;         }
   Matrix response()         const { return response_;          }
@@ -294,7 +297,7 @@ NIST_END
 NIST_BEGIN(Gauss)
   b[0] * exp(-b[1] * x) +
   b[2] * exp(-pow((x - b[3])/b[4], 2)) +
-  b[5] * exp(-pow((x - b[6])/b[7],2))
+  b[5] * exp(-pow((x - b[6])/b[7], 2))
 NIST_END
 
 // y = b1*exp(-b2*x) + b3*exp(-b4*x) + b5*exp(-b6*x)  +  e
@@ -338,7 +341,7 @@ NIST_END
 
 // y = b1 * (1-(1+b2*x/2)**(-2))  +  e
 NIST_BEGIN(Misra1b)
-  b[0] * (T(1.0) - T(1.0)/ ((T(1.0) + b[1] * x / 2.0) * (T(1.0) + b[1] * x / 2.0)))
+  b[0] * (T(1.0) - T(1.0)/ ((T(1.0) + b[1] * x / 2.0) * (T(1.0) + b[1] * x / 2.0)))  // NOLINT
 NIST_END
 
 // y = b1 * (1-(1+2*b2*x)**(-.5))  +  e
@@ -431,12 +434,26 @@ int RegressionDriver(const string& filename,
 
     ceres::Problem problem;
     for (int i = 0; i < nist_problem.num_observations(); ++i) {
-      problem.AddResidualBlock(
-          new ceres::AutoDiffCostFunction<Model, num_residuals, num_parameters>(
-              new Model(predictor.data() + nist_problem.predictor_size() * i,
-                        response.data() + nist_problem.response_size() * i)),
-          NULL,
-          initial_parameters.data());
+      Model* model = new Model(
+          predictor.data() + nist_problem.predictor_size() * i,
+          response.data() + nist_problem.response_size() * i);
+      ceres::CostFunction* cost_function = NULL;
+      if (FLAGS_use_numeric_diff) {
+        cost_function =
+            new ceres::NumericDiffCostFunction<Model,
+                                               ceres::CENTRAL,
+                                               num_residuals,
+                                               num_parameters>(model);
+      } else {
+         cost_function =
+             new ceres::AutoDiffCostFunction<Model,
+                                             num_residuals,
+                                             num_parameters>(model);
+      }
+
+      problem.AddResidualBlock(cost_function,
+                               NULL,
+                               initial_parameters.data());
     }
 
     ceres::Solver::Summary summary;
@@ -566,7 +583,8 @@ void SolveNISTProblems() {
   cout << "Easy    : " << easy_success << "/16\n";
   cout << "Medium  : " << medium_success << "/22\n";
   cout << "Hard    : " << hard_success << "/16\n";
-  cout << "Total   : " << easy_success + medium_success + hard_success << "/54\n";
+  cout << "Total   : "
+       << easy_success + medium_success + hard_success << "/54\n";
 }
 
 }  // namespace examples
@@ -577,4 +595,4 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   ceres::examples::SolveNISTProblems();
   return 0;
-};
+}
