@@ -140,15 +140,15 @@ else (SCHUR_SPECIALIZATIONS)
 endif (SCHUR_SPECIALIZATIONS)
 
 # Build the list of dependencies for Ceres based on the current configuration.
-IF (NOT MINIGLOG AND glog_FOUND)
+if (NOT MINIGLOG AND glog_FOUND)
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${glog_LIBRARIES})
 endif (NOT MINIGLOG AND glog_FOUND)
 
 if (SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
-  LIST(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${SUITESPARSE_LIBRARIES})
-ENDIF (SUITESPARSE AND SUITESPARSE_FOUND)
+  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${SUITESPARSE_LIBRARIES})
+endif (SUITESPARSE AND SuiteSparse_FOUND)
 
 if (BLAS_FOUND AND LAPACK_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${LAPACK_LIBRARIES})
@@ -207,12 +207,12 @@ if (CXSPARSE AND CXSparse_FOUND)
   target_compile_definitions (ceres PRIVATE
     CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
   target_link_libraries (ceres PUBLIC ${CXSPARSE_LIBRARIES})
-ENDIF (CXSPARSE AND CXSparse_FOUND)
+endif (CXSPARSE AND CXSparse_FOUND)
 
-IF (gflags_FOUND)
+if (gflags_FOUND)
   target_include_directories (ceres PRIVATE ${gflags_INCLUDE_DIRS})
   target_link_libraries (ceres PRIVATE ${gflags_LIBRARIES})
-ENDIF (gflags_FOUND)
+endif (gflags_FOUND)
 
 set_target_properties(ceres PROPERTIES
   VERSION ${CERES_VERSION}
