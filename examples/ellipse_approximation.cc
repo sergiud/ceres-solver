@@ -270,9 +270,10 @@ const double kYData[kYRows * kYCols] = {
 ceres::ConstMatrixRef kY(kYData, kYRows, kYCols);
 
 class PointToLineSegmentContourCostFunction : public ceres::CostFunction {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(double, 2)
  public:
   PointToLineSegmentContourCostFunction(const int num_segments,
-                                        const Eigen::Vector2d y)
+                                        const Eigen::Vector2d& y)
       : num_segments_(num_segments), y_(y) {
     // The first parameter is the preimage position.
     mutable_parameter_block_sizes()->push_back(1);
@@ -323,7 +324,7 @@ class PointToLineSegmentContourCostFunction : public ceres::CostFunction {
   }
 
   static ceres::CostFunction* Create(const int num_segments,
-                                     const Eigen::Vector2d y) {
+                                     const Eigen::Vector2d& y) {
     return new PointToLineSegmentContourCostFunction(num_segments, y);
   }
 
