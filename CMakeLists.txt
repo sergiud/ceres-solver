@@ -286,6 +286,8 @@ if (SUITESPARSE)
   find_package(SuiteSparse NO_MODULE)
 
   IF (SuiteSparse_FOUND)
+    set (SUITESPARSE_DEPENDENCY
+      "find_dependency (SuiteSparse ${SuiteSparse_VERSION})")
     # On Ubuntu the system install of SuiteSparse (v3.4.0) up to at least
     # Ubuntu 13.10 cannot be used to link shared libraries.
     if (BUILD_SHARED_LIBS AND
