@@ -147,7 +147,7 @@ endif (NOT MINIGLOG AND glog_FOUND)
 if (SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
-  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${SUITESPARSE_LIBRARIES})
+  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES SuiteSparse::CHOLMOD SuiteSparse::SPQR)
 endif (SUITESPARSE AND SuiteSparse_FOUND)
 
 if (BLAS_FOUND AND LAPACK_FOUND)
@@ -196,10 +196,6 @@ target_include_directories (ceres PUBLIC ${glog_INCLUDE_DIRS})
 # tell CMake to treat Eigen headers as system headers.  This results in all
 # compiler warnings from them being suppressed.
 target_include_directories (ceres SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS})
-
-if (SUITESPARSE)
-  target_include_directories (ceres PRIVATE ${SUITESPARSE_INCLUDE_DIRS})
-endif (SUITESPARSE)
 
 if (CXSPARSE AND CXSparse_FOUND)
   target_include_directories (ceres PUBLIC ${CXSPARSE_INCLUDE_DIRS})
@@ -352,11 +348,9 @@ if (BUILD_TESTING AND GFLAGS)
 
   # TODO(sameeragarwal): This test should ultimately be made
   # independent of SuiteSparse.
-  if (SUITESPARSE AND SUITESPARSE_FOUND)
+  if (SUITESPARSE AND SuiteSparse_FOUND)
     ceres_test(compressed_col_sparse_matrix_utils)
-    target_link_libraries(compressed_col_sparse_matrix_utils_test
-                          ${SUITESPARSE_LIBRARIES})
-  endif (SUITESPARSE AND SUITESPARSE_FOUND)
+  endif (SUITESPARSE AND SuiteSparse_FOUND)
 
   ceres_test(symmetric_linear_solver)
   ceres_test(triplet_sparse_matrix)
