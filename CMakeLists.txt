@@ -98,7 +98,11 @@ set (CPACK_PACKAGE_VERSION ${CERES_VERSION})
 include (CMakePackageConfigHelpers)
 include (CPack)
 
-enable_testing()
+option(BUILD_TESTING "Enable tests" ON)
+
+if (BUILD_TESTING)
+  enable_testing()
+endif (BUILD_TESTING)
 
 option(MINIGLOG "Use a stripped down version of glog." OFF)
 option(GFLAGS "Enable Google Flags." ON)
@@ -140,7 +144,6 @@ if (NOT WIN32)
 endif(NOT WIN32)
 option(EXPORT_BUILD_DIR
   "Export build directory using CMake (enables external use without install)." OFF)
-option(BUILD_TESTING "Enable tests" ON)
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
