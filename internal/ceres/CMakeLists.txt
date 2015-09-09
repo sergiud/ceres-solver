@@ -198,11 +198,10 @@ target_include_directories (ceres PUBLIC ${glog_INCLUDE_DIRS})
 target_include_directories (ceres SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS})
 
 if (CXSPARSE AND CXSparse_FOUND)
-  target_include_directories (ceres PUBLIC ${CXSPARSE_INCLUDE_DIRS})
   # Define version information for use in Solver::FullReport.
   target_compile_definitions (ceres PRIVATE
     CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
-  target_link_libraries (ceres PUBLIC ${CXSPARSE_LIBRARIES})
+  target_link_libraries (ceres PUBLIC CXSparse)
 endif (CXSPARSE AND CXSparse_FOUND)
 
 if (gflags_FOUND)
