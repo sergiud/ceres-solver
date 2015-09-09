@@ -138,8 +138,6 @@ if (NOT WIN32)
   # features available are on by default and there is no analogue to -std=c++11.
   option(CXX11 "Enable use of C++11 headers if available (requires client code use C++11)." OFF)
 endif(NOT WIN32)
-option(EXPORT_BUILD_DIR
-  "Export build directory using CMake (enables external use without install)." OFF)
 option(BUILD_TESTING "Enable tests" ON)
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
