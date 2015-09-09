@@ -132,35 +132,35 @@ endif ()
 file(GLOB CERES_INTERNAL_HDRS *.h)
 
 # Include the specialized schur solvers.
-if (SCHUR_SPECIALIZATIONS)
+if (WITH_SCHUR_SPECIALIZATIONS)
   file(GLOB CERES_INTERNAL_SCHUR_FILES generated/*.cc)
-else (SCHUR_SPECIALIZATIONS)
+else (WITH_SCHUR_SPECIALIZATIONS)
   # Only the fully dynamic solver. The build is much faster this way.
   file(GLOB CERES_INTERNAL_SCHUR_FILES generated/*_d_d_d.cc)
-endif (SCHUR_SPECIALIZATIONS)
+endif (WITH_SCHUR_SPECIALIZATIONS)
 
 # Build the list of dependencies for Ceres based on the current configuration.
-if (NOT MINIGLOG AND glog_FOUND)
+if (NOT WITH_MINILOG AND glog_FOUND)
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${glog_LIBRARIES})
-endif (NOT MINIGLOG AND glog_FOUND)
+endif (NOT WITH_MINILOG AND glog_FOUND)
 
-if (SUITESPARSE AND SuiteSparse_FOUND)
+if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES SuiteSparse::CHOLMOD SuiteSparse::SPQR)
-endif (SUITESPARSE AND SuiteSparse_FOUND)
+endif (WITH_SUITESPARSE AND SuiteSparse_FOUND)
 
-if (BLAS_FOUND AND LAPACK_FOUND)
+if (WITH_LAPACK AND BLAS_FOUND AND LAPACK_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${LAPACK_LIBRARIES})
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${BLAS_LIBRARIES})
-endif (BLAS_FOUND AND LAPACK_FOUND)
+endif (WITH_LAPACK AND BLAS_FOUND AND LAPACK_FOUND)
 
-if (OPENMP_FOUND)
+if (WITH_OPENMP AND OPENMP_FOUND)
   if (NOT MSVC)
     list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES gomp)
     list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${CMAKE_THREAD_LIBS_INIT})
   endif (NOT MSVC)
-endif (OPENMP_FOUND)
+endif (WITH_OPENMP AND OPENMP_FOUND)
 
 set(CERES_LIBRARY_SOURCE
     ${CERES_INTERNAL_SRC}
@@ -169,9 +169,9 @@ set(CERES_LIBRARY_SOURCE
 
 # Primarily for Android, but optionally for others, compile the minimal
 # glog implementation into Ceres.
-if (MINIGLOG)
+if (WITH_MINILOG)
   list(APPEND CERES_LIBRARY_SOURCE miniglog/glog/logging.cc)
-endif (MINIGLOG)
+endif (WITH_MINILOG)
 
 add_library(ceres ${CERES_LIBRARY_SOURCE})
 
@@ -197,17 +197,17 @@ target_include_directories (ceres PUBLIC ${glog_INCLUDE_DIRS})
 # compiler warnings from them being suppressed.
 target_include_directories (ceres SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS})
 
-if (CXSPARSE AND CXSparse_FOUND)
+if (WITH_CXSPARSE AND CXSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   target_compile_definitions (ceres PRIVATE
     CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
   target_link_libraries (ceres PUBLIC CXSparse)
-endif (CXSPARSE AND CXSparse_FOUND)
+endif (WITH_CXSPARSE AND CXSparse_FOUND)
 
-if (gflags_FOUND)
+if (WITH_GFLAGS AND gflags_FOUND)
   target_include_directories (ceres PRIVATE ${gflags_INCLUDE_DIRS})
   target_link_libraries (ceres PRIVATE ${gflags_LIBRARIES})
-endif (gflags_FOUND)
+endif (WITH_GFLAGS AND gflags_FOUND)
 
 set_target_properties(ceres PROPERTIES
   VERSION ${CERES_VERSION}
@@ -306,15 +306,15 @@ if (BUILD_TESTING AND GFLAGS)
               numeric_diff_test_utils.cc
               test_util.cc)
 
-  if (MINIGLOG)
+  if (WITH_MINILOG)
     # When using miniglog, it is compiled into Ceres, thus Ceres becomes
     # the library against which other libraries should link for logging.
     target_link_libraries(gtest ${gflags_LIBRARIES} ceres)
     target_link_libraries(test_util ceres gtest)
-  else (MINIGLOG)
+  else (WITH_MINILOG)
     target_link_libraries(gtest ${gflags_LIBRARIES} ${glog_LIBRARIES})
     target_link_libraries(test_util ceres gtest ${glog_LIBRARIES})
-  endif (MINIGLOG)
+  endif (WITH_MINILOG)
 
   macro (CERES_TEST NAME)
     add_executable(${NAME}_test ${NAME}_test.cc)
@@ -385,9 +385,9 @@ if (BUILD_TESTING AND GFLAGS)
 
   # TODO(sameeragarwal): This test should ultimately be made
   # independent of SuiteSparse.
-  if (SUITESPARSE AND SuiteSparse_FOUND)
+  if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
     ceres_test(compressed_col_sparse_matrix_utils)
-  endif (SUITESPARSE AND SuiteSparse_FOUND)
+  endif (WITH_SUITESPARSE AND SuiteSparse_FOUND)
 
   ceres_test(symmetric_linear_solver)
   ceres_test(triplet_sparse_matrix)

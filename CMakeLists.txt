@@ -100,20 +100,20 @@ include (CPack)
 
 enable_testing()
 
-option(MINIGLOG "Use a stripped down version of glog." OFF)
-option(GFLAGS "Enable Google Flags." ON)
-option(SUITESPARSE "Enable SuiteSparse." ON)
-option(CXSPARSE "Enable CXSparse." ON)
-option(LAPACK "Enable use of LAPACK." ON)
+option(WITH_MINILOG "Use a stripped down version of glog." OFF)
+option(WITH_GFLAGS "Enable Google Flags." ON)
+option(WITH_SUITESPARSE "Enable SuiteSparse." ON)
+option(WITH_CXSPARSE "Enable CXSparse." ON)
+option(WITH_LAPACK "Enable use of LAPACK." ON)
 # Template specializations for the Schur complement based solvers. If
 # compile time, binary size or compiler performance is an issue, you
 # may consider disabling this.
-option(SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
-option(CUSTOM_BLAS
+option(WITH_SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
+option(WITH_CUSTOM_BLAS
        "Use handcoded BLAS routines (usually faster) instead of Eigen."
        ON)
 # Multithreading using OpenMP
-option(OPENMP "Enable threaded solving in Ceres (requires OpenMP)" ON)
+option(WITH_OPENMP "Enable threaded solving in Ceres (requires OpenMP)" ON)
 # Enable the use of Eigen as a sparse linear algebra library for
 # solving the nonlinear least squares problems. Enabling this
 # option will result in an LGPL licensed version of Ceres Solver
@@ -121,7 +121,7 @@ option(OPENMP "Enable threaded solving in Ceres (requires OpenMP)" ON)
 # This does not affect the covariance estimation algorithm, as it
 # depends on the sparse QR factorization algorithm, which is licensed
 # under the MPL.
-OPTION(EIGENSPARSE
+OPTION(WITH_EIGENSPARSE
   "Enable Eigen as a sparse linear algebra library, WARNING: results in an LGPL licensed Ceres." OFF)
 if (NOT WIN32)
   # Ceres does not use C++11 internally, however it does use shared_ptr
@@ -181,17 +181,17 @@ endif (MSVC)
 if (IOS)
   message(STATUS "Building Ceres for iOS platform: ${IOS_PLATFORM}")
 
-  update_cache_variable(MINIGLOG ON)
+  update_cache_variable(WITH_MINILOG ON)
   message(STATUS "Building for iOS, forcing use of miniglog instead of glog.")
 
-  update_cache_variable(SUITESPARSE OFF)
-  update_cache_variable(CXSPARSE OFF)
-  update_cache_variable(GFLAGS OFF)
-  update_cache_variable(OPENMP OFF)
+  update_cache_variable(WITH_SUITESPARSE OFF)
+  update_cache_variable(WITH_CXSPARSE OFF)
+  update_cache_variable(WITH_GFLAGS OFF)
+  update_cache_variable(WITH_OPENMP OFF)
 
   # Apple claims that the BLAS call dsyrk_ is a private API, and will not allow
   # you to submit to the Apple Store if the symbol is present.
-  update_cache_variable(LAPACK OFF)
+  update_cache_variable(WITH_LAPACK OFF)
 
   message(STATUS "Building for iOS: SuiteSparse, CXSparse, LAPACK, gflags, "
     "and OpenMP are not available.")
@@ -226,7 +226,7 @@ if (EIGEN_FOUND)
   # Ensure that only MPL2 licensed code is part of the default build.
   message("")
   message("   ===============================================================")
-  if (EIGENSPARSE)
+  if (WITH_EIGENSPARSE)
     list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
     message("   Enabling the use of Eigen as a sparse linear algebra library ")
     message("   for solving the nonlinear least squares problems. Enabling ")
@@ -242,18 +242,18 @@ if (EIGEN_FOUND)
       message("   linear solvers will suffer. ")
     endif (EIGEN_VERSION VERSION_LESS 3.2.2)
 
-  else (EIGENSPARSE)
+  else (WITH_EIGENSPARSE)
     message("   Disabling the use of Eigen as a sparse linear algebra library.")
     message("   This does not affect the covariance estimation algorithm ")
     message("   which can still use the EIGEN_SPARSE_QR algorithm.")
     add_definitions(-DEIGEN_MPL2_ONLY)
-  endif (EIGENSPARSE)
+  endif (WITH_EIGENSPARSE)
     message("   ===============================================================")
     message("")
 endif (EIGEN_FOUND)
 
 # LAPACK (& BLAS).
-if (LAPACK)
+if (WITH_LAPACK)
   find_package(LAPACK QUIET)
   if (LAPACK_FOUND)
     message("-- Found LAPACK library: ${LAPACK_LIBRARIES}")
@@ -269,16 +269,16 @@ if (LAPACK)
   endif (BLAS_FOUND)
 
   if (NOT (LAPACK_FOUND AND BLAS_FOUND))
-    update_cache_variable(LAPACK OFF)
+    update_cache_variable(WITH_LAPACK OFF)
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
   endif (NOT (LAPACK_FOUND AND BLAS_FOUND))
-else (LAPACK)
+else (WITH_LAPACK)
   message("-- Building without LAPACK.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
-endif (LAPACK)
+endif (WITH_LAPACK)
 
 # SuiteSparse.
-if (SUITESPARSE)
+if (WITH_SUITESPARSE)
   # By default, if SuiteSparse and all dependencies are found, Ceres is
   # built with SuiteSparse support.
 
@@ -308,19 +308,19 @@ if (SUITESPARSE)
     # built with SuiteSparse support.
     message("-- Found SuiteSparse ${SuiteSparse_VERSION}, "
             "building with SuiteSparse.")
-  else (SUITESPARSE_FOUND)
+  else (SuiteSparse_FOUND)
     # Disable use of SuiteSparse if it cannot be found and continue.
     message("-- Did not find all SuiteSparse dependencies, disabling "
       "SuiteSparse support.")
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
   endif (SuiteSparse_FOUND)
-else (SUITESPARSE)
+else (WITH_SUITESPARSE)
   message("-- Building without SuiteSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
-endif (SUITESPARSE)
+endif (WITH_SUITESPARSE)
 
 # CXSparse.
-if (CXSPARSE)
+if (WITH_CXSPARSE)
   # Don't search with REQUIRED as we can continue without CXSparse.
   find_package(CXSparse NO_MODULE)
   if (CXSparse_FOUND)
@@ -334,29 +334,29 @@ if (CXSPARSE)
     message("-- Did not find CXSparse, Building without CXSparse.")
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
   endif (CXSparse_FOUND)
-else (CXSPARSE)
+else (WITH_CXSPARSE)
   message("-- Building without CXSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
   # Mark as advanced (remove from default GUI view) the CXSparse search
-  # variables in case user enabled CXSPARSE, FindCXSparse did not find it, so
+  # variables in case user enabled WITH_CXSPARSE, FindCXSparse did not find it, so
   # made search variables visible in GUI for user to set, but then user disables
-  # CXSPARSE instead of setting them.
+  # WITH_CXSPARSE instead of setting them.
   mark_as_advanced(FORCE CXSPARSE_INCLUDE_DIR
                          CXSPARSE_LIBRARY)
-endif (CXSPARSE)
+endif (WITH_CXSPARSE)
 
 # Ensure that the user understands they have disabled all sparse libraries.
-if (NOT SUITESPARSE AND NOT CXSPARSE AND NOT EIGENSPARSE)
+if (NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
   message("   ===============================================================")
   message("   Compiling without any sparse library: SuiteSparse, CXSparse ")
   message("   & Eigen (Sparse) are all disabled or unavailable.  No sparse ")
   message("   linear solvers (SPARSE_NORMAL_CHOLESKY & SPARSE_SCHUR)")
   message("   will be available when Ceres is used.")
   message("   ===============================================================")
-endif(NOT SUITESPARSE AND NOT CXSPARSE AND NOT EIGENSPARSE)
+endif(NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
 
 # GFlags.
-if (GFLAGS)
+if (WITH_GFLAGS)
   # Don't search with REQUIRED as we can continue without gflags.
   find_package(gflags)
   include (DetermineGflagsNamespace)
@@ -371,56 +371,56 @@ if (GFLAGS)
     message("-- Did not find Google Flags (gflags), Building without gflags "
       "- no tests or tools will be built!")
   endif (gflags_FOUND)
-else (GFLAGS)
+else (WITH_GFLAGS)
   message("-- Google Flags disabled; no tests or tools will be built!")
   # Mark as advanced (remove from default GUI view) the gflags search
-  # variables in case user enabled GFLAGS, FindGflags did not find it, so
+  # variables in case user enabled WITH_GFLAGS, FindGflags did not find it, so
   # made search variables visible in GUI for user to set, but then user disables
-  # GFLAGS instead of setting them.
+  # WITH_GFLAGS instead of setting them.
   mark_as_advanced(FORCE gflags_INCLUDE_DIR
                          gflags_LIBRARIES)
-endif (GFLAGS)
+endif (WITH_GFLAGS)
 
 # MiniGLog.
-if (MINIGLOG)
+if (WITH_MINILOG)
   message("-- Compiling minimal glog substitute into Ceres.")
   set(glog_INCLUDE_DIRS internal/ceres/miniglog)
   message("-- Using minimal glog substitute (include): ${glog_INCLUDE_DIRS}")
 
   # Mark as advanced (remove from default GUI view) the glog search
-  # variables in case user disables MINIGLOG, FindGlog did not find it, so
+  # variables in case user disables WITH_MINILOG, FindGlog did not find it, so
   # made search variables visible in GUI for user to set, but then user enables
-  # MINIGLOG instead of setting them.
+  # WITH_MINILOG instead of setting them.
   mark_as_advanced(FORCE glog_INCLUDE_DIR
                          glog_LIBRARY)
-else (MINIGLOG)
+else (WITH_MINILOG)
   # Don't search with REQUIRED so that configuration continues if not found and
-  # we can output an error messages explaining MINIGLOG option.
+  # we can output an error messages explaining WITH_MINILOG option.
   find_package(glog)
   if (glog_FOUND)
     set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION})")
     message("-- Found Google Log header in: ${glog_INCLUDE_DIRS}")
   else (glog_FOUND)
     message(FATAL_ERROR "Can't find Google Log. Please set glog_INCLUDE_DIR & "
-      "glog_LIBRARY or enable MINIGLOG option to use minimal glog "
+      "glog_LIBRARY or enable WITH_MINILOG option to use minimal glog "
       "implementation.")
   endif (glog_FOUND)
-endif (MINIGLOG)
+endif (WITH_MINILOG)
 
-if (NOT SCHUR_SPECIALIZATIONS)
+if (NOT WITH_SCHUR_SPECIALIZATIONS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_RESTRICT_SCHUR_SPECIALIZATION)
   message("-- Disabling Schur specializations (faster compiles)")
-endif (NOT SCHUR_SPECIALIZATIONS)
+endif (NOT WITH_SCHUR_SPECIALIZATIONS)
 
-if (NOT CUSTOM_BLAS)
+if (NOT WITH_CUSTOM_BLAS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CUSTOM_BLAS)
   message("-- Disabling custom blas")
-endif (NOT CUSTOM_BLAS)
+endif (NOT WITH_CUSTOM_BLAS)
 
-if (OPENMP)
+if (WITH_OPENMP)
   # Clang does not (yet) support OpenMP.
   if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    update_cache_variable(OPENMP OFF)
+    update_cache_variable(WITH_OPENMP OFF)
     message("-- Compiler is Clang, disabling OpenMP.")
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
   else (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -439,14 +439,14 @@ if (OPENMP)
       endif (UNIX)
     else (OPENMP_FOUND)
       message("-- Failed to find OpenMP, disabling.")
-      update_cache_variable(OPENMP OFF)
+      update_cache_variable(WITH_OPENMP OFF)
       list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
     endif (OPENMP_FOUND)
   endif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-else (OPENMP)
+else (WITH_OPENMP)
   message("-- Building without OpenMP (disabling multithreading).")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
-endif (OPENMP)
+endif (WITH_OPENMP)
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++11" COMPILER_HAS_CXX11_FLAG)
@@ -527,17 +527,17 @@ include_directories(
 # as system headers.
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 
-if (SUITESPARSE)
+if (WITH_SUITESPARSE)
   include_directories(${SUITESPARSE_INCLUDE_DIRS})
-endif (SUITESPARSE)
+endif (WITH_SUITESPARSE)
 
-if (CXSPARSE)
+if (WITH_CXSPARSE)
   include_directories(${CXSPARSE_INCLUDE_DIRS})
-endif (CXSPARSE)
+endif (WITH_CXSPARSE)
 
-if (GFLAGS)
+if (WITH_GFLAGS)
   include_directories(${gflags_INCLUDE_DIRS})
-endif (GFLAGS)
+endif (WITH_GFLAGS)
 
 if (BUILD_SHARED_LIBS)
   message("-- Building Ceres as a shared library.")
@@ -772,12 +772,12 @@ install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION include/ceres/internal)
 install(FILES ${CMAKE_BINARY_DIR}/config/ceres/internal/config.h
         DESTINATION include/ceres/internal)
 
-if (MINIGLOG)
+if (WITH_MINILOG)
   # Install miniglog header if being used as logging #includes appear in
   # installed public Ceres headers.
   install(FILES ${CMAKE_SOURCE_DIR}/internal/ceres/miniglog/glog/logging.h
           DESTINATION include/ceres/internal/miniglog/glog)
-endif (MINIGLOG)
+endif (WITH_MINILOG)
 
 # Add an uninstall target to remove all installed files.
 configure_file("${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in"
