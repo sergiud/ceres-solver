@@ -98,7 +98,11 @@ set (CPACK_PACKAGE_VERSION ${CERES_VERSION})
 include (CMakePackageConfigHelpers)
 include (CPack)
 
-enable_testing()
+option(BUILD_TESTING "Enable tests" ON)
+
+if (BUILD_TESTING)
+  enable_testing()
+endif (BUILD_TESTING)
 
 option(WITH_MINILOG "Use a stripped down version of glog." OFF)
 option(WITH_GFLAGS "Enable Google Flags." ON)
@@ -138,7 +142,6 @@ if (NOT WIN32)
   # features available are on by default and there is no analogue to -std=c++11.
   option(CXX11 "Enable use of C++11 headers if available (requires client code use C++11)." OFF)
 endif(NOT WIN32)
-option(BUILD_TESTING "Enable tests" ON)
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
