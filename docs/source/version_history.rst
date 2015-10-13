@@ -4,8 +4,8 @@
 Version History
 ===============
 
-HEAD
-====
+1.11.0
+======
 
 New Features
 ------------
@@ -27,6 +27,20 @@ New Features
 
 Bug Fixes & Minor Changes
 -------------------------
+#. Remove use of link-time optimisation (LTO) for all compilers due to
+   portability issues with gtest / type_info::operator== & Eigen with
+   Clang on OS X vs GCC 4.9+ on Linux requiring contradictory 'fixes'.
+#. Use link-time optimisation (LTO) only when compiling Ceres itself,
+   not tests or examples, to bypass gtest / type_info::operator== issue.
+#. Use old minimum iOS version flags on Xcode < 7.0.
+#. Add gtest-specific flags when building/using as a shared library.
+#. Clean up iOS.cmake to use xcrun/xcodebuild & libtool.
+#. Import the latest version of ``googletest``.
+#. Refactored ``system_test`` into ``bundle_adjustment_test`` and
+   ``system_test``, where each test case is its own test.
+#. Fix invalid memory access bug in
+   ``CompressedRowSparseMatrix::AppendRows`` when it was called with a
+   matrix of size zero.
 #. Build position independent code when compiling Ceres statically
    (Alexander Alekhin).
 #. Fix a bug in DetectStructure (Johannes Schonberger).

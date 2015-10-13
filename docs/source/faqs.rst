@@ -33,34 +33,6 @@ Building
    NDK. It has worse performance than the full fledged glog library
    and is much harder to control and use.
 
-#. Increase the inlining threshold in Clang for Eigen.
-
-   By default, the inlining threshold (evaluated on a heuristic used by LLVM to
-   guess how expensive a function will be to inline) can hobble Eigen, resulting in
-   poor performance.
-
-   Ceres itself will always be compiled with an increased inline threshold
-   (currently 600) when compiled with Clang.  This increased threshold is also
-   added to the interface flags for the exported Ceres CMake target provided
-   that the CMake version is >= 2.8.12 (from which this was supported).  This
-   means that **any user code that links against Ceres using CMake >= 2.8.12
-   (and is compiled with Clang, irrespective of what Ceres was compiled with)
-   will automatically be compiled with the same increased inlining threshold
-   used to compile Ceres**.
-
-   If you are using CMake < 2.8.12 and Clang in your own code which uses Ceres
-   we recommend that you increase the inlining threshold yourself using:
-
-.. code-block:: cmake
-
-    # Use a larger inlining threshold for Clang, since it can hobble Eigen,
-    # resulting in reduced performance. The -Qunused-arguments is needed because
-    # CMake passes the inline threshold to the linker and clang complains about
-    # it (and dies, if compiling with -Werror).
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      set(CMAKE_CXX_FLAGS
-          "${CMAKE_CXX_FLAGS} -Qunused-arguments -mllvm -inline-threshold=600")
-    endif()
 
 Modeling
 ========
@@ -215,7 +187,7 @@ Solving
         4  1.803857e+04    5.58e+02    2.69e+04   8.66e+01   9.93e-01  3.69e+05       1    1.61e-01    1.03e+00
         5  1.803391e+04    4.66e+00    3.11e+02   1.02e+01   1.00e+00  1.11e+06       1    1.49e-01    1.18e+00
 
-     Ceres Solver v1.10.0 Solve Report
+     Ceres Solver v1.11.0 Solve Report
      ----------------------------------
                                           Original                  Reduced
      Parameter blocks                        22122                    22122
