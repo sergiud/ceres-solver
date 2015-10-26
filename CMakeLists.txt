@@ -253,7 +253,7 @@ if (WITH_SUITESPARSE)
   # built with SuiteSparse support.
 
   # Check for SuiteSparse and dependencies.
-  find_package(SuiteSparse NO_MODULE)
+  find_package(SuiteSparse NO_MODULE COMPONENTS CHOLMOD SPQR)
 
   IF (SuiteSparse_FOUND)
     set (SUITESPARSE_DEPENDENCY
