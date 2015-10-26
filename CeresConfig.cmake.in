@@ -3,8 +3,6 @@
 include (CMakeFindDependencyMacro)
 include ("${CMAKE_CURRENT_LIST_DIR}/CeresTargets.cmake")
 
-set_and_check (CERES_INCLUDE_DIR "@PACKAGE_Ceres_INCLUDE_DIR@")
-
 @GLOG_DEPENDENCY@
 @CXSPARSE_DEPENDENCY@
 @SUITESPARSE_DEPENDENCY@
