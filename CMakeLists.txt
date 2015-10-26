@@ -307,12 +307,6 @@ if (WITH_CXSPARSE)
 else (WITH_CXSPARSE)
   message("-- Building without CXSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
-  # Mark as advanced (remove from default GUI view) the CXSparse search
-  # variables in case user enabled WITH_CXSPARSE, FindCXSparse did not find it, so
-  # made search variables visible in GUI for user to set, but then user disables
-  # WITH_CXSPARSE instead of setting them.
-  mark_as_advanced(FORCE CXSPARSE_INCLUDE_DIR
-                         CXSPARSE_LIBRARY)
 endif (WITH_CXSPARSE)
 
 # Ensure that the user understands they have disabled all sparse libraries.
@@ -498,18 +492,6 @@ include_directories(
 # used by clients after find_package(Ceres) does not identify Eigen as
 # as system headers.
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
-
-if (WITH_SUITESPARSE)
-  include_directories(${SUITESPARSE_INCLUDE_DIRS})
-endif (WITH_SUITESPARSE)
-
-if (WITH_CXSPARSE)
-  include_directories(${CXSPARSE_INCLUDE_DIRS})
-endif (WITH_CXSPARSE)
-
-if (WITH_GFLAGS)
-  include_directories(${gflags_INCLUDE_DIRS})
-endif (WITH_GFLAGS)
 
 if (BUILD_SHARED_LIBS)
   message("-- Building Ceres as a shared library.")
