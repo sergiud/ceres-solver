@@ -750,8 +750,10 @@ add_custom_target(uninstall
 # generate the absolute install paths.
 set(RELATIVE_CMAKECONFIG_INSTALL_DIR lib/cmake/Ceres)
 
-EXPORT (TARGETS ceres FILE CeresTargets.cmake)
-EXPORT (PACKAGE ceres)
+set_target_properties (ceres PROPERTIES EXPORT_NAME Ceres)
+
+export (TARGETS ceres NAMESPACE Ceres:: FILE CeresTargets.cmake)
+export (PACKAGE ceres)
 
 # This "exports" all targets which have been put into the export set
 # "CeresExport". This means that CMake generates a file with the given
@@ -760,7 +762,7 @@ EXPORT (PACKAGE ceres)
 # in the export set, so when loaded later on CMake will create "imported"
 # library targets from these, which can be used in many ways in the same way
 # as a normal library target created via a normal ADD_LIBRARY().
-INSTALL(EXPORT CeresTargets
+install(EXPORT CeresTargets NAMESPACE  Ceres::
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 
 # Figure out the relative path from the installed Config.cmake file to the
@@ -771,27 +773,17 @@ file(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
      ${CMAKE_INSTALL_PREFIX}/${RELATIVE_CMAKECONFIG_INSTALL_DIR}
      ${CMAKE_INSTALL_PREFIX})
 
-set (Ceres_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 configure_package_config_file (
   CeresConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake INSTALL_DESTINATION
-  lib/cmake/Ceres PATH_VARS Ceres_INCLUDE_DIR
+  ${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake
+  INSTALL_DESTINATION lib/cmake/Ceres
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file (CeresConfigVersion.cmake VERSION
   ${CERES_VERSION} COMPATIBILITY SameMajorVersion)
 
-set (Ceres_INCLUDE_DIR include)
-
-configure_package_config_file (
-  CeresConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CeresConfig.cmake
-  INSTALL_DESTINATION lib${LIB_SUFFIX}/cmake/Ceres PATH_VARS Ceres_INCLUDE_DIR
-  NO_CHECK_REQUIRED_COMPONENTS_MACRO)
-
 # Install these files into the same directory as the generated exports-file,
 # we include the FindPackage scripts for libraries whose headers are included
 # in the public API of Ceres and should thus be present in CERES_INCLUDE_DIRS.
-INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CeresConfig.cmake"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CeresConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfigVersion.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
