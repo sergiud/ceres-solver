@@ -201,7 +201,7 @@ if (WITH_CXSPARSE AND CXSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   target_compile_definitions (ceres PRIVATE
     CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
-  target_link_libraries (ceres PUBLIC CXSparse)
+  target_link_libraries (ceres PUBLIC CXSparse::CXSparse)
 endif (WITH_CXSPARSE AND CXSparse_FOUND)
 
 if (WITH_GFLAGS AND gflags_FOUND)
