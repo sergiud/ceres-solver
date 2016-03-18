@@ -486,9 +486,27 @@ Jet<T, N> tanh(const Jet<T, N>& f) {
 }
 
 // Bessel functions of the first kind with integer order equal to 0, 1, n.
-inline double BesselJ0(double x) { return j0(x); }
-inline double BesselJ1(double x) { return j1(x); }
-inline double BesselJn(int n, double x) { return jn(n, x); }
+inline double BesselJ0(double x) {
+#ifdef HAVE__J0
+    return _j0(x);
+#else
+    return j0(x);
+#endif
+}
+inline double BesselJ1(double x) {
+#ifdef HAVE__J1
+    return _j1(x);
+#else
+    return j1(x);
+#endif
+}
+inline double BesselJn(int n, double x) {
+#ifdef HAVE__JN
+    return _jn(n, x);
+#else
+    return jn(n, x);
+#endif
+}
 
 // For the formulae of the derivatives of the Bessel functions see the book:
 // Olver, Lozier, Boisvert, Clark, NIST Handbook of Mathematical Functions,

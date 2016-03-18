@@ -185,6 +185,18 @@ target_include_directories (ceres PUBLIC ${glog_INCLUDE_DIRS})
 # compiler warnings from them being suppressed.
 target_include_directories (ceres SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS})
 
+if (HAVE__J0)
+  target_compile_definitions (ceres PUBLIC HAVE__J0)
+endif (HAVE__J0)
+
+if (HAVE__J1)
+  target_compile_definitions (ceres PUBLIC HAVE__J1)
+endif (HAVE__J1)
+
+if (HAVE__JN)
+  target_compile_definitions (ceres PUBLIC HAVE__JN)
+endif (HAVE__JN)
+
 if (WITH_CXSPARSE AND CXSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   target_compile_definitions (ceres PRIVATE

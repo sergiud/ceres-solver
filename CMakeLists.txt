@@ -88,6 +88,7 @@ set (CPACK_PACKAGE_VERSION ${CERES_VERSION})
 
 include (CMakePackageConfigHelpers)
 include (CPack)
+include(CheckFunctionExists)
 
 option(BUILD_TESTING "Enable tests" ON)
 
@@ -475,6 +476,10 @@ else (SHARED_PTR_FOUND)
   message(FATAL_ERROR "Unable to find shared_ptr, try enabling CXX11 option "
     "if you expect C++11 to be available.")
 endif (SHARED_PTR_FOUND)
+
+check_function_exists (_j0 HAVE__J0)
+check_function_exists (_j1 HAVE__J1)
+check_function_exists (_jn HAVE__JN)
 
 # To ensure that CXX11 accurately reflects whether we are using C++11,
 # check if it is required given where the potentially C++11 features Ceres
