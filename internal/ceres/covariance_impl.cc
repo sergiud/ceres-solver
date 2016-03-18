@@ -337,7 +337,13 @@ bool CovarianceImpl::GetCovarianceMatrixInTangentOrAmbientSpace(
                  max_covariance_block_size]);
 
   bool success = true;
+#if defined(CERES_USE_OPENMP)
+#if defined(_OPENMP) && (_OPENMP >= 200805)
 #pragma omp parallel for num_threads(num_threads) schedule(dynamic) collapse(2)
+#else
+#pragma omp parallel for num_threads(num_threads) schedule(dynamic)
+#endif
+#endif
   for (int i = 0; i < parameters.size(); ++i) {
     for (int j = 0; j < parameters.size(); ++j) {
       // The second loop can't start from j = i for compatibility with OpenMP
