@@ -391,7 +391,6 @@ else (WITH_MINILOG)
   find_package(glog)
   if (glog_FOUND)
     set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION})")
-    message("-- Found Google Log header in: ${glog_INCLUDE_DIRS}")
   else (glog_FOUND)
     message(FATAL_ERROR "Can't find Google Log. Please set glog_INCLUDE_DIR & "
       "glog_LIBRARY or enable WITH_MINILOG option to use minimal glog "

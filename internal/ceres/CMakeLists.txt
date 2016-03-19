@@ -129,7 +129,7 @@ endif (WITH_SCHUR_SPECIALIZATIONS)
 
 # Build the list of dependencies for Ceres based on the current configuration.
 if (NOT WITH_MINILOG AND glog_FOUND)
-  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${glog_LIBRARIES})
+  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
 endif (NOT WITH_MINILOG AND glog_FOUND)
 
 if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
@@ -174,8 +174,6 @@ target_include_directories (ceres
   ${CMAKE_SOURCE_DIR}/internal
   ${CMAKE_SOURCE_DIR}/internal/ceres
 )
-
-target_include_directories (ceres PUBLIC ${glog_INCLUDE_DIRS})
 
 # Eigen SparseQR generates various compiler warnings related to unused and
 # uninitialised local variables, which prevents Ceres compilation as we use
