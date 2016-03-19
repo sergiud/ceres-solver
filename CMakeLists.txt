@@ -119,6 +119,13 @@ option(WITH_OPENMP "Enable threaded solving in Ceres (requires OpenMP)" ON)
 # under the MPL.
 OPTION(WITH_EIGENSPARSE
   "Enable Eigen as a sparse linear algebra library, WARNING: results in an LGPL licensed Ceres." OFF)
+option(WITH_CXX11 "Enable use of C++11 headers if available (requires client code use C++11)." OFF)
+
+if (WITH_CXX11)
+  set (CMAKE_CXX_STANDARD 11)
+  set (CMAKE_CXX_STANDARD_REQUIRED ON)
+endif (WITH_CXX11)
+
 if (NOT MSVC)
   # Ceres does not use C++11 internally, however it does use shared_ptr
   # (required) and unordered_map (if available), both of which were present in
@@ -134,7 +141,6 @@ if (NOT MSVC)
   # (C++11 etc) features available are on by default and there is no analogue to
   # -std=c++11.  It will however be available for MinGW & CygWin, which can
   # support -std=c++11.
-  option(CXX11 "Enable use of C++11 headers if available (requires client code use C++11)." OFF)
 endif(NOT MSVC)
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
@@ -436,12 +442,12 @@ endif (WITH_OPENMP)
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-std=c++11" COMPILER_HAS_CXX11_FLAG)
-if (CXX11 AND COMPILER_HAS_CXX11_FLAG)
+if (WITH_CXX11 AND COMPILER_HAS_CXX11_FLAG)
   # Update CMAKE_REQUIRED_FLAGS used by CheckCXXSourceCompiles to include
   # -std=c++11 s/t we will detect the C++11 versions of unordered_map &
   # shared_ptr if they exist.
   set(CMAKE_REQUIRED_FLAGS -std=c++11)
-endif (CXX11 AND COMPILER_HAS_CXX11_FLAG)
+endif (WITH_CXX11 AND COMPILER_HAS_CXX11_FLAG)
 
 # Set the Ceres compile definitions for the unordered_map configuration.
 include(FindUnorderedMap)
@@ -458,7 +464,7 @@ if (UNORDERED_MAP_FOUND)
   endif(HAVE_TR1_UNORDERED_MAP_IN_TR1_NAMESPACE)
 else (UNORDERED_MAP_FOUND)
   message("-- Replacing unordered_map/set with map/set (warning: slower!), "
-    "try enabling CXX11 option if you expect C++11 to be available.")
+    "try enabling WITH_CXX11 option if you expect C++11 to be available.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_UNORDERED_MAP)
 endif()
 
@@ -473,7 +479,7 @@ if (SHARED_PTR_FOUND)
     list(APPEND CERES_COMPILE_OPTIONS CERES_TR1_SHARED_PTR)
   endif (SHARED_PTR_TR1_NAMESPACE)
 else (SHARED_PTR_FOUND)
-  message(FATAL_ERROR "Unable to find shared_ptr, try enabling CXX11 option "
+  message(FATAL_ERROR "Unable to find shared_ptr, try enabling WITH_CXX11 option "
     "if you expect C++11 to be available.")
 endif (SHARED_PTR_FOUND)
 
@@ -481,15 +487,15 @@ check_function_exists (_j0 HAVE__J0)
 check_function_exists (_j1 HAVE__J1)
 check_function_exists (_jn HAVE__JN)
 
-# To ensure that CXX11 accurately reflects whether we are using C++11,
+# To ensure that WITH_CXX11 accurately reflects whether we are using C++11,
 # check if it is required given where the potentially C++11 features Ceres
 # uses were found, and disable it if C++11 is not being used.
-if (CXX11)
+if (WITH_CXX11)
   if (NOT HAVE_SHARED_PTR_IN_STD_NAMESPACE AND
       NOT HAVE_UNORDERED_MAP_IN_STD_NAMESPACE)
     message("-- Failed to find C++11 components in C++11 locations & "
-      "namespaces, disabling CXX11.")
-    update_cache_variable(CXX11 OFF)
+      "namespaces, disabling WITH_CXX11.")
+    update_cache_variable(WITH_CXX11 OFF)
   else()
     message("   ==============================================================")
     message("   Compiling Ceres using C++11.  This will result in a version ")
@@ -500,7 +506,7 @@ if (CXX11)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     endif()
   endif()
-endif(CXX11)
+endif(WITH_CXX11)
 
 include_directories(
   include
