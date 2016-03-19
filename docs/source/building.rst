@@ -546,7 +546,7 @@ Options controlling Ceres configuration
    multi-threading with ``OpenMP`` is not supported. Turn this ``OFF``
    to disable multi-threading.
 
-#. ``CXX11 [Default: OFF]`` *Non-Windows platforms only*.
+#. ``CXX11 [Default: OFF]`` *Non-MSVC compilers only*.
 
    Although Ceres does not currently use C++11, it does use ``shared_ptr``
    (required) and ``unordered_map`` (if available); both of which existed in the
@@ -554,7 +554,7 @@ Options controlling Ceres configuration
    Ceres can compile on pre-C++11 compilers, using the TR1/C++0x versions of
    ``shared_ptr`` & ``unordered_map``.
 
-   Note that on Linux (GCC & Clang), compiling against the TR1/C++0x versions:
+   Note that when using GCC & Clang, compiling against the TR1/C++0x versions:
    ``CXX11=OFF`` (the default) *does not* require ``-std=c++11`` when compiling
    Ceres, *nor* does it require that any client code using Ceres use
    ``-std=c++11``.   However, this will cause compile errors if any client code
@@ -587,9 +587,10 @@ Options controlling Ceres configuration
    OS X 10.9+           ON          std               **Yes**
    ===================  ==========  ================  ======================================
 
-   The ``CXX11`` option does does not exist for Windows, as there any new C++
-   features available are enabled by default, and there is no analogue of
-   ``-std=c++11``.
+   The ``CXX11`` option does does not exist when using MSVC, as there any new
+   C++ features available are enabled by default, and there is no analogue of
+   ``-std=c++11``.  It will however be available on MinGW & CygWin, which can
+   support ``-std=c++11``.
 
 #. ``BUILD_SHARED_LIBS [Default: OFF]``: By default Ceres is built as
    a static library, turn this ``ON`` to instead build Ceres as a
@@ -612,6 +613,20 @@ Options controlling Ceres configuration
 #. ``MSVC_USE_STATIC_CRT [Default: OFF]`` *Windows Only*: By default
    Ceres will use the Visual Studio default, *shared* C-Run Time (CRT) library.
    Turn this ``ON`` to use the *static* C-Run Time library instead.
+
+#. ``LIB_SUFFIX [Default: "64" on non-Debian/Arch based 64-bit Linux, otherwise: ""]``:
+   The suffix to append to the library install directory, built from:
+   ``${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}``.
+
+   The filesystem hierarchy standard recommends that 64-bit systems install
+   native libraries to lib64 rather than lib.  Most Linux distributions follow
+   this convention, but Debian and Arch based distros do not.  Note that the
+   only generally sensible values for ``LIB_SUFFIX`` are "" and "64".
+
+   Although by default Ceres will auto-detect non-Debian/Arch based 64-bit
+   Linux distributions and default ``LIB_SUFFIX`` to "64", this can always be
+   overridden by manually specifying LIB_SUFFIX using: ``-DLIB_SUFFIX=<VALUE>``
+   when invoking CMake.
 
 
 Options controlling Ceres dependency locations
