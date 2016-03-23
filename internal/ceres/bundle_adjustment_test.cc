@@ -385,7 +385,7 @@ TEST_F(BundleAdjustmentTest, SparseSchurWithUserOrderingUsingEigenSparse) {
 }
 #endif  // CERES_USE_EIGEN_SPARSE
 
-#ifdef CERES_USE_OPENMP
+#if (defined(CERES_USE_OPENMP) || defined(CERES_USE_TBB))
 
 TEST_F(BundleAdjustmentTest, MultiThreadedDenseSchurWithAutomaticOrdering) {
   RunSolverForConfigAndExpectResidualsMatch(

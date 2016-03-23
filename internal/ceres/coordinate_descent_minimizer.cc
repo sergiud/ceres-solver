@@ -30,9 +30,7 @@
 
 #include "ceres/coordinate_descent_minimizer.h"
 
-#ifdef CERES_USE_OPENMP
-#include <omp.h>
-#endif
+#include "parfor.h"
 
 #include <iterator>
 #include <numeric>
@@ -154,7 +152,6 @@ void CoordinateDescentMinimizer::Minimize(
       continue;
     }
 
-#ifdef CERES_USE_OPENMP
     const int num_inner_iteration_threads =
         min(options.num_threads, num_problems);
     evaluator_options_.num_threads =
@@ -162,17 +159,9 @@ void CoordinateDescentMinimizer::Minimize(
 
     // The parameter blocks in each independent set can be optimized
     // in parallel, since they do not co-occur in any residual block.
-#pragma omp parallel for num_threads(num_inner_iteration_threads)
-#endif
-    for (int j = independent_set_offsets_[i];
-         j < independent_set_offsets_[i + 1];
-         ++j) {
-#ifdef CERES_USE_OPENMP
-      int thread_id = omp_get_thread_num();
-#else
-      int thread_id = 0;
-#endif
-
+    parfor(independent_set_offsets_[i],
+           independent_set_offsets_[i + 1],
+           1, num_inner_iteration_threads, [&](int thread_id, int j) {
       ParameterBlock* parameter_block = parameter_blocks_[j];
       const int old_index = parameter_block->index();
       const int old_delta_offset = parameter_block->delta_offset();
@@ -202,7 +191,7 @@ void CoordinateDescentMinimizer::Minimize(
       parameter_block->set_delta_offset(old_delta_offset);
       parameter_block->SetState(parameters + parameter_block->state_offset());
       parameter_block->SetConstant();
-    }
+    });
   }
 
   for (int i =  0; i < parameter_blocks_.size(); ++i) {

@@ -82,10 +82,9 @@
 // This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
 
-#ifdef CERES_USE_OPENMP
-#include <omp.h>
-#endif
+#include "parfor.h"
 
+#include <atomic>
 #include <map>
 #include <string>
 #include <vector>
@@ -115,7 +114,7 @@ class ProgramEvaluator : public Evaluator {
         jacobian_writer_(options, program),
         evaluate_preparers_(
             jacobian_writer_.CreateEvaluatePreparers(options.num_threads)) {
-#ifndef CERES_USE_OPENMP
+#if !(defined(CERES_USE_OPENMP) || defined(CERES_USE_TBB))
     if (options_.num_threads > 1) {
       LOG(WARNING)
           << "OpenMP support is not compiled into this binary; "
@@ -172,21 +171,16 @@ class ProgramEvaluator : public Evaluator {
     // This bool is used to disable the loop if an error is encountered
     // without breaking out of it. The remaining loop iterations are still run,
     // but with an empty body, and so will finish quickly.
-    bool abort = false;
+    std::atomic_bool abort;
+    abort = false;
     int num_residual_blocks = program_->NumResidualBlocks();
-#pragma omp parallel for num_threads(options_.num_threads)
-    for (int i = 0; i < num_residual_blocks; ++i) {
+    parfor(0, num_residual_blocks, 1, options_.num_threads, [&](int thread_id, int i) {
+    for(int dummy = 0; dummy < 1; dummy++) {
 // Disable the loop instead of breaking, as required by OpenMP.
-#pragma omp flush(abort)
       if (abort) {
         continue;
       }
 
-#ifdef CERES_USE_OPENMP
-      int thread_id = omp_get_thread_num();
-#else
-      int thread_id = 0;
-#endif
       EvaluatePreparer* preparer = &evaluate_preparers_[thread_id];
       EvaluateScratch* scratch = &evaluate_scratch_[thread_id];
 
@@ -221,7 +215,6 @@ class ProgramEvaluator : public Evaluator {
 // This ensures that the OpenMP threads have a consistent view of 'abort'. Do
 // the flush inside the failure case so that there is usually only one
 // synchronization point per loop iteration instead of two.
-#pragma omp flush(abort)
         continue;
       }
 
@@ -254,7 +247,7 @@ class ProgramEvaluator : public Evaluator {
               scratch->gradient.get() + parameter_block->delta_offset());
         }
       }
-    }
+    }});
 
     if (!abort) {
       const int num_parameters = program_->NumEffectiveParameters();

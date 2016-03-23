@@ -48,9 +48,7 @@
 // This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
 
-#ifdef CERES_USE_OPENMP
-#include <omp.h>
-#endif
+#include "parfor.h"
 
 #include <algorithm>
 #include <map>
@@ -185,8 +183,8 @@ Eliminate(const BlockSparseMatrix* A,
 
   // Add the diagonal to the schur complement.
   if (D != NULL) {
-#pragma omp parallel for num_threads(num_threads_) schedule(dynamic)
-    for (int i = num_eliminate_blocks_; i < num_col_blocks; ++i) {
+    parfor_dynamic<int>(num_eliminate_blocks_, num_col_blocks, 1, num_threads_,
+                        [&](int thread_id, int i) {
       const int block_id = i - num_eliminate_blocks_;
       int r, c, row_stride, col_stride;
       CellInfo* cell_info = lhs->GetCell(block_id, block_id,
@@ -202,7 +200,7 @@ Eliminate(const BlockSparseMatrix* A,
         m.block(r, c, block_size, block_size).diagonal()
             += diag.array().square().matrix();
       }
-    }
+    });
   }
 
   // Eliminate y blocks one chunk at a time.  For each chunk, compute
@@ -218,13 +216,7 @@ Eliminate(const BlockSparseMatrix* A,
   // z blocks that share a row block/residual term with the y
   // block. EliminateRowOuterProduct does the corresponding operation
   // for the lhs of the reduced linear system.
-#pragma omp parallel for num_threads(num_threads_) schedule(dynamic)
-  for (int i = 0; i < chunks_.size(); ++i) {
-#ifdef CERES_USE_OPENMP
-    int thread_id = omp_get_thread_num();
-#else
-    int thread_id = 0;
-#endif
+  parfor_dynamic<int>(0, chunks_.size(), 1, num_threads_, [&](int thread_id, int i) {
     double* buffer = buffer_.get() + thread_id * buffer_size_;
     const Chunk& chunk = chunks_[i];
     const int e_block_id = bs->rows[chunk.start].cells.front().block_id;
@@ -289,8 +281,8 @@ Eliminate(const BlockSparseMatrix* A,
     UpdateRhs(chunk, A, b, chunk.start, inverse_ete_g.get(), rhs);
 
     // S -= F'E(E'E)^{-1}E'F
-    ChunkOuterProduct(bs, inverse_ete, buffer, chunk.buffer_layout, lhs);
-  }
+    ChunkOuterProduct(thread_id, bs, inverse_ete, buffer, chunk.buffer_layout, lhs);
+  });
 
   // For rows with no e_blocks, the schur complement update reduces to
   // S += F'F.
@@ -306,8 +298,7 @@ BackSubstitute(const BlockSparseMatrix* A,
                const double* z,
                double* y) {
   const CompressedRowBlockStructure* bs = A->block_structure();
-#pragma omp parallel for num_threads(num_threads_) schedule(dynamic)
-  for (int i = 0; i < chunks_.size(); ++i) {
+  parfor_dynamic<int>(0, chunks_.size(), 1, num_threads_, [&](int thread_id, int i) {
     const Chunk& chunk = chunks_[i];
     const int e_block_id = bs->rows[chunk.start].cells.front().block_id;
     const int e_block_size = bs->cols[e_block_id].size;
@@ -361,7 +352,7 @@ BackSubstitute(const BlockSparseMatrix* A,
     }
 
     ete.llt().solveInPlace(y_block);
-  }
+  });
 }
 
 // Update the rhs of the reduced linear system. Compute
@@ -495,7 +486,7 @@ ChunkDiagonalBlockAndGradient(
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
 void
 SchurEliminator<kRowBlockSize, kEBlockSize, kFBlockSize>::
-ChunkOuterProduct(const CompressedRowBlockStructure* bs,
+ChunkOuterProduct(int thread_id, const CompressedRowBlockStructure* bs,
                   const Matrix& inverse_ete,
                   const double* buffer,
                   const BufferLayoutType& buffer_layout,
@@ -507,11 +498,6 @@ ChunkOuterProduct(const CompressedRowBlockStructure* bs,
   const int e_block_size = inverse_ete.rows();
   BufferLayoutType::const_iterator it1 = buffer_layout.begin();
 
-#ifdef CERES_USE_OPENMP
-  int thread_id = omp_get_thread_num();
-#else
-  int thread_id = 0;
-#endif
   double* b1_transpose_inverse_ete =
       chunk_outer_product_buffer_.get() + thread_id * buffer_size_;
 

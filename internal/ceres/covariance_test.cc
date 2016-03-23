@@ -640,7 +640,7 @@ TEST_F(CovarianceTest, NormalBehavior) {
   ComputeAndCompareCovarianceBlocks(options, expected_covariance);
 }
 
-#ifdef CERES_USE_OPENMP
+#if (defined(CERES_USE_OPENMP) || defined(CERES_USE_TBB))
 
 TEST_F(CovarianceTest, ThreadedNormalBehavior) {
   // J
@@ -688,7 +688,7 @@ TEST_F(CovarianceTest, ThreadedNormalBehavior) {
   ComputeAndCompareCovarianceBlocks(options, expected_covariance);
 }
 
-#endif  // CERES_USE_OPENMP
+#endif  // ((defined CERES_USE_OPENMP) || (defined CERES_USE_TBB))
 
 TEST_F(CovarianceTest, ConstantParameterBlock) {
   problem_.SetParameterBlockConstant(parameters_);
@@ -1240,13 +1240,13 @@ class LargeScaleCovarianceTest : public ::testing::Test {
   vector<pair<const double*, const double*> > all_covariance_blocks_;
 };
 
-#if !defined(CERES_NO_SUITESPARSE) && defined(CERES_USE_OPENMP)
+#if !defined(CERES_NO_SUITESPARSE) && (defined(CERES_USE_OPENMP) || defined(CERES_USE_TBB))
 
 TEST_F(LargeScaleCovarianceTest, Parallel) {
   ComputeAndCompare(SUITE_SPARSE_QR, 4);
 }
 
-#endif  // !defined(CERES_NO_SUITESPARSE) && defined(CERES_USE_OPENMP)
+#endif  // !defined(CERES_NO_SUITESPARSE) && (defined(CERES_USE_OPENMP) || defined(CERES_USE_TBB))
 
 }  // namespace internal
 }  // namespace ceres
