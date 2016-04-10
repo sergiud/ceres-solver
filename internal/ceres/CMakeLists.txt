@@ -264,7 +264,7 @@ install(TARGETS ceres
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         ARCHIVE DESTINATION lib${LIB_SUFFIX})
 
-if (BUILD_TESTING AND GFLAGS)
+if (BUILD_TESTING AND WITH_GFLAGS)
   # The CERES_GFLAGS_NAMESPACE compile definition is NOT stored in
   # CERES_COMPILE_OPTIONS (and thus config.h) as Ceres itself does not
   # require gflags, only the tests and examples do.
@@ -288,8 +288,8 @@ if (BUILD_TESTING AND GFLAGS)
     target_link_libraries(gtest ${gflags_LIBRARIES} ceres)
     target_link_libraries(test_util ceres gtest)
   else (WITH_MINILOG)
-    target_link_libraries(gtest ${gflags_LIBRARIES} ${glog_LIBRARIES})
-    target_link_libraries(test_util ceres gtest ${glog_LIBRARIES})
+    target_link_libraries(gtest ${gflags_LIBRARIES} glog::glog)
+    target_link_libraries(test_util ceres gtest glog::glog)
   endif (WITH_MINILOG)
 
   macro (CERES_TEST NAME)
@@ -381,4 +381,4 @@ if (BUILD_TESTING AND GFLAGS)
 
   # Put the large end to end test last.
   ceres_test(system)
-endif (BUILD_TESTING AND GFLAGS)
+endif (BUILD_TESTING AND WITH_GFLAGS)
