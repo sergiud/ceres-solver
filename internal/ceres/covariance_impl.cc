@@ -337,6 +337,7 @@ bool CovarianceImpl::GetCovarianceMatrixInTangentOrAmbientSpace(
                  max_covariance_block_size]);
 
   bool success = true;
+  int num_params = parameters.size();
 
 #if defined(CERES_USE_OPENMP)
 // The collapse() directive is only supported in OpenMP 3.0 and higher. OpenMP
@@ -347,8 +348,8 @@ bool CovarianceImpl::GetCovarianceMatrixInTangentOrAmbientSpace(
 #  pragma omp parallel for num_threads(num_threads) schedule(dynamic)
 #endif
 #endif
-  for (int i = 0; i < parameters.size(); ++i) {
-    for (int j = 0; j < parameters.size(); ++j) {
+  for (int i = 0; i < num_params; ++i) {
+    for (int j = 0; j < num_params; ++j) {
       // The second loop can't start from j = i for compatibility with OpenMP
       // collapse command. The conditional serves as a workaround
       if (j >= i) {
