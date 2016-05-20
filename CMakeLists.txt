@@ -755,7 +755,7 @@ set(RELATIVE_CMAKECONFIG_INSTALL_DIR lib/cmake/Ceres)
 set_target_properties (ceres PROPERTIES EXPORT_NAME Ceres)
 
 export (TARGETS ceres NAMESPACE Ceres:: FILE CeresTargets.cmake)
-export (PACKAGE ceres)
+export (PACKAGE Ceres)
 
 # This "exports" all targets which have been put into the export set
 # "CeresExport". This means that CMake generates a file with the given
