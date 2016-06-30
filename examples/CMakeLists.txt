@@ -75,7 +75,7 @@ target_link_libraries(simple_bundle_adjuster ceres)
 add_executable(sampled_function sampled_function.cc)
 target_link_libraries(sampled_function ceres)
 
-if (WITH_GFLAGS)
+if (WITH_GFLAGS AND gflags_FOUND)
   # The CERES_GFLAGS_NAMESPACE compile definition is NOT stored in
   # CERES_COMPILE_OPTIONS (and thus config.h) as Ceres itself does not
   # require gflags, only the tests and examples do.
@@ -115,4 +115,4 @@ if (WITH_GFLAGS)
                  robot_pose_mle.cc)
   TARGET_LINK_LIBRARIES(robot_pose_mle ceres ${gflags_LIBRARIES})
 
-endif (WITH_GFLAGS)
+endif (WITH_GFLAGS AND gflags_FOUND)

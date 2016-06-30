@@ -252,7 +252,7 @@ install(TARGETS ceres
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         ARCHIVE DESTINATION lib${LIB_SUFFIX})
 
-if (BUILD_TESTING AND WITH_GFLAGS)
+if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   # The CERES_GFLAGS_NAMESPACE compile definition is NOT stored in
   # CERES_COMPILE_OPTIONS (and thus config.h) as Ceres itself does not
   # require gflags, only the tests and examples do.
@@ -369,4 +369,4 @@ if (BUILD_TESTING AND WITH_GFLAGS)
 
   # Put the large end to end test last.
   ceres_test(system)
-endif (BUILD_TESTING AND WITH_GFLAGS)
+endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
