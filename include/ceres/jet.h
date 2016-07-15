@@ -506,6 +506,10 @@ Jet<T, N> ceil(const Jet<T, N>& f) {
 }
 
 // Bessel functions of the first kind with integer order equal to 0, 1, n.
+// Microsoft has deprecated the j[0,1,n]() POSIX Bessel functions in favour of
+// _j[0,1,n]().  Where available on MSVC, use _j[0,1,n]() to avoid deprecated
+// function errors in client code (the specific warning is suppressed when
+// Ceres itself is built).
 inline double BesselJ0(double x) {
 #ifdef HAVE__J0
     return _j0(x);
