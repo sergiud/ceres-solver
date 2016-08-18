@@ -115,3 +115,4 @@ if (WITH_GFLAGS AND gflags_FOUND)
 endif (WITH_GFLAGS AND gflags_FOUND)
 
 add_subdirectory(sampled_function)
+add_subdirectory(slam)
