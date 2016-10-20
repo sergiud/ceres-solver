@@ -302,6 +302,8 @@ if (WITH_CXSPARSE)
   # Don't search with REQUIRED as we can continue without CXSparse.
   find_package(CXSparse NO_MODULE)
   if (TARGET CXSparse::CXSparse)
+    # Avoid I conflict
+    set_property (DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NCOMPLEX)
     set (CXSPARSE_DEPENDENCY "find_dependency (CXSparse ${CXSparse_VERSION})")
     # By default, if CXSparse and all dependencies are found, Ceres is
     # built with CXSparse support.
