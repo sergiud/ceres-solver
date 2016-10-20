@@ -301,17 +301,17 @@ endif (WITH_SUITESPARSE)
 if (WITH_CXSPARSE)
   # Don't search with REQUIRED as we can continue without CXSparse.
   find_package(CXSparse NO_MODULE)
-  if (CXSparse_FOUND)
+  if (TARGET CXSparse::CXSparse)
     set (CXSPARSE_DEPENDENCY "find_dependency (CXSparse ${CXSparse_VERSION})")
     # By default, if CXSparse and all dependencies are found, Ceres is
     # built with CXSparse support.
     message("-- Found CXSparse version: ${CXSparse_VERSION}, "
       "building with CXSparse.")
-  else (CXSparse_FOUND)
+  else (TARGET CXSparse::CXSparse)
     # Disable use of CXSparse if it cannot be found and continue.
     message("-- Did not find CXSparse, Building without CXSparse.")
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
-  endif (CXSparse_FOUND)
+  endif (TARGET CXSparse::CXSparse)
 else (WITH_CXSPARSE)
   message("-- Building without CXSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
