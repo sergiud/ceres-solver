@@ -200,12 +200,12 @@ if (HAVE__JN)
   target_compile_definitions (ceres PUBLIC HAVE__JN)
 endif (HAVE__JN)
 
-if (WITH_CXSPARSE AND CXSparse_FOUND)
+if (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
   # Define version information for use in Solver::FullReport.
   target_compile_definitions (ceres PRIVATE
     CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
   target_link_libraries (ceres PUBLIC CXSparse::CXSparse)
-endif (WITH_CXSPARSE AND CXSparse_FOUND)
+endif (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
 
 if (WITH_GFLAGS AND gflags_FOUND)
   target_include_directories (ceres PRIVATE ${gflags_INCLUDE_DIRS})
