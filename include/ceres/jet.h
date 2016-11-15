@@ -229,11 +229,13 @@ struct Jet {
 
   // The infinitesimal part.
 
-  // We allocate Jets on the stack and other places they
-  // might not be aligned to 16-byte boundaries.  If we have C++11, we
-  // can specify their alignment anyway, and thus can safely enable
-  // vectorization on those matrices; in C++99, we are out of luck.  Figure out
-  // what case we're in and do the right thing.
+  // We allocate Jets on the stack and other places they might not be aligned
+  // to 16-byte boundaries, which would prevent the safe use of vectorisation.
+  // If we have C++11, we can specify the alignment.  However, the standard
+  // gives wide lattitude as to what alignments are valid, and it might be that
+  // the maximum supported alignment is < 16, in which case even with C++11, we
+  // cannot specify 16-byte alignment.  If using < C++11, we cannot specify
+  // alignment.
 #ifndef CERES_USE_CXX11
   // fall back to safe version:
   Eigen::Matrix<T, N, 1, Eigen::DontAlign> v;
@@ -242,7 +244,10 @@ struct Jet {
       16 <= ::ceres::port_constants::kMaxAlignBytes;
   static constexpr int kAlignHint = kShouldAlignMatrix ?
       Eigen::AutoAlign : Eigen::DontAlign;
-  static constexpr size_t kAlignment = kShouldAlignMatrix ? 16 : 1;
+  // Default to the native alignment of double if 16-byte alignment is not
+  // supported.  We cannot use alignof(T) as if we do, GCC complains that the
+  // alignment 'is not an integer constant', although Clang accepts it.
+  static constexpr size_t kAlignment = kShouldAlignMatrix ? 16 : alignof(double);
   alignas(kAlignment) Eigen::Matrix<T, N, 1, kAlignHint> v;
 #endif
 };
@@ -345,7 +350,7 @@ Jet<T, N> operator/(T s, const Jet<T, N>& g) {
 // Binary / with a scalar: x / s
 template<typename T, int N> inline
 Jet<T, N> operator/(const Jet<T, N>& f, T s) {
-  const T s_inverse = 1.0 / s;
+  const T s_inverse = T(1.0) / s;
   return Jet<T, N>(f.a * s_inverse, f.v * s_inverse);
 }
 
