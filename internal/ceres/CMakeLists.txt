@@ -176,6 +176,7 @@ target_include_directories (ceres
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal>"
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal/ceres>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   PRIVATE
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/internal
@@ -255,9 +256,9 @@ target_link_libraries(ceres
 
 install(TARGETS ceres
         EXPORT  CeresTargets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib${LIB_SUFFIX}
-        ARCHIVE DESTINATION lib${LIB_SUFFIX})
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   # The CERES_GFLAGS_NAMESPACE compile definition is NOT stored in

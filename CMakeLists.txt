@@ -51,6 +51,7 @@ set (CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(UpdateCacheVariable)
 
+include (GNUInstallDirs)
 include (GenerateExportHeader)
 
 # Set up the git hook to make Gerrit Change-Id: lines in commit messages.
@@ -158,30 +159,6 @@ if (MSVC)
     update_cache_variable(BUILD_TESTING OFF)
   endif (BUILD_TESTING AND BUILD_SHARED_LIBS)
 endif (MSVC)
-# Allow user to specify a suffix for the library install directory, the only
-# really sensible option (other than "") being "64", such that:
-# ${CMAKE_INSTALL_PREFIX}/lib -> ${CMAKE_INSTALL_PREFIX}/lib64.
-#
-# Heuristic for determining LIB_SUFFIX. FHS recommends that 64-bit systems
-# install native libraries to lib64 rather than lib. Most distros seem to
-# follow this convention with a couple notable exceptions (Debian-based and
-# Arch-based distros) which we try to detect here.
-if (CMAKE_SYSTEM_NAME MATCHES "Linux" AND
-    NOT DEFINED LIB_SUFFIX AND
-    NOT CMAKE_CROSSCOMPILING AND
-    CMAKE_SIZEOF_VOID_P EQUAL "8" AND
-    NOT EXISTS "/etc/debian_version" AND
-    NOT EXISTS "/etc/arch-release")
-  message("-- Detected non-Debian/Arch-based 64-bit Linux distribution. "
-    "Defaulting to library install directory: lib${LIB_SUFFIX}. You can "
-    "override this by specifying LIB_SUFFIX.")
-  set(LIB_SUFFIX "64")
-endif ()
-# Only create the cache variable (for the CMake GUI) after attempting to detect
-# the suffix *if not specified by the user* (NOT DEFINED LIB_SUFFIX in if())
-# s/t the user could override our autodetected suffix with "" if desired.
-set(LIB_SUFFIX "${LIB_SUFFIX}" CACHE STRING
-  "Suffix of library install directory (to support lib/lib64)." FORCE)
 
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
 # library for iOS.
@@ -677,21 +654,22 @@ endif (BUILD_EXAMPLES)
 
 # Setup installation of Ceres public headers.
 file(GLOB CERES_HDRS ${CMAKE_SOURCE_DIR}/include/ceres/*.h)
-install(FILES ${CERES_HDRS} DESTINATION include/ceres)
+install(FILES ${CERES_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres)
 
 file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${CMAKE_SOURCE_DIR}/include/ceres/internal/*.h)
-install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION include/ceres/internal)
+install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
+  ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
 # Also setup installation of Ceres config.h configured with the current
 # build options into the installed headers directory.
 install(FILES ${CMAKE_BINARY_DIR}/config/ceres/internal/config.h
-        DESTINATION include/ceres/internal)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
 if (WITH_MINILOG)
   # Install miniglog header if being used as logging #includes appear in
   # installed public Ceres headers.
   install(FILES ${CMAKE_SOURCE_DIR}/internal/ceres/miniglog/glog/logging.h
-          DESTINATION include/ceres/internal/miniglog/glog)
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/miniglog/glog)
 endif (WITH_MINILOG)
 
 # Add an uninstall target to remove all installed files.
@@ -704,7 +682,7 @@ add_custom_target(uninstall
 
 # Set relative install paths, which are appended to CMAKE_INSTALL_PREFIX to
 # generate the absolute install paths.
-set(RELATIVE_CMAKECONFIG_INSTALL_DIR lib/cmake/Ceres)
+set(RELATIVE_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Ceres)
 
 set_target_properties (ceres PROPERTIES EXPORT_NAME Ceres)
 
@@ -732,7 +710,7 @@ file(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
 configure_package_config_file (
   CeresConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake
-  INSTALL_DESTINATION lib/cmake/Ceres
+  INSTALL_DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR}
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file (CeresConfigVersion.cmake VERSION
   ${CERES_VERSION} COMPATIBILITY SameMajorVersion)
@@ -748,5 +726,5 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ceres/internal/export.h
-  DESTINATION include/ceres/internal)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
