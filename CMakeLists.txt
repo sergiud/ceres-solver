@@ -743,6 +743,6 @@ write_basic_package_version_file (CeresConfigVersion.cmake VERSION
 # Install these files into the same directory as the generated exports-file,
 # we include the FindPackage scripts for libraries whose headers are included
 # in the public API of Ceres and should thus be present in CERES_INCLUDE_DIRS.
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CeresConfig.cmake"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfigVersion.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
