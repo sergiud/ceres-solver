@@ -36,13 +36,22 @@ if (POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)
 endif()
 
+if (POLICY CMP0063)
+  cmake_policy (SET CMP0063 NEW)
+endif (POLICY CMP0063)
+
 project(Ceres C CXX)
+
+set (CMAKE_CXX_VISIBILITY_PRESET hidden)
+set (CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 # Make CMake aware of the cmake folder for local FindXXX scripts,
 # append rather than set in case the user has passed their own
 # additional paths via -D.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(UpdateCacheVariable)
+
+include (GenerateExportHeader)
 
 # Set up the git hook to make Gerrit Change-Id: lines in commit messages.
 include(AddGerritCommitHook)
@@ -461,18 +470,6 @@ include_directories(
 # as system headers.
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 
-if (BUILD_SHARED_LIBS)
-  message("-- Building Ceres as a shared library.")
-  # The CERES_BUILDING_SHARED_LIBRARY compile definition is NOT stored in
-  # CERES_COMPILE_OPTIONS as it must only be defined when Ceres is compiled
-  # not when it is used as it controls the CERES_EXPORT macro which provides
-  # dllimport/export support in MSVC.
-  add_definitions(-DCERES_BUILDING_SHARED_LIBRARY)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_USING_SHARED_LIBRARY)
-else (BUILD_SHARED_LIBS)
-  message("-- Building Ceres as a static library.")
-endif (BUILD_SHARED_LIBS)
-
 # Change the default build type from Debug to Release, while still
 # supporting overriding the build type.
 #
@@ -740,9 +737,16 @@ configure_package_config_file (
 write_basic_package_version_file (CeresConfigVersion.cmake VERSION
   ${CERES_VERSION} COMPATIBILITY SameMajorVersion)
 
+generate_export_header (ceres EXPORT_FILE_NAME
+    ${CMAKE_CURRENT_BINARY_DIR}/include/ceres/internal/export.h)
+
 # Install these files into the same directory as the generated exports-file,
 # we include the FindPackage scripts for libraries whose headers are included
 # in the public API of Ceres and should thus be present in CERES_INCLUDE_DIRS.
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfigVersion.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ceres/internal/export.h
+  DESTINATION include/ceres/internal)
+

@@ -171,6 +171,7 @@ add_library(ceres ${CERES_LIBRARY_SOURCE})
 target_include_directories (ceres
   PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
+  "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>"
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal>"
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal/ceres>"

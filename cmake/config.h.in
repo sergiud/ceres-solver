@@ -85,7 +85,4 @@
 // If defined shared_ptr is in std::tr1 namespace, otherwise std.
 @CERES_TR1_SHARED_PTR@
 
-// If defined, Ceres was built as a shared library.
-@CERES_USING_SHARED_LIBRARY@
-
 #endif  // CERES_PUBLIC_INTERNAL_CONFIG_H_
