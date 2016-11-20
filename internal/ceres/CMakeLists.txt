@@ -51,6 +51,7 @@ set(CERES_INTERNAL_SRC
     conjugate_gradients_solver.cc
     coordinate_descent_minimizer.cc
     corrector.cc
+    cost_function.cc
     covariance.cc
     covariance_impl.cc
     cxsparse.cc
