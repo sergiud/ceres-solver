@@ -14,7 +14,7 @@ New Features
 #. Auto-differentiable implementations of Bessel functions, ``floor``,
    and ``ceil`` (Alessandro Gentilini & Michael Vitus)
 #. New 2D and 3D SLAM examples. (Michael Vitus)
-#. Added``EigenQuaternionParameterization``. (Michael Vitus)
+#. Added ``EigenQuaternionParameterization``. (Michael Vitus)
 #. Added ``Problem::IsParameterBlockConstant`` (Thomas Schneider)
 #. A complete refactoring of ``TrustRegionMinimizer``. (Sameer Agarwal)
 #. Gradient checking cleanup and local parameterization bugfix (David
@@ -30,6 +30,25 @@ Backward Incompatible API Changes
 
 Bug Fixes & Minor Changes
 -------------------------
+#. Clear XXX_FOUND in Find<XXX>.cmake prior to searching. (Alex Stewart)
+#. Fix versioning in the documentation (Sameer Agarwal)
+#. Fix missing gflags imported target definition in
+   CeresConfig.cmake. (Alex Stewart)
+#. Make gflags a public dependency of Ceres if it and glog are
+   found. (Alex Stewart)
+#. Add support for glog exported CMake target. (Alex Stewart)
+#. Use ``google::GLOG_WARNING`` instead of ``WARNING`` in tests to support
+   MSVC. (Alex Stewart)
+#. Update gtest and gmock to
+   ``a2b8a8e07628e5fd60644b6dd99c1b5e7d7f1f47`` (Sameer Agarwal)
+#. Add MSVC-specific ``#define`` to expose math constants in
+   ``<cmath>``. (Alex Stewart)
+#. Fix typo. indepdendent -> independent (Hung Lun)
+#. Fix potential invalid reset of CMAKE_FIND_LIBRARY_PREFIXES on MSVC
+   (Alex Stewart)
+#. Fix use of alignas(0) which is not ignored on GCC (Alex Stewart)
+#. Use default alignment if alignof(std::max_align_t) < 16 with C++11
+   (Alex Stewart)
 #. Introduce a common base class for DynamicAutoDiffCostFunction and
    DynamicNumericDiffCostFunction. (Sameer Agarwal)
 #. Fix an exact equality test causing breakage in

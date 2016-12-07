@@ -261,11 +261,6 @@ install(TARGETS ceres
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
-  # The CERES_GFLAGS_NAMESPACE compile definition is NOT stored in
-  # CERES_COMPILE_OPTIONS (and thus config.h) as Ceres itself does not
-  # require gflags, only the tests and examples do.
-  add_definitions(-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
-
   add_library(gtest gmock_gtest_all.cc gmock_main.cc)
   if (BUILD_SHARED_LIBS)
     # Define gtest-specific shared library flags for compilation.

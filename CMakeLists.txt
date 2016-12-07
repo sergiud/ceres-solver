@@ -327,6 +327,8 @@ if (WITH_GFLAGS)
 
   if (gflags_FOUND)
     message("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}")
+      "in namespace: ${gflags_NAMESPACE}")
+    add_definitions(-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
   else (gflags_FOUND)
     message("-- Did not find Google Flags (gflags), Building without gflags "
       "- no tests or tools will be built!")
