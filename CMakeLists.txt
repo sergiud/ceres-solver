@@ -326,7 +326,7 @@ if (WITH_GFLAGS)
   determine_gflags_namespace (gflags_NAMESPACE)
 
   if (gflags_FOUND)
-    message("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}"
+    message("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}, "
       "in namespace: ${gflags_NAMESPACE}")
     add_definitions(-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
   else (gflags_FOUND)
