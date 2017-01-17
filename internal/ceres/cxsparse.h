@@ -39,6 +39,10 @@
 #include <vector>
 #include "cs.h"
 
+#ifdef I
+#undef I
+#endif // defined(I)
+
 namespace ceres {
 namespace internal {
 
