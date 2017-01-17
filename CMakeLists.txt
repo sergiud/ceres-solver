@@ -319,28 +319,15 @@ endif(NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
 if (WITH_GFLAGS)
   # Don't search with REQUIRED as we can continue without gflags.
   find_package(gflags)
-  include (DetermineGflagsNamespace)
-
-  set (CMAKE_REQUIRED_INCLUDES ${gflags_INCLUDE_DIR})
-
-  determine_gflags_namespace (gflags_NAMESPACE)
 
   if (gflags_FOUND)
-    message("-- Found Google Flags header in: ${gflags_INCLUDE_DIR}, "
-      "in namespace: ${gflags_NAMESPACE}")
-    add_definitions(-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
-  else (gflags_FOUND)
-    message("-- Did not find Google Flags (gflags), Building without gflags "
-      "- no tests or tools will be built!")
+    include (DetermineGflagsNamespace)
+
+    set (CMAKE_REQUIRED_INCLUDES ${gflags_INCLUDE_DIR})
+    determine_gflags_namespace (gflags_NAMESPACE)
+
+    add_definitions (-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
   endif (gflags_FOUND)
-else (WITH_GFLAGS)
-  message("-- Google Flags disabled; no tests or tools will be built!")
-  # Mark as advanced (remove from default GUI view) the gflags search
-  # variables in case user enabled WITH_GFLAGS, FindGflags did not find it, so
-  # made search variables visible in GUI for user to set, but then user disables
-  # WITH_GFLAGS instead of setting them.
-  mark_as_advanced(FORCE gflags_INCLUDE_DIR
-                         gflags_LIBRARIES)
 endif (WITH_GFLAGS)
 
 # MiniGLog.
