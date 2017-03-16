@@ -334,7 +334,10 @@ endif (WITH_GFLAGS)
 if (WITH_MINILOG)
   message("-- Compiling minimal glog substitute into Ceres.")
   set(glog_INCLUDE_DIRS internal/ceres/miniglog)
+  set(MINIGLOG_MAX_LOG_LEVEL 2 CACHE STRING "The maximum message severity level to be logged")
+  add_definitions("-DMAX_LOG_LEVEL=${MINIGLOG_MAX_LOG_LEVEL}")
   message("-- Using minimal glog substitute (include): ${glog_INCLUDE_DIRS}")
+  message("-- Max log level for minimal glog substitute: ${MINIGLOG_MAX_LOG_LEVEL}")
 
   # Mark as advanced (remove from default GUI view) the glog search
   # variables in case user disables WITH_MINILOG, FindGlog did not find it, so
@@ -343,6 +346,7 @@ if (WITH_MINILOG)
   mark_as_advanced(FORCE glog_INCLUDE_DIR
                          glog_LIBRARY)
 else (WITH_MINILOG)
+  unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
   # Don't search with REQUIRED so that configuration continues if not found and
   # we can output an error messages explaining WITH_MINILOG option.
   find_package(glog)
@@ -557,11 +561,11 @@ if (MSVC)
   add_definitions("-D_VARIADIC_MAX=10")
 endif (MSVC)
 
-if (UNIX)
+if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
   # GCC is not strict enough by default, so enable most of the warnings.
   set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-missing-field-initializers")
-endif (UNIX)
+endif (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 
 # Use a larger inlining threshold for Clang, since it hobbles Eigen,
 # resulting in an unreasonably slow version of the blas routines. The
