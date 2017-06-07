@@ -114,9 +114,9 @@ The key computational step in a trust-region algorithm is the solution
 of the constrained optimization problem
 
 .. math::
-   \arg \min_{\Delta x}& \frac{1}{2}\|J(x)\Delta x + F(x)\|^2 \\
-   \text{such that} &\|D(x)\Delta x\|^2 \le \mu\\
-    &L \le x + \Delta x \le U.
+   \arg \min_{\Delta x}&\quad \frac{1}{2}\|J(x)\Delta x + F(x)\|^2 \\
+   \text{such that} &\quad \|D(x)\Delta x\|^2 \le \mu\\
+    &\quad L \le x + \Delta x \le U.
    :label: trp
 
 There are a number of different ways of solving this problem, each
@@ -141,7 +141,7 @@ setting :member:`Solver::Options::trust_region_strategy_type`.
 Levenberg-Marquardt
 -------------------
 
-The Levenberg-Marquardt algorithm [Levenberg]_ [Marquardt]_ is the
+The Levenberg-Marquardt algorithm [Levenberg]_  [Marquardt]_ is the
 most popular algorithm for solving non-linear least squares problems.
 It was also the first trust region algorithm to be developed
 [Levenberg]_ [Marquardt]_. Ceres implements an exact step [Madsen]_
@@ -151,12 +151,12 @@ and an inexact step variant of the Levenberg-Marquardt algorithm
 It can be shown, that the solution to :eq:`trp` can be obtained by
 solving an unconstrained optimization of the form
 
-.. math:: \arg\min_{\Delta x}& \frac{1}{2}\|J(x)\Delta x + F(x)\|^2 +\lambda  \|D(x)\Delta x\|^2
+.. math:: \arg\min_{\Delta x} \frac{1}{2}\|J(x)\Delta x + F(x)\|^2 +\lambda  \|D(x)\Delta x\|^2
 
 Where, :math:`\lambda` is a Lagrange multiplier that is inverse
 related to :math:`\mu`. In Ceres, we solve for
 
-.. math:: \arg\min_{\Delta x}& \frac{1}{2}\|J(x)\Delta x + F(x)\|^2 + \frac{1}{\mu} \|D(x)\Delta x\|^2
+.. math:: \arg\min_{\Delta x} \frac{1}{2}\|J(x)\Delta x + F(x)\|^2 + \frac{1}{\mu} \|D(x)\Delta x\|^2
    :label: lsqr
 
 The matrix :math:`D(x)` is a non-negative diagonal matrix, typically
@@ -2153,6 +2153,23 @@ The three arrays will be:
    left :member:`Solver::Summary::linear_solver_ordering_given` blank
    and asked for an automatic ordering, or if the problem contains
    some constant or inactive parameter blocks.
+
+.. member:: std::string Solver::Summary::schur_structure_given
+
+    For Schur type linear solvers, this string describes the template
+    specialization which was detected in the problem and should be
+    used.
+
+.. member:: std::string Solver::Summary::schur_structure_used
+
+   For Schur type linear solvers, this string describes the template
+   specialization that was actually instantiated and used. The reason
+   this will be different from
+   :member:`Solver::Summary::schur_structure_given` is because the
+   corresponding template specialization does not exist.
+
+   Template specializations can be added to ceres by editing
+   ``internal/ceres/generate_template_specializations.py``
 
 .. member:: bool Solver::Summary::inner_iterations_given
 
