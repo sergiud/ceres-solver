@@ -374,4 +374,14 @@ bool ProductParameterization::ComputeJacobian(const double* x,
   return true;
 }
 
+IdentityParameterization::~IdentityParameterization() {}
+
+EigenQuaternionParameterization::~EigenQuaternionParameterization() {}
+
+QuaternionParameterization::~QuaternionParameterization() {}
+
+SubsetParameterization::~SubsetParameterization() {}
+
+HomogeneousVectorParameterization::~HomogeneousVectorParameterization() {}
+
 }  // namespace ceres

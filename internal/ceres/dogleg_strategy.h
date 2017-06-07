@@ -33,6 +33,7 @@
 
 #include "ceres/linear_solver.h"
 #include "ceres/trust_region_strategy.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -52,10 +53,10 @@ namespace internal {
 // DoglegStrategy follows the approach by Shultz, Schnabel, Byrd.
 // This finds the exact optimum over the two-dimensional subspace
 // spanned by the two Dogleg vectors.
-class DoglegStrategy : public TrustRegionStrategy {
+class CERES_EXPORT DoglegStrategy : public TrustRegionStrategy {
  public:
   explicit DoglegStrategy(const TrustRegionStrategy::Options& options);
-  virtual ~DoglegStrategy() {}
+  virtual ~DoglegStrategy();
 
   // TrustRegionStrategy interface
   virtual Summary ComputeStep(const PerSolveOptions& per_solve_options,

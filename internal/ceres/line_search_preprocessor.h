@@ -32,11 +32,12 @@
 #define CERES_INTERNAL_LINE_SEARCH_PREPROCESSOR_H_
 
 #include "ceres/preprocessor.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
 
-class LineSearchPreprocessor : public Preprocessor {
+class CERES_EXPORT LineSearchPreprocessor : public Preprocessor {
  public:
   virtual ~LineSearchPreprocessor();
   virtual bool Preprocess(const Solver::Options& options,

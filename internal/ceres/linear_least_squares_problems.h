@@ -36,6 +36,7 @@
 #include "ceres/sparse_matrix.h"
 #include "ceres/internal/port.h"
 #include "ceres/internal/scoped_ptr.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -62,6 +63,7 @@ struct LinearLeastSquaresProblem {
 };
 
 // Factories for linear least squares problem.
+CERES_EXPORT
 LinearLeastSquaresProblem* CreateLinearLeastSquaresProblemFromId(int id);
 
 LinearLeastSquaresProblem* LinearLeastSquaresProblem0();

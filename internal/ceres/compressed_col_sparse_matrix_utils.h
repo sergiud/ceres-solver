@@ -33,6 +33,7 @@
 
 #include <vector>
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -47,6 +48,7 @@ namespace internal {
 // and column block j, then it is expected that A contains at least
 // one non-zero entry corresponding to the top left entry of c_ij,
 // as that entry is used to detect the presence of a non-zero c_ij.
+CERES_EXPORT
 void CompressedColumnScalarMatrixToBlockMatrix(
     const int* scalar_rows,
     const int* scalar_cols,
@@ -58,6 +60,7 @@ void CompressedColumnScalarMatrixToBlockMatrix(
 // Given a set of blocks and a permutation of these blocks, compute
 // the corresponding "scalar" ordering, where the scalar ordering of
 // size sum(blocks).
+CERES_EXPORT
 void BlockOrderingToScalarOrdering(
     const std::vector<int>& blocks,
     const std::vector<int>& block_ordering,

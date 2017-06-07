@@ -35,6 +35,7 @@
 #include "ceres/ordered_groups.h"
 #include "ceres/graph.h"
 #include "ceres/types.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -55,6 +56,7 @@ class ParameterBlock;
 // ordering = [independent set,
 //             complement of the independent set,
 //             fixed blocks]
+CERES_EXPORT
 int ComputeSchurOrdering(const Program& program,
                          std::vector<ParameterBlock* >* ordering);
 
@@ -76,6 +78,7 @@ void ComputeRecursiveIndependentSetOrdering(const Program& program,
 // vertex corresponds to a parameter block in the Problem except for
 // parameter blocks that are marked constant. An edge connects two
 // parameter blocks, if they co-occur in a residual block.
+CERES_EXPORT
 Graph<ParameterBlock*>* CreateHessianGraph(const Program& program);
 
 // Iterate over each of the groups in order of their priority and fill

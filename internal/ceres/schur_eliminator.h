@@ -40,6 +40,7 @@
 #include "ceres/linear_solver.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/scoped_ptr.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -161,9 +162,9 @@ namespace internal {
 // 2008 for an example of such use].
 //
 // Example usage: Please see schur_complement_solver.cc
-class SchurEliminatorBase {
+class CERES_EXPORT SchurEliminatorBase {
  public:
-  virtual ~SchurEliminatorBase() {}
+  virtual ~SchurEliminatorBase();
 
   // Initialize the eliminator. It is the user's responsibilty to call
   // this function before calling Eliminate or BackSubstitute. It is

@@ -44,6 +44,7 @@
 #include "ceres/internal/macros.h"
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/local_parameterization.h"
+#include "ceres/internal/export.h"
 #include "glog/logging.h"
 
 namespace ceres {
@@ -64,7 +65,7 @@ namespace ceres {
 //
 // How to use: Fill in an array of pointers to parameter blocks for your
 // CostFunction, and then call Probe(). Check that the return value is 'true'.
-class GradientChecker {
+class CERES_EXPORT GradientChecker {
  public:
   // This will not take ownership of the cost function or local
   // parameterizations.

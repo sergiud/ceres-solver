@@ -44,6 +44,7 @@
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/types.h"
 #include "ceres/small_blas.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -52,7 +53,7 @@ namespace internal {
 // BlockRandomAccessMatrix. Internally a TripletSparseMatrix is used
 // for doing the actual storage. This class augments this matrix with
 // an unordered_map that allows random read/write access.
-class BlockRandomAccessSparseMatrix : public BlockRandomAccessMatrix {
+class CERES_EXPORT BlockRandomAccessSparseMatrix : public BlockRandomAccessMatrix {
  public:
   // blocks is an array of block sizes. block_pairs is a set of
   // <row_block_id, col_block_id> pairs to identify the non-zero cells

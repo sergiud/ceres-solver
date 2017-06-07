@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 #include "ceres/block_random_access_matrix.h"
 #include "ceres/block_sparse_matrix.h"
@@ -108,7 +109,7 @@ class BlockSparseMatrix;
 // set to DENSE_SCHUR and SPARSE_SCHUR
 // respectively. LinearSolver::Options::elimination_groups[0] should be
 // at least 1.
-class SchurComplementSolver : public BlockSparseMatrixSolver {
+class CERES_EXPORT SchurComplementSolver : public BlockSparseMatrixSolver {
  public:
   explicit SchurComplementSolver(const LinearSolver::Options& options)
       : options_(options) {

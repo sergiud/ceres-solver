@@ -38,6 +38,7 @@
 
 #include "ceres/collections_port.h"
 #include "ceres/graph.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -62,6 +63,7 @@ struct SingleLinkageClusteringOptions {
 //
 // The return value of this function is the number of clusters
 // identified by the algorithm.
+CERES_EXPORT
 int ComputeSingleLinkageClustering(
     const SingleLinkageClusteringOptions& options,
     const WeightedGraph<int>& graph,

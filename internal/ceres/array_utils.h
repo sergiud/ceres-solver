@@ -45,25 +45,30 @@
 
 #include <string>
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
 
 // Fill the array x with an impossible value that the user code is
 // never expected to compute.
+CERES_EXPORT
 void InvalidateArray(int size, double* x);
 
 // Check if all the entries of the array x are valid, i.e. all the
 // values in the array should be finite and none of them should be
 // equal to the "impossible" value used by InvalidateArray.
+CERES_EXPORT
 bool IsArrayValid(int size, const double* x);
 
 // If the array contains an invalid value, return the index for it,
 // otherwise return size.
+CERES_EXPORT
 int FindInvalidValue(const int size, const double* x);
 
 // Utility routine to print an array of doubles to a string. If the
 // array pointer is NULL, it is treated as an array of zeros.
+CERES_EXPORT
 void AppendArrayToString(const int size, const double* x, std::string* result);
 
 extern const double kImpossibleValue;
@@ -81,6 +86,7 @@ extern const double kImpossibleValue;
 // gets mapped to
 //
 // [1 0 2 3 0 1 3]
+CERES_EXPORT
 void MapValuesToContiguousRange(int size, int* array);
 
 }  // namespace internal

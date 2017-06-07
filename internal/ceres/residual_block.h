@@ -42,6 +42,7 @@
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 
@@ -64,7 +65,7 @@ class ParameterBlock;
 //
 // The residual block stores pointers to but does not own the cost functions,
 // loss functions, and parameter blocks.
-class ResidualBlock {
+class CERES_EXPORT ResidualBlock {
  public:
   // Construct the residual block with the given cost/loss functions. Loss may
   // be null. The index is the index of the residual block in the Program's

@@ -47,6 +47,8 @@
 namespace ceres {
 namespace internal {
 
+SchurEliminatorBase::~SchurEliminatorBase() {}
+
 SchurEliminatorBase*
 SchurEliminatorBase::Create(const LinearSolver::Options& options) {
 #ifndef CERES_RESTRICT_SCHUR_SPECIALIZATION
