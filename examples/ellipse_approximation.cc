@@ -329,7 +329,7 @@ class PointToLineSegmentContourCostFunction : public ceres::CostFunction {
   }
 
  private:
-  inline double ModuloNumSegments(const double& t) const {
+  inline double ModuloNumSegments(const double t) const {
     return t - num_segments_ * floor(t / num_segments_);
   }
 
@@ -337,8 +337,9 @@ class PointToLineSegmentContourCostFunction : public ceres::CostFunction {
   const Eigen::Vector2d y_;
 };
 
-struct EuclideanDistanceFunctor {
-  EuclideanDistanceFunctor(const double& sqrt_weight)
+class EuclideanDistanceFunctor {
+ public:
+  explicit EuclideanDistanceFunctor(const double& sqrt_weight)
       : sqrt_weight_(sqrt_weight) {}
 
   template <typename T>
@@ -348,7 +349,7 @@ struct EuclideanDistanceFunctor {
     return true;
   }
 
-  static ceres::CostFunction* Create(const double& sqrt_weight) {
+  static ceres::CostFunction* Create(const double sqrt_weight) {
     return new ceres::AutoDiffCostFunction<EuclideanDistanceFunctor, 2, 2, 2>(
         new EuclideanDistanceFunctor(sqrt_weight));
   }

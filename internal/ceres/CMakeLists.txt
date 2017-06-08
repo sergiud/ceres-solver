@@ -62,7 +62,9 @@ set(CERES_INTERNAL_SRC
     dogleg_strategy.cc
     dynamic_compressed_row_jacobian_writer.cc
     dynamic_compressed_row_sparse_matrix.cc
+    dynamic_sparse_normal_cholesky_solver.cc
     evaluator.cc
+    eigensparse.cc
     file.cc
     gradient_checker.cc
     gradient_checking_cost_function.cc
@@ -105,6 +107,7 @@ set(CERES_INTERNAL_SRC
     solver.cc
     solver_utils.cc
     sparse_matrix.cc
+    sparse_cholesky.cc
     sparse_normal_cholesky_solver.cc
     split.cc
     stringprintf.cc
@@ -122,6 +125,14 @@ set(CERES_INTERNAL_SRC
 
 # Also depend on the header files so that they appear in IDEs.
 file(GLOB CERES_INTERNAL_HDRS *.h)
+if (MINIGLOG)
+  file(GLOB MINIGLOG_HDRS miniglog/glog/*.h)
+  list(APPEND CERES_INTERNAL_HDRS ${MINIGLOG_HDRS})
+endif()
+
+# Depend also on public headers so they appear in IDEs.
+file(GLOB CERES_PUBLIC_HDRS ${Ceres_SOURCE_DIR}/include/ceres/*.h)
+file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/internal/*.h)
 
 # Include the specialized schur solvers.
 if (WITH_SCHUR_SPECIALIZATIONS)
@@ -160,6 +171,8 @@ endif (WITH_OPENMP AND OPENMP_FOUND)
 set(CERES_LIBRARY_SOURCE
     ${CERES_INTERNAL_SRC}
     ${CERES_INTERNAL_HDRS}
+    ${CERES_PUBLIC_HDRS}
+    ${CERES_PUBLIC_INTERNAL_HDRS}
     ${CERES_INTERNAL_SCHUR_FILES})
 
 # Primarily for Android, but optionally for others, compile the minimal
@@ -237,17 +250,9 @@ if (NOT WIN32 AND NOT BUILD_SHARED_LIBS)
   endif()
 endif()
 
-if (CMAKE_VERSION VERSION_LESS "2.8.12")
-  # CMake version < 2.8.12 does not support target_compile_options(), warn
-  # user that they will have to add compile flags to their own projects
-  # manually if required.
-  message("-- Warning: Detected CMake version: ${CMAKE_VERSION} < 2.8.12, "
-    "which is the minimum required for compile options to be included in an "
-    "exported CMake target, but CERES_USE_CXX11 is enabled and the detected. "
-    "compiler requires -std=c++11. The client is responsible for adding "
-    "-std=c++11 when using Ceres.")
-else()
-  target_compile_features (ceres PUBLIC cxx_auto_type)
+if (WITH_CXX11)
+  include(AddCeresCXX11RequirementsToTarget)
+  add_ceres_cxx11_requirements_to_target(ceres)
 endif()
 
 
@@ -295,7 +300,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
     add_test(NAME ${NAME}_test
              COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME}_test
              --test_srcdir
-             ${CMAKE_SOURCE_DIR}/data)
+             ${Ceres_SOURCE_DIR}/data)
   endmacro (CERES_TEST)
 
   ceres_test(array_utils)
@@ -321,6 +326,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(dynamic_autodiff_cost_function)
   ceres_test(dynamic_compressed_row_sparse_matrix)
   ceres_test(dynamic_numeric_diff_cost_function)
+  ceres_test(dynamic_sparsity)
   ceres_test(evaluator)
   ceres_test(gradient_checker)
   ceres_test(gradient_checking_cost_function)
@@ -330,11 +336,13 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(graph_algorithms)
   ceres_test(householder_vector)
   ceres_test(is_close)
+  ceres_test(invert_psd_matrix)
   ceres_test(implicit_schur_complement)
   ceres_test(iterative_schur_complement_solver)
   ceres_test(jet)
   ceres_test(levenberg_marquardt_strategy)
   ceres_test(dogleg_strategy)
+  ceres_test(line_search_minimizer)
   ceres_test(line_search_preprocessor)
   ceres_test(local_parameterization)
   ceres_test(loss_function)
@@ -357,6 +365,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(single_linkage_clustering)
   ceres_test(small_blas)
   ceres_test(solver)
+  ceres_test(sparse_cholesky)
 
   # TODO(sameeragarwal): This test should ultimately be made
   # independent of SuiteSparse.

@@ -420,8 +420,7 @@ enum LineSearchInterpolationType {
 
 enum CovarianceAlgorithmType {
   DENSE_SVD,
-  SUITE_SPARSE_QR,
-  EIGEN_SPARSE_QR
+  SPARSE_QR,
 };
 
 // It is a near impossibility that user code generates this exact
