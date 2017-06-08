@@ -36,6 +36,7 @@
 
 #include "ceres/linear_solver.h"
 #include "ceres/internal/macros.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -55,7 +56,7 @@ class LinearOperator;
 // For more details see the documentation for
 // LinearSolver::PerSolveOptions::r_tolerance and
 // LinearSolver::PerSolveOptions::q_tolerance in linear_solver.h.
-class ConjugateGradientsSolver : public LinearSolver {
+class CERES_EXPORT ConjugateGradientsSolver : public LinearSolver {
  public:
   explicit ConjugateGradientsSolver(const LinearSolver::Options& options);
   virtual Summary Solve(LinearOperator* A,

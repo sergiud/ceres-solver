@@ -48,6 +48,7 @@
 #include "ceres/collections_port.h"
 #include "ceres/problem.h"
 #include "ceres/types.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 
@@ -61,7 +62,7 @@ namespace internal {
 class Program;
 class ResidualBlock;
 
-class ProblemImpl {
+class CERES_EXPORT ProblemImpl {
  public:
   typedef std::map<double*, ParameterBlock*> ParameterMap;
   typedef HashSet<ResidualBlock*> ResidualBlockSet;

@@ -36,6 +36,7 @@
 #include <vector>
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -64,12 +65,14 @@ inline double EvaluatePolynomial(const Vector& polynomial, double x) {
 // On failure, a more detailed message will be written to LOG(ERROR).
 // If real is not NULL, the real parts of the roots will be returned in it.
 // Likewise, if imaginary is not NULL, imaginary parts will be returned in it.
+CERES_EXPORT
 bool FindPolynomialRoots(const Vector& polynomial,
                          Vector* real,
                          Vector* imaginary);
 
 // Return the derivative of the given polynomial. It is assumed that
 // the input polynomial is at least of degree zero.
+CERES_EXPORT
 Vector DifferentiatePolynomial(const Vector& polynomial);
 
 // Find the minimum value of the polynomial in the interval [x_min,
@@ -78,6 +81,7 @@ Vector DifferentiatePolynomial(const Vector& polynomial);
 // interval [x_min, x_max] are considered as well as the end points
 // x_min and x_max. Since polynomials are differentiable functions,
 // this ensures that the true minimum is found.
+CERES_EXPORT
 void MinimizePolynomial(const Vector& polynomial,
                         double x_min,
                         double x_max,
@@ -116,6 +120,7 @@ struct FunctionSample {
 // Of course its possible to sample a polynomial any number of times,
 // in which case, generally speaking the spurious higher order
 // coefficients will be zero.
+CERES_EXPORT
 Vector FindInterpolatingPolynomial(const std::vector<FunctionSample>& samples);
 
 // Interpolate the function described by samples with a polynomial,
@@ -124,6 +129,7 @@ Vector FindInterpolatingPolynomial(const std::vector<FunctionSample>& samples);
 // finding algorithms may fail due to numerical difficulties. But the
 // function is guaranteed to return its best guess of an answer, by
 // considering the samples and the end points as possible solutions.
+CERES_EXPORT
 void MinimizeInterpolatingPolynomial(const std::vector<FunctionSample>& samples,
                                      double x_min,
                                      double x_max,

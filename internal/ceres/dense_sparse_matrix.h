@@ -38,13 +38,14 @@
 #include "ceres/internal/macros.h"
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/types.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
 
 class TripletSparseMatrix;
 
-class DenseSparseMatrix : public SparseMatrix {
+class CERES_EXPORT DenseSparseMatrix : public SparseMatrix {
  public:
   // Build a matrix with the same content as the TripletSparseMatrix
   // m. This assumes that m does not have any repeated entries.
@@ -54,7 +55,7 @@ class DenseSparseMatrix : public SparseMatrix {
   DenseSparseMatrix(int num_rows, int num_cols);
   DenseSparseMatrix(int num_rows, int num_cols, bool reserve_diagonal);
 
-  virtual ~DenseSparseMatrix() {}
+  ~DenseSparseMatrix();
 
   // SparseMatrix interface.
   virtual void SetZero();

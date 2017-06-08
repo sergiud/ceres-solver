@@ -53,9 +53,6 @@ function(append_target_property TARGET PROPERTY)
     # returned by CMake into the property.
     set(INITIAL_PROPERTY_STATE "")
   endif()
-  # Delistify (remove ; separators) the potentially set of items to append
-  # to the specified target property.
-  string(REPLACE ";" " " ITEMS_TO_APPEND "${ARGN}")
-  set_target_properties(${TARGET} PROPERTIES ${PROPERTY}
-    "${INITIAL_PROPERTY_STATE} ${ITEMS_TO_APPEND}")
+  set_property (TARGET ${TARGET} APPEND PROPERTY ${PROPERTY}
+    "${ITEMS_TO_APPEND}")
 endfunction()

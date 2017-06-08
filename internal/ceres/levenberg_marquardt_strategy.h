@@ -33,6 +33,7 @@
 
 #include "ceres/internal/eigen.h"
 #include "ceres/trust_region_strategy.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -42,7 +43,7 @@ namespace internal {
 // K. Madsen, H.B. Nielsen and O. Tingleff. Available to download from
 //
 // http://www2.imm.dtu.dk/pubdb/views/edoc_download.php/3215/pdf/imm3215.pdf
-class LevenbergMarquardtStrategy : public TrustRegionStrategy {
+class CERES_EXPORT LevenbergMarquardtStrategy : public TrustRegionStrategy {
  public:
   explicit LevenbergMarquardtStrategy(
       const TrustRegionStrategy::Options& options);

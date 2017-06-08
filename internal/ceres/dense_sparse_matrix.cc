@@ -80,6 +80,8 @@ DenseSparseMatrix::DenseSparseMatrix(const ColMajorMatrix& m)
       has_diagonal_reserved_(false) {
 }
 
+DenseSparseMatrix::~DenseSparseMatrix() {}
+
 void DenseSparseMatrix::SetZero() {
   m_.setZero();
 }

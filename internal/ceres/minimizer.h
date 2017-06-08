@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/solver.h"
 
@@ -47,7 +48,7 @@ class CoordinateDescentMinimizer;
 class LinearSolver;
 
 // Interface for non-linear least squares solvers.
-class Minimizer {
+class CERES_EXPORT Minimizer {
  public:
   // Options struct to control the behaviour of the Minimizer. Please
   // see solver.h for detailed information about the meaning and

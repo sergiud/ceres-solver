@@ -35,6 +35,7 @@
 
 #include <string>
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -45,6 +46,7 @@ void ReadFileToStringOrDie(const std::string &filename, std::string *data);
 
 // Join two path components, adding a slash if necessary.  If basename is an
 // absolute path then JoinPath ignores dirname and simply returns basename.
+CERES_EXPORT
 std::string JoinPath(const std::string& dirname, const std::string& basename);
 
 }  // namespace internal

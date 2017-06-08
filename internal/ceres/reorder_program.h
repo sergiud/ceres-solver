@@ -33,6 +33,7 @@
 
 #include <string>
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/parameter_block_ordering.h"
 #include "ceres/problem_impl.h"
 #include "ceres/types.h"
@@ -43,6 +44,7 @@ namespace internal {
 class Program;
 
 // Reorder the parameter blocks in program using the ordering
+CERES_EXPORT
 bool ApplyOrdering(const ProblemImpl::ParameterMap& parameter_map,
                    const ParameterBlockOrdering& ordering,
                    Program* program,
@@ -51,6 +53,7 @@ bool ApplyOrdering(const ProblemImpl::ParameterMap& parameter_map,
 // Reorder the residuals for program, if necessary, so that the residuals
 // involving each E block occur together. This is a necessary condition for the
 // Schur eliminator, which works on these "row blocks" in the jacobian.
+CERES_EXPORT
 bool LexicographicallyOrderResidualBlocks(int size_of_first_elimination_group,
                                           Program* program,
                                           std::string* error);
@@ -71,6 +74,7 @@ bool LexicographicallyOrderResidualBlocks(int size_of_first_elimination_group,
 //
 // Upon return, ordering contains the parameter block ordering that
 // was used to order the program.
+CERES_EXPORT
 bool ReorderProgramForSchurTypeLinearSolver(
     LinearSolverType linear_solver_type,
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
@@ -89,6 +93,7 @@ bool ReorderProgramForSchurTypeLinearSolver(
 // fill-reducing ordering is available in the sparse linear algebra
 // library (SuiteSparse version >= 4.2.0) then the fill reducing
 // ordering will take it into account, otherwise it will be ignored.
+CERES_EXPORT
 bool ReorderProgramForSparseNormalCholesky(
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
     const ParameterBlockOrdering& parameter_block_ordering,

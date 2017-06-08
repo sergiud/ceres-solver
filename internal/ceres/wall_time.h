@@ -35,6 +35,7 @@
 #include <string>
 #include "ceres/internal/port.h"
 #include "ceres/stringprintf.h"
+#include "ceres/internal/export.h"
 #include "glog/logging.h"
 
 namespace ceres {
@@ -44,6 +45,7 @@ namespace internal {
 // OpenMP is available then the high precision openmp_get_wtime()
 // function is used. Otherwise on unixes, gettimeofday is used. The
 // granularity is in seconds on windows systems.
+CERES_EXPORT
 double WallTimeInSeconds();
 
 // Log a series of events, recording for each event the time elapsed

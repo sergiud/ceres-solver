@@ -185,16 +185,17 @@ add_library(ceres ${CERES_LIBRARY_SOURCE})
 
 target_include_directories (ceres
   PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
-  "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>"
-  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
-  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal>"
-  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/internal/ceres>"
+  "$<BUILD_INTERFACE:${Ceres_BINARY_DIR}/config>"
+  "$<BUILD_INTERFACE:${Ceres_BINARY_DIR}/include>"
+  "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/include>"
+  "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal>"
+  "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal/ceres>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   PRIVATE
-  ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/internal
-  ${CMAKE_SOURCE_DIR}/internal/ceres
+  ${Ceres_BINARY_DIR}/include
+  ${Ceres_SOURCE_DIR}/include
+  ${Ceres_SOURCE_DIR}/internal
+  ${Ceres_SOURCE_DIR}/internal/ceres
 )
 
 # Eigen SparseQR generates various compiler warnings related to unused and
@@ -273,11 +274,13 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
     append_target_property(gtest COMPILE_DEFINITIONS
       GTEST_CREATE_SHARED_LIBRARY)
   endif()
+  set_target_properties (gtest PROPERTIES CXX_VISIBILITY_PRESET default)
 
   add_library(test_util
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
               test_util.cc)
+  set_target_properties (test_util PROPERTIES CXX_VISIBILITY_PRESET default)
 
   if (WITH_MINILOG)
     # When using miniglog, it is compiled into Ceres, thus Ceres becomes

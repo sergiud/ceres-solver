@@ -35,6 +35,7 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 #ifndef CERES_NO_SUITESPARSE
 
@@ -80,7 +81,7 @@ class TripletSparseMatrix;
 // provides the user with a simpler interface. The methods here cannot
 // be static as a cholmod_common object serves as a global variable
 // for all cholmod function calls.
-class SuiteSparse {
+class CERES_EXPORT SuiteSparse {
  public:
   SuiteSparse();
   ~SuiteSparse();

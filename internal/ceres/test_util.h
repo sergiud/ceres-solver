@@ -33,6 +33,7 @@
 #include "ceres/problem.h"
 #include "ceres/solver.h"
 #include "ceres/stringprintf.h"
+#include "ceres/internal/export.h"
 #include "gtest/gtest.h"
 
 
@@ -45,11 +46,13 @@ namespace internal {
 // Expects that x and y have a relative difference of no more than
 // max_abs_relative_difference. If either x or y is zero, then the relative
 // difference is interpreted as an absolute difference.
+CERES_EXPORT
 bool ExpectClose(double x, double y, double max_abs_relative_difference);
 
 // Expects that for all i = 1,.., n - 1
 //
 //   |p[i] - q[i]| / max(|p[i]|, |q[i]|) < tolerance
+CERES_EXPORT
 void ExpectArraysClose(int n,
                        const double* p,
                        const double* q,

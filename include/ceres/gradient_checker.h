@@ -44,6 +44,7 @@
 #include "ceres/internal/macros.h"
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/local_parameterization.h"
+#include "ceres/internal/export.h"
 #include "glog/logging.h"
 
 namespace ceres {
