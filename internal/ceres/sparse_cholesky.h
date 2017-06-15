@@ -33,6 +33,7 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
@@ -63,7 +64,7 @@ namespace internal {
 //  CHECK_EQ(sparse_cholesky->Solve(rhs.data(), solution.data(), &message),
 //           LINEAR_SOLVER_SUCCESS);
 
-class SparseCholesky {
+class CERES_EXPORT SparseCholesky {
  public:
   // Factory which returns an instance of SparseCholesky for the given
   // sparse linear algebra library and fill reducing ordering
