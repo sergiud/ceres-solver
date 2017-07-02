@@ -38,6 +38,8 @@
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -138,5 +140,7 @@ void MinimizeInterpolatingPolynomial(const std::vector<FunctionSample>& samples,
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_POLYNOMIAL_SOLVER_H_

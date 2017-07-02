@@ -38,6 +38,8 @@
 #include "ceres/problem_impl.h"
 #include "ceres/types.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -102,5 +104,7 @@ bool ReorderProgramForSparseNormalCholesky(
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_REORDER_PROGRAM_

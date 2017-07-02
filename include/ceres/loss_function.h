@@ -81,6 +81,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 class CERES_EXPORT LossFunction {
@@ -422,6 +424,8 @@ class CERES_EXPORT LossFunctionWrapper : public LossFunction {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

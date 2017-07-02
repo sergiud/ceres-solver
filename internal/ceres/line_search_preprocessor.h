@@ -34,6 +34,8 @@
 #include "ceres/preprocessor.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -47,5 +49,7 @@ class CERES_EXPORT LineSearchPreprocessor : public Preprocessor {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_LINE_SEARCH_PREPROCESSOR_H_

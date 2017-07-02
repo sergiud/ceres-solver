@@ -48,6 +48,8 @@
 #include "ceres/internal/export.h"
 #include "glog/logging.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -369,5 +371,7 @@ typedef TypedLinearSolver<TripletSparseMatrix>       TripletSparseMatrixSolver; 
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_LINEAR_SOLVER_H_

@@ -48,6 +48,8 @@
 #undef I
 #endif // defined(I)
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -169,6 +171,8 @@ class CXSparseCholesky : public SparseCholesky {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #else   // CERES_NO_CXSPARSE
 

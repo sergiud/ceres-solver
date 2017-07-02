@@ -38,6 +38,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -152,5 +154,7 @@ class CERES_EXPORT TripletSparseMatrix : public SparseMatrix {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_TRIPLET_SPARSE_MATRIX_H__

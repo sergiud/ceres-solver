@@ -44,6 +44,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 class LossFunction;
@@ -145,5 +147,7 @@ class CERES_EXPORT ResidualBlock {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_RESIDUAL_BLOCK_H_

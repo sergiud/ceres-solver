@@ -42,6 +42,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 class Problem;
@@ -1053,6 +1055,8 @@ CERES_EXPORT void Solve(const Solver::Options& options,
            Solver::Summary* summary);
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

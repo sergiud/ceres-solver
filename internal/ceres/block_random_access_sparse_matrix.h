@@ -46,6 +46,8 @@
 #include "ceres/small_blas.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -126,5 +128,7 @@ class CERES_EXPORT BlockRandomAccessSparseMatrix : public BlockRandomAccessMatri
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_BLOCK_RANDOM_ACCESS_SPARSE_MATRIX_H_

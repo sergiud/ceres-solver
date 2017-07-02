@@ -37,6 +37,8 @@
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 // Purpose: Sometimes parameter blocks x can overparameterize a problem
@@ -317,6 +319,8 @@ class CERES_EXPORT ProductParameterization : public LocalParameterization {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

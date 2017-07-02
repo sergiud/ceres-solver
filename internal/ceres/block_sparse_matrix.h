@@ -41,6 +41,8 @@
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -140,5 +142,7 @@ class CERES_EXPORT BlockSparseMatrix : public SparseMatrix {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_BLOCK_SPARSE_MATRIX_H_

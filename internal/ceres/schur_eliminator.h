@@ -42,6 +42,8 @@
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -361,5 +363,7 @@ class SchurEliminator : public SchurEliminatorBase {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_SCHUR_ELIMINATOR_H_

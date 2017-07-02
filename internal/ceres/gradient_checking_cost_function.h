@@ -40,6 +40,8 @@
 #include "ceres/mutex.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -111,5 +113,7 @@ ProblemImpl* CreateGradientCheckingProblemImpl(
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_GRADIENT_CHECKING_COST_FUNCTION_H_

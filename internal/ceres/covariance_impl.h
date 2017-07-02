@@ -41,6 +41,8 @@
 #include "ceres/suitesparse.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -98,5 +100,7 @@ class CERES_EXPORT CovarianceImpl {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_COVARIANCE_IMPL_H_

@@ -33,6 +33,8 @@
 
 #include "ceres/cost_function.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 // A common base class for DynamicAutoDiffCostFunction and
@@ -52,5 +54,7 @@ class CERES_EXPORT DynamicCostFunction : public CostFunction {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_PUBLIC_DYNAMIC_COST_FUNCTION_H_

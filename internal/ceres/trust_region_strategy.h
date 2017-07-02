@@ -36,6 +36,8 @@
 #include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -161,5 +163,7 @@ class CERES_EXPORT TrustRegionStrategy {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_TRUST_REGION_STRATEGY_H_

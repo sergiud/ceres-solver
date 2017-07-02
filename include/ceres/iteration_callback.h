@@ -38,6 +38,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 // This struct describes the state of the optimizer after each
@@ -219,6 +221,8 @@ class CERES_EXPORT IterationCallback {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

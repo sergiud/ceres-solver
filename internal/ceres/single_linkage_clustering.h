@@ -35,6 +35,8 @@
 #include "ceres/graph.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -66,5 +68,7 @@ int ComputeSingleLinkageClustering(
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_SINGLE_LINKAGE_CLUSTERING_H_

@@ -47,6 +47,8 @@
 #include "ceres/internal/export.h"
 #include "glog/logging.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -149,5 +151,7 @@ class PartitionedMatrixView : public PartitionedMatrixViewBase {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_PARTITIONED_MATRIX_VIEW_H_

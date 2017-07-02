@@ -47,6 +47,8 @@
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -89,5 +91,7 @@ void MapValuesToContiguousRange(int size, int* array);
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_ARRAY_UTILS_H_

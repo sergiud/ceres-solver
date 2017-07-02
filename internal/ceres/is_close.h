@@ -35,6 +35,8 @@
 
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 // Returns true if x and y have a relative (unsigned) difference less than
@@ -50,5 +52,7 @@ bool IsClose(double x,
              double *absolute_error);
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_IS_CLOSE_H_

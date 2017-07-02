@@ -44,6 +44,8 @@
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -90,5 +92,7 @@ extern void StringAppendV(std::string* dst, const char* format, va_list ap);
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_STRINGPRINTF_H_

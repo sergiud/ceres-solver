@@ -50,6 +50,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 class CostFunction;
@@ -225,5 +227,7 @@ class CERES_EXPORT ProblemImpl {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_PUBLIC_PROBLEM_IMPL_H_

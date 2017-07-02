@@ -41,6 +41,8 @@
 #include <vector>
 #include "ceres/graph.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -78,5 +80,7 @@ WeightedGraph<int>* CreateSchurComplementGraph(
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_VISIBILITY_H_

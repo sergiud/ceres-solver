@@ -40,6 +40,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 class GradientProblem;
@@ -358,6 +360,8 @@ CERES_EXPORT void Solve(const GradientProblemSolver::Options& options,
                         GradientProblemSolver::Summary* summary);
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

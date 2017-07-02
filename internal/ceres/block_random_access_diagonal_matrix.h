@@ -45,6 +45,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -98,5 +100,7 @@ class CERES_EXPORT BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMat
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_BLOCK_RANDOM_ACCESS_DIAGONAL_MATRIX_H_

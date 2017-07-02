@@ -51,6 +51,8 @@
 #include "Eigen/OrderingMethods"
 #endif
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -187,5 +189,7 @@ class SparseSchurComplementSolver : public SchurComplementSolver {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_SCHUR_COMPLEMENT_SOLVER_H_

@@ -47,6 +47,8 @@
 #include "ceres/internal/disable_warnings.h"
 
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 class CostFunction;
@@ -482,6 +484,8 @@ class CERES_EXPORT Problem {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

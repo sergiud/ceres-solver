@@ -38,6 +38,8 @@
 #include "ceres/internal/macros.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -71,5 +73,7 @@ class CERES_EXPORT ConjugateGradientsSolver : public LinearSolver {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_CONJUGATE_GRADIENTS_SOLVER_H_

@@ -41,6 +41,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 // This class allows you to apply different conditioning to the residual
@@ -93,6 +95,8 @@ class CERES_EXPORT ConditionedCostFunction : public CostFunction {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

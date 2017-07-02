@@ -37,6 +37,8 @@
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -51,5 +53,7 @@ std::string JoinPath(const std::string& dirname, const std::string& basename);
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_FILE_H_

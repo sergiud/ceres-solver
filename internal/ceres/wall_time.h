@@ -38,6 +38,8 @@
 #include "ceres/internal/export.h"
 #include "glog/logging.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -86,5 +88,7 @@ class EventLogger {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_WALL_TIME_H_

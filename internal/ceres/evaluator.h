@@ -41,6 +41,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 struct CRSMatrix;
@@ -202,5 +204,7 @@ class CERES_EXPORT Evaluator {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_EVALUATOR_H_

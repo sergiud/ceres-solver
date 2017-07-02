@@ -39,6 +39,8 @@
 #include "ceres/internal/export.h"
 #include "glog/logging.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 struct CRSMatrix;
@@ -231,5 +233,7 @@ class CERES_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_COMPRESSED_ROW_SPARSE_MATRIX_H_

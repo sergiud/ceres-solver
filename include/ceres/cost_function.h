@@ -50,6 +50,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 // This class implements the computation of the cost (a.k.a. residual) terms as
@@ -141,6 +143,8 @@ class CERES_EXPORT CostFunction {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

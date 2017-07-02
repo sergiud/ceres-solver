@@ -47,6 +47,8 @@
 #include "ceres/internal/export.h"
 #include "glog/logging.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 // GradientChecker compares the Jacobians returned by a cost function against
@@ -146,5 +148,7 @@ class CERES_EXPORT GradientChecker {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_PUBLIC_GRADIENT_CHECKER_H_

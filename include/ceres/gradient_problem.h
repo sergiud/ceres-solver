@@ -36,6 +36,8 @@
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/local_parameterization.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 class FirstOrderFunction;
@@ -123,5 +125,7 @@ class CERES_EXPORT FirstOrderFunction {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_PUBLIC_GRADIENT_PROBLEM_H_

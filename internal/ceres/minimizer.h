@@ -38,6 +38,8 @@
 #include "ceres/iteration_callback.h"
 #include "ceres/solver.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -199,5 +201,7 @@ class CERES_EXPORT Minimizer {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_MINIMIZER_H_

@@ -35,6 +35,8 @@
 #include "ceres/internal/port.h"
 #include "ceres/internal/disable_warnings.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 
 // A compressed row sparse matrix used primarily for communicating the
@@ -80,6 +82,8 @@ struct CERES_EXPORT CRSMatrix {
 };
 
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

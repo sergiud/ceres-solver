@@ -38,6 +38,8 @@
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -119,5 +121,7 @@ class CERES_EXPORT SparseCholesky {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_SPARSE_CHOLESKY_H_

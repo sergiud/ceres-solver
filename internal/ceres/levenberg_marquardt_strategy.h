@@ -35,6 +35,8 @@
 #include "ceres/trust_region_strategy.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -84,5 +86,7 @@ class CERES_EXPORT LevenbergMarquardtStrategy : public TrustRegionStrategy {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_LEVENBERG_MARQUARDT_STRATEGY_H_

@@ -70,6 +70,8 @@
 #define SuiteSparse_long UF_long
 #endif
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -302,9 +304,13 @@ class SuiteSparseCholesky : public SparseCholesky {
 }  // namespace internal
 }  // namespace ceres
 
+#include "ceres/internal/suffix.h"
+
 #else  // CERES_NO_SUITESPARSE
 
 typedef void cholmod_factor;
+
+#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -327,6 +333,8 @@ class SuiteSparse {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_NO_SUITESPARSE
 

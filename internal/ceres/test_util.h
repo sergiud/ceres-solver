@@ -40,6 +40,8 @@
 #ifndef CERES_INTERNAL_TEST_UTIL_H_
 #define CERES_INTERNAL_TEST_UTIL_H_
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -188,5 +190,7 @@ class SystemTest : public::testing::Test {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_TEST_UTIL_H_

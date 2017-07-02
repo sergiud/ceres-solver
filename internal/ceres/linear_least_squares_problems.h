@@ -38,6 +38,8 @@
 #include "ceres/internal/scoped_ptr.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -83,5 +85,7 @@ bool DumpLinearLeastSquaresProblem(const std::string& filename_base,
                                    int num_eliminate_blocks);
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_LINEAR_LEAST_SQUARES_PROBLEMS_H_

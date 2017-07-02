@@ -46,6 +46,8 @@
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -98,5 +100,7 @@ class CERES_EXPORT DynamicCompressedRowSparseMatrix : public CompressedRowSparse
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_DYNAMIC_COMPRESSED_ROW_SPARSE_MATRIX_H_

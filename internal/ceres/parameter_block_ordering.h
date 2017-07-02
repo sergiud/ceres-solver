@@ -37,6 +37,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -88,5 +90,7 @@ void OrderingToGroupSizes(const ParameterBlockOrdering* ordering,
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_PARAMETER_BLOCK_ORDERING_H_

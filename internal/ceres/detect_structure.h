@@ -34,6 +34,8 @@
 #include "ceres/block_structure.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -65,5 +67,7 @@ void DetectStructure(const CompressedRowBlockStructure& bs,
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_DETECT_STRUCTURE_H_

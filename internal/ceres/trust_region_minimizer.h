@@ -41,6 +41,8 @@
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
+#include "ceres/internal/prefix.h"
+
 namespace ceres {
 namespace internal {
 
@@ -163,5 +165,7 @@ class CERES_EXPORT TrustRegionMinimizer : public Minimizer {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_TRUST_REGION_MINIMIZER_H_
