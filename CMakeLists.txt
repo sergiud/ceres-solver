@@ -402,6 +402,11 @@ else (WITH_OPENMP)
   message("-- Building without OpenMP (disabling multithreading).")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
 endif (WITH_OPENMP)
+# Initialise CMAKE_REQUIRED_FLAGS used by CheckCXXSourceCompiles with the
+# contents of CMAKE_CXX_FLAGS such that if the user has passed extra flags
+# they are used when discovering shared_ptr/unordered_map.
+set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
+
 
 # Set the Ceres compile definitions for the unordered_map configuration.
 include(FindUnorderedMap)
