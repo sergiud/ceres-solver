@@ -33,6 +33,9 @@
 
 #include <string>
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
+
+#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -45,7 +48,7 @@ namespace internal {
 // line/direction. FunctionSample contains the information in two
 // ways. Information in the ambient space and information along the
 // direction of search.
-struct FunctionSample {
+struct CERES_EXPORT FunctionSample {
   FunctionSample();
   FunctionSample(double x, double value);
   FunctionSample(double x, double value, double gradient);
@@ -90,5 +93,7 @@ struct FunctionSample {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_FUNCTION_SAMPLE_H_

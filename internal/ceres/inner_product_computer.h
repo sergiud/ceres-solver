@@ -36,6 +36,9 @@
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/internal/scoped_ptr.h"
+#include "ceres/internal/export.h"
+
+#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -60,7 +63,7 @@ namespace internal {
 // This is not a problem as sparse linear algebra libraries can ignore
 // these entries with ease and the space used is minimal/linear in the
 // size of the matrices.
-class InnerProductComputer {
+class CERES_EXPORT InnerProductComputer {
  public:
   // Factory
   //
@@ -153,5 +156,7 @@ class InnerProductComputer {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_INNER_PRODUCT_COMPUTER_H_
