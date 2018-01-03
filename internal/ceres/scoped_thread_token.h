@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2017 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,76 +26,36 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: strandmark@google.com (Petter Strandmark)
+// Author: yp@photonscore.de (Yury Prokazov)
 
-#include "ceres/wall_time.h"
+#ifndef CERES_INTERNAL_SCOPED_THREAD_TOKEN_H_
+#define CERES_INTERNAL_SCOPED_THREAD_TOKEN_H_
 
-#ifdef CERES_USE_OPENMP
-#include <omp.h>
-#else
-#include <ctime>
-#endif
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <sys/time.h>
-#endif
+#include "ceres/thread_token_provider.h"
 
 namespace ceres {
 namespace internal {
 
-double WallTimeInSeconds() {
-#ifdef CERES_USE_OPENMP
-  return omp_get_wtime();
-#else
-#ifdef _WIN32
-  LARGE_INTEGER count;
-  LARGE_INTEGER frequency;
-  QueryPerformanceCounter(&count);
-  QueryPerformanceFrequency(&frequency);
-  return static_cast<double>(count.QuadPart) /
-         static_cast<double>(frequency.QuadPart);
-#else
-  timeval time_val;
-  gettimeofday(&time_val, NULL);
-  return (time_val.tv_sec + time_val.tv_usec * 1e-6);
-#endif
-#endif
-}
+// Helper class for ThreadTokenProvider. This object acquires a token in its
+// constructor and puts that token back with destruction.
+class ScopedThreadToken {
+ public:
+  ScopedThreadToken(ThreadTokenProvider* provider)
+      : provider_(provider), token_(provider->Acquire()) {}
 
-EventLogger::EventLogger(const std::string& logger_name)
-    : start_time_(WallTimeInSeconds()),
-      last_event_time_(start_time_),
-      events_("") {
-  StringAppendF(&events_,
-                "\n%s\n                                   Delta   Cumulative\n",
-                logger_name.c_str());
-}
+  ~ScopedThreadToken() { provider_->Release(token_); }
 
-EventLogger::~EventLogger() {
-  if (VLOG_IS_ON(3)) {
-    AddEvent("Total");
-    VLOG(2) << "\n" << events_ << "\n";
-  }
-}
+  int token() const { return token_; }
 
-void EventLogger::AddEvent(const std::string& event_name) {
-  if (!VLOG_IS_ON(3)) {
-    return;
-  }
+ private:
+  ThreadTokenProvider* provider_;
+  int token_;
 
-  const double current_time = WallTimeInSeconds();
-  const double relative_time_delta = current_time - last_event_time_;
-  const double absolute_time_delta = current_time - start_time_;
-  last_event_time_ = current_time;
-
-  StringAppendF(&events_,
-                "  %30s : %10.5f   %10.5f\n",
-                event_name.c_str(),
-                relative_time_delta,
-                absolute_time_delta);
-}
+  ScopedThreadToken(ScopedThreadToken&);
+  ScopedThreadToken& operator=(ScopedThreadToken&);
+};
 
 }  // namespace internal
 }  // namespace ceres
+
+#endif  // CERES_INTERNAL_SCOPED_THREAD_TOKEN_H_

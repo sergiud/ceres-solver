@@ -114,6 +114,7 @@ set(CERES_INTERNAL_SRC
     split.cc
     stringprintf.cc
     suitesparse.cc
+    thread_token_provider.cc
     triplet_sparse_matrix.cc
     trust_region_preprocessor.cc
     trust_region_minimizer.cc
@@ -157,7 +158,6 @@ endif (WITH_SUITESPARSE AND SuiteSparse_FOUND)
 
 if (WITH_LAPACK AND BLAS_FOUND AND LAPACK_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${LAPACK_LIBRARIES})
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${BLAS_LIBRARIES})
 endif (WITH_LAPACK AND BLAS_FOUND AND LAPACK_FOUND)
 
 if (WITH_OPENMP AND OPENMP_FOUND)
@@ -169,6 +169,13 @@ if (WITH_OPENMP AND OPENMP_FOUND)
     list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${CMAKE_THREAD_LIBS_INIT})
   endif()
 endif (WITH_OPENMP AND OPENMP_FOUND)
+
+if (WITH_TBB AND TBB_FOUND)
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${TBB_LIBRARIES})
+  if (NOT MSVC)
+    list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${CMAKE_THREAD_LIBS_INIT})
+  endif (NOT MSVC)
+endif (WITH_TBB AND TBB_FOUND)
 
 set(CERES_LIBRARY_SOURCE
     ${CERES_INTERNAL_SRC}
@@ -184,6 +191,10 @@ if (WITH_MINILOG)
 endif (WITH_MINILOG)
 
 add_library(ceres ${CERES_LIBRARY_SOURCE})
+
+if (WITH_TBB AND TBB_FOUND)
+  target_compile_features (ceres PUBLIC cxx_lambdas)
+endif (WITH_TBB AND TBB_FOUND)
 
 target_include_directories (ceres
   PUBLIC
@@ -377,6 +388,9 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(sparse_cholesky)
   ceres_test(sparse_normal_cholesky_solver)
   ceres_test(system)
+  ceres_test(tiny_solver)
+  ceres_test(tiny_solver_autodiff_function)
+  ceres_test(tiny_solver_cost_function_adapter)
   ceres_test(triplet_sparse_matrix)
   ceres_test(trust_region_minimizer)
   ceres_test(trust_region_preprocessor)

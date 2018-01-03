@@ -89,6 +89,10 @@ optional. For details on customizing the build process, see
   ``SuiteSparse``, and optionally used by Ceres directly for some
   operations.
 
+-  `TBB <https://www.threadingbuildingblocks.org/>`_ is a C++11 template
+  library for parallel programming that optionally can be used as an alternative
+  to OpenMP. **Optional**
+
   On ``UNIX`` OSes other than Mac OS X we recommend `ATLAS
   <http://math-atlas.sourceforge.net/>`_, which includes ``BLAS`` and
   ``LAPACK`` routines. It is also possible to use `OpenBLAS
@@ -298,6 +302,46 @@ We are now ready to build, test, and install Ceres.
    make test
    # Optionally install Ceres, it can also be exported using CMake which
    # allows Ceres to be used without requiring installation, see the
+   # documentation for the EXPORT_BUILD_DIR option for more information.
+   make install
+
+Building with OpenMP on OS X
+----------------------------
+
+Up to at least Xcode 8, OpenMP support was disabled in Apple's version of
+Clang.  However, you can install the latest version of the LLVM toolchain
+from Homebrew which does support OpenMP, and thus build Ceres with OpenMP
+support on OS X.  To do this, you must install llvm via Homebrew:
+
+.. code-block:: bash
+
+      # Install latest version of LLVM toolchain.
+      brew install llvm
+
+As the LLVM formula in Homebrew is keg-only, it will not be installed to
+``/usr/local`` to avoid conflicts with the standard Apple LLVM toolchain.
+To build Ceres with the Homebrew LLVM toolchain you should do the
+following:
+
+.. code-block:: bash
+
+   tar zxf ceres-solver-1.13.0.tar.gz
+   mkdir ceres-bin
+   cd ceres-bin
+   # Configure the local shell only (not persistent) to use the Homebrew LLVM
+   # toolchain in favour of the default Apple version.  This is taken
+   # verbatim from the instructions output by Homebrew when installing the
+   # llvm formula.
+   export LDFLAGS="-L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib"
+   export CPPFLAGS="-I/usr/local/opt/llvm/include"
+   export PATH="/usr/local/opt/llvm/bin:$PATH"
+   # Force CMake to use the Homebrew version of Clang.  OpenMP will be
+   # automatically enabled if it is detected that the compiler supports it.
+   cmake -DCMAKE_C_COMPILER=/usr/local/opt/llvm/bin/clang -DCMAKE_CXX_COMPILER=/usr/local/opt/llvm/bin/clang++ ../ceres-solver-1.13.0
+   make -j3
+   make test
+   # Optionally install Ceres.  It can also be exported using CMake which
+   # allows Ceres to be used without requiring installation.  See the
    # documentation for the EXPORT_BUILD_DIR option for more information.
    make install
 
@@ -525,15 +569,18 @@ defaults if you know what you are doing.
 Options controlling Ceres configuration
 ---------------------------------------
 
-#. ``LAPACK [Default: ON]``: By default Ceres will use ``LAPACK`` (&
-   ``BLAS``) if they are found.  Turn this ``OFF`` to build Ceres
-   without ``LAPACK``. Turning this ``OFF`` also disables
-   ``SUITESPARSE`` as it depends on ``LAPACK``.
+#. ``LAPACK [Default: ON]``: If this option is enabled, and the ``BLAS`` and
+   ``LAPACK`` libraries are found, Ceres will enable **direct** use of
+   ``LAPACK`` routines (i.e. Ceres itself will call them).  If this option is
+   disabled, then Ceres will not require ``LAPACK`` or ``BLAS``.  It is
+   however still possible that Ceres may call ``LAPACK`` routines indirectly
+   via SuiteSparse if ``LAPACK=OFF`` and ``SUITESPARSE=ON``.  Finally
+   note that if ``LAPACK=ON`` and ``SUITESPARSE=ON``, the ``LAPACK`` and
+   ``BLAS`` libraries used by SuiteSparse and Ceres should be the same.
 
 #. ``SUITESPARSE [Default: ON]``: By default, Ceres will link to
    ``SuiteSparse`` if it and all of its dependencies are present. Turn
-   this ``OFF`` to build Ceres without ``SuiteSparse``. Note that
-   ``LAPACK`` must be ``ON`` in order to build with ``SuiteSparse``.
+   this ``OFF`` to build Ceres without ``SuiteSparse``.
 
 #. ``CXSPARSE [Default: ON]``: By default, Ceres will link to
    ``CXSparse`` if all its dependencies are present. Turn this ``OFF``
@@ -568,9 +615,12 @@ Options controlling Ceres configuration
    multi-threading with ``OpenMP`` is not supported. Turn this ``OFF``
    to disable multi-threading.
 
+#. ``TBB [Default: OFF]``: An alternative to ``OpenMP`` threading library that
+   requires C++11. This option is mutually exclusive to ``OpenMP``.
+
 #. ``CXX11 [Default: OFF]`` *Non-MSVC compilers only*.
 
-   Although Ceres does not currently use C++11, it does use
+   Although Ceres does not currently require C++11, it does use
    ``shared_ptr`` (required) and ``unordered_map`` (if available);
    both of which existed in the previous iterations of what became the
    C++11 standard: TR1 & C++0x.  As such, Ceres can compile on
@@ -710,18 +760,9 @@ containing the ``BLAS`` & ``LAPACK`` libraries when invoking ``CMake``
 to build Ceres via ``-D<VAR>=<VALUE>``.  This should result in the
 libraries being found for any common variant of each.
 
-If you are building on an exotic system, or setting
-``CMAKE_LIBRARY_PATH`` does not work, or is not appropriate for some
-other reason, one option would be to write your own custom versions of
-``FindBLAS.cmake`` & ``FindLAPACK.cmake`` specific to your
-environment.  In this case you must set ``CMAKE_MODULE_PATH`` to the
-directory containing these custom scripts when invoking ``CMake`` to
-build Ceres and they will be used in preference to the default
-versions.  However, in order for this to work, your scripts must
-provide the full set of variables provided by the default scripts.
-Also, if you are building Ceres with ``SuiteSparse``, the versions of
-``BLAS`` & ``LAPACK`` used by ``SuiteSparse`` and Ceres should be the
-same.
+Alternatively, you may also directly specify the ``BLAS_LIBRARIES`` and
+``LAPACK_LIBRARIES`` variables via ``-D<VAR>=<VALUE>`` when invoking CMake
+to configure Ceres.
 
 .. _section-using-ceres:
 

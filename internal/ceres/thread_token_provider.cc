@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2017 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,75 +26,48 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: strandmark@google.com (Petter Strandmark)
+// Author: yp@photonscore.de (Yury Prokazov)
 
-#include "ceres/wall_time.h"
+#include "ceres/thread_token_provider.h"
 
 #ifdef CERES_USE_OPENMP
 #include <omp.h>
-#else
-#include <ctime>
-#endif
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <sys/time.h>
 #endif
 
 namespace ceres {
 namespace internal {
 
-double WallTimeInSeconds() {
+ThreadTokenProvider::ThreadTokenProvider(int num_threads) {
+  (void)num_threads;
+#ifdef CERES_USE_TBB
+  pool_.set_capacity(num_threads);
+  for (int i = 0; i < num_threads; i++) {
+    pool_.push(i);
+  }
+#endif
+}
+
+int ThreadTokenProvider::Acquire() {
 #ifdef CERES_USE_OPENMP
-  return omp_get_wtime();
-#else
-#ifdef _WIN32
-  LARGE_INTEGER count;
-  LARGE_INTEGER frequency;
-  QueryPerformanceCounter(&count);
-  QueryPerformanceFrequency(&frequency);
-  return static_cast<double>(count.QuadPart) /
-         static_cast<double>(frequency.QuadPart);
-#else
-  timeval time_val;
-  gettimeofday(&time_val, NULL);
-  return (time_val.tv_sec + time_val.tv_usec * 1e-6);
+  return omp_get_thread_num();
 #endif
+
+#ifdef CERES_NO_THREADS
+  return 0;
+#endif
+
+#ifdef CERES_USE_TBB
+  int thread_id;
+  pool_.pop(thread_id);
+  return thread_id;
 #endif
 }
 
-EventLogger::EventLogger(const std::string& logger_name)
-    : start_time_(WallTimeInSeconds()),
-      last_event_time_(start_time_),
-      events_("") {
-  StringAppendF(&events_,
-                "\n%s\n                                   Delta   Cumulative\n",
-                logger_name.c_str());
-}
-
-EventLogger::~EventLogger() {
-  if (VLOG_IS_ON(3)) {
-    AddEvent("Total");
-    VLOG(2) << "\n" << events_ << "\n";
-  }
-}
-
-void EventLogger::AddEvent(const std::string& event_name) {
-  if (!VLOG_IS_ON(3)) {
-    return;
-  }
-
-  const double current_time = WallTimeInSeconds();
-  const double relative_time_delta = current_time - last_event_time_;
-  const double absolute_time_delta = current_time - start_time_;
-  last_event_time_ = current_time;
-
-  StringAppendF(&events_,
-                "  %30s : %10.5f   %10.5f\n",
-                event_name.c_str(),
-                relative_time_delta,
-                absolute_time_delta);
+void ThreadTokenProvider::Release(int thread_id) {
+  (void)thread_id;
+#ifdef CERES_USE_TBB
+  pool_.push(thread_id);
+#endif
 }
 
 }  // namespace internal

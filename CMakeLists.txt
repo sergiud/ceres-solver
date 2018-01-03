@@ -127,7 +127,23 @@ option(WITH_CUSTOM_BLAS
        "Use handcoded BLAS routines (usually faster) instead of Eigen."
        ON)
 # Multithreading using OpenMP
-option(WITH_OPENMP "Enable threaded solving in Ceres (requires OpenMP)" ON)
+
+set (WITH_THREADING_BACKEND "" CACHE STRING
+  "Enable threaded solving using the specified backend")
+
+set_property (CACHE WITH_THREADING_BACKEND PROPERTY STRINGS OpenMP;TBB)
+
+if (WITH_THREADING_BACKEND STREQUAL "")
+  set (WITH_OPENMP TRUE)
+  set (WITH_TBB TRUE)
+elseif (WITH_THREADING_BACKEND STREQUAL OpenMP)
+  set (WITH_OPENMP TRUE)
+  set (WITH_TBB FALSE)
+elseif (WITH_THREADING_BACKEND STREQUAL TBB)
+  set (WITH_OPENMP FALSE)
+  set (WITH_TBB TRUE)
+endif (WITH_THREADING_BACKEND STREQUAL "")
+
 # Enable the use of Eigen as a sparse linear algebra library for
 # solving the nonlinear least squares problems. Enabling this
 # option will result in an LGPL licensed version of Ceres Solver
@@ -186,7 +202,6 @@ if (IOS)
   update_cache_variable(WITH_SUITESPARSE OFF)
   update_cache_variable(WITH_CXSPARSE OFF)
   update_cache_variable(WITH_GFLAGS OFF)
-  update_cache_variable(WITH_OPENMP OFF)
   # Apple claims that the BLAS call dsyrk_ is a private API, and will not allow
   # you to submit to the Apple Store if the symbol is present.
   update_cache_variable(WITH_LAPACK OFF)
@@ -238,18 +253,6 @@ if (EIGEN_FOUND)
     message("")
 endif (EIGEN_FOUND)
 
-# LAPACK (& BLAS).
-if (WITH_LAPACK)
-  find_package(LAPACK)
-
-  if (NOT (LAPACK_FOUND))
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
-  endif (NOT (LAPACK_FOUND))
-else (WITH_LAPACK)
-  message("-- Building without LAPACK.")
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
-endif (WITH_LAPACK)
-
 # SuiteSparse.
 if (WITH_SUITESPARSE)
   # By default, if SuiteSparse and all dependencies are found, Ceres is
@@ -291,6 +294,25 @@ else (WITH_SUITESPARSE)
   message("-- Building without SuiteSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
 endif (WITH_SUITESPARSE)
+
+# LAPACK (& BLAS).
+if (WITH_LAPACK)
+  find_package (LAPACK 3.6.0 NO_MODULE)
+
+  if (NOT (TARGET blas AND TARGET lapack))
+    find_package (LAPACK)
+  else (NOT (TARGET blas AND TARGET lapack))
+    set (BLAS_LIBRARIES blas)
+    set (LAPACK_LIBRARIES lapack)
+  endif (NOT (TARGET blas AND TARGET lapack))
+
+  if (NOT (LAPACK_FOUND))
+    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
+  endif (NOT (LAPACK_FOUND))
+else (WITH_LAPACK)
+  message("-- Building without LAPACK.")
+  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
+endif (WITH_LAPACK)
 
 # CXSparse.
 if (WITH_CXSPARSE)
@@ -380,9 +402,10 @@ endif (NOT WITH_CUSTOM_BLAS)
 
 if (WITH_OPENMP)
   # Find quietly, as we can continue without OpenMP if it is not found.
-  find_package(OpenMP QUIET)
+  find_package(OpenMP)
   if (OPENMP_FOUND)
     message("-- Building with OpenMP.")
+    set (WITH_TBB FALSE)
     list(APPEND CERES_COMPILE_OPTIONS CERES_USE_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -393,20 +416,32 @@ if (WITH_OPENMP)
       list(APPEND CERES_COMPILE_OPTIONS CERES_HAVE_PTHREAD)
       list(APPEND CERES_COMPILE_OPTIONS CERES_HAVE_RWLOCK)
     endif (UNIX)
-  else (OPENMP_FOUND)
-    message("-- Failed to find OpenMP, disabling. This is expected on "
-      "Clang < 3.8, and at least Xcode <= 7.")
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
   endif (OPENMP_FOUND)
-else (WITH_OPENMP)
-  message("-- Building without OpenMP (disabling multithreading).")
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
 endif (WITH_OPENMP)
 # Initialise CMAKE_REQUIRED_FLAGS used by CheckCXXSourceCompiles with the
 # contents of CMAKE_CXX_FLAGS such that if the user has passed extra flags
 # they are used when discovering shared_ptr/unordered_map.
 set(CMAKE_REQUIRED_FLAGS ${CMAKE_CXX_FLAGS})
 
+if (WITH_TBB)
+  find_package (TBB 3.0)
+
+  if (TBB_FOUND)
+    set (TBB_DEPENDENCY "find_dependency (TBB ${TBB_VERSION})")
+    list (APPEND CERES_COMPILE_OPTIONS CERES_USE_TBB)
+    set (WITH_OPENMP FALSE)
+  endif (TBB_FOUND)
+endif (WITH_TBB)
+
+if (WITH_THREADING_BACKEND STREQUAL "")
+  if (OPENMP_FOUND)
+    set (WITH_THREADING_BACKEND OpenMP CACHE STRING "" FORCE)
+  elseif (TBB_FOUND)
+    set (WITH_THREADING_BACKEND TBB CACHE STRING "" FORCE)
+  else (OPENMP_FOUND)
+    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
+  endif (OPENMP_FOUND)
+endif (WITH_THREADING_BACKEND STREQUAL "")
 
 # Set the Ceres compile definitions for the unordered_map configuration.
 include(FindUnorderedMap)
@@ -660,6 +695,10 @@ create_ceres_config("${CERES_COMPILE_OPTIONS}"
 # of the dependencies (e.g. /usr/local) that we find the config.h we just
 # configured, not the (older) installed config.h.
 include_directories(BEFORE ${Ceres_BINARY_DIR}/config)
+
+if (CMAKE_CL OR CMAKE_CL_64)
+  add_compile_options (/bigobj)
+endif (CMAKE_CL OR CMAKE_CL_64)
 
 add_subdirectory(internal/ceres)
 
