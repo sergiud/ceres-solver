@@ -346,7 +346,7 @@ endif(NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
 # GFlags.
 if (WITH_GFLAGS)
   # Don't search with REQUIRED as we can continue without gflags.
-  find_package(gflags)
+  find_package(gflags 2.2.1)
 
   if (gflags_FOUND)
     include (DetermineGflagsNamespace)

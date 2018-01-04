@@ -1,5 +1,5 @@
 macro(determine_gflags_namespace VARIABLE)
-  if (NOT "${VARIABLE}" STREQUAL "")
+  if (NOT DEFINED "${VARIABLE}")
     if (CMAKE_REQUIRED_INCLUDES)
       set (CHECK_INCLUDE_FILE_CXX_INCLUDE_DIRS "-DINCLUDE_DIRECTORIES=${CMAKE_REQUIRED_INCLUDES}")
     else ()
@@ -34,8 +34,8 @@ int main(int argc, char**argv)
       try_compile (${VARIABLE}
         "${CMAKE_BINARY_DIR}" "${_check_file}"
         COMPILE_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}" -DGFLAGS_NAMESPACE=${_namespace}
-        LINK_LIBRARIES "${gflags_LIBRARIES}"
-        CMAKE_FLAGS -DINCLUDE_DIRECTORIES:STRING="${gflags_INCLUDE_DIR}"
+        LINK_LIBRARIES gflags
+        CMAKE_FLAGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         OUTPUT_VARIABLE OUTPUT)
 
       if (${VARIABLE})
