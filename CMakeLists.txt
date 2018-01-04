@@ -260,7 +260,7 @@ if (WITH_SUITESPARSE)
 
   IF (SuiteSparse_FOUND)
     set (SUITESPARSE_DEPENDENCY
-      "find_dependency (SuiteSparse ${SuiteSparse_VERSION})")
+      "find_dependency (SuiteSparse ${SuiteSparse_VERSION} NO_MODULE)")
     # On Ubuntu the system install of SuiteSparse (v3.4.0) up to at least
     # Ubuntu 13.10 cannot be used to link shared libraries.
     if (BUILD_SHARED_LIBS AND
@@ -318,7 +318,7 @@ if (WITH_CXSPARSE)
   if (TARGET CXSparse::CXSparse)
     # Avoid I conflict
     set_property (DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NCOMPLEX)
-    set (CXSPARSE_DEPENDENCY "find_dependency (CXSparse ${CXSparse_VERSION})")
+    set (CXSPARSE_DEPENDENCY "find_dependency (CXSparse ${CXSparse_VERSION} NO_MODULE)")
     # By default, if CXSparse and all dependencies are found, Ceres is
     # built with CXSparse support.
     message("-- Found CXSparse version: ${CXSparse_VERSION}, "
@@ -379,7 +379,7 @@ else (WITH_MINILOG)
   # we can output an error messages explaining WITH_MINILOG option.
   find_package(glog)
   if (glog_FOUND)
-    set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION})")
+    set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION} NO_MODULE)")
   else (glog_FOUND)
     message(FATAL_ERROR "Can't find Google Log. Please set glog_INCLUDE_DIR & "
       "glog_LIBRARY or enable WITH_MINILOG option to use minimal glog "
