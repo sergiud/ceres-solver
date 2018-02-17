@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2018 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,63 +26,58 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: sameeragarwal@google.com (Sameer Agarwal)
+// Author: vitus@google.com (Michael Vitus)
 
-#ifndef CERES_INTERNAL_EXECUTION_SUMMARY_H_
-#define CERES_INTERNAL_EXECUTION_SUMMARY_H_
-
-#include <map>
-#include <string>
-
+// This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
-#include "ceres/mutex.h"
-#include "ceres/wall_time.h"
+
+#ifdef CERES_USE_TBB
+
+#include "ceres/parallel_for.h"
+
+#include <vector>
+
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 namespace ceres {
 namespace internal {
 
-struct CallStatistics {
-  CallStatistics() : time(0.), calls(0) {}
-  double time;
-  int calls;
-};
+using testing::ElementsAreArray;
 
-// Struct used by various objects to report statistics about their
-// execution.
-class ExecutionSummary {
- public:
-  void IncrementTimeBy(const std::string& name, const double value) {
-    CeresMutexLock l(&mutex_);
-    CallStatistics& call_stats = statistics_[name];
-    call_stats.time += value;
-    ++call_stats.calls;
+// Tests the parallel for loop computes the correct result for various number of
+// threads.
+TEST(ParallelFor, NumThreads) {
+  const int size = 16;
+  std::vector<int> expected_results(size, 0);
+  for (int i = 0; i < size; ++i) {
+    expected_results[i] = std::sqrt(i);
   }
 
-  const std::map<std::string, CallStatistics>& statistics() const {
-    return statistics_;
+  for (int num_threads = 1; num_threads <= 8; ++num_threads) {
+    std::vector<int> values(size, 0);
+    ParallelFor(0, size, num_threads,
+                [&values](int i) { values[i] = std::sqrt(i); });
+    EXPECT_THAT(values, ElementsAreArray(expected_results));
   }
+}
 
- private:
-  Mutex mutex_;
-  std::map<std::string, CallStatistics> statistics_;
-};
+// Tests nested for loops do not result in a deadlock.
+TEST(ParallelFor, NestedParallelForDeadlock) {
+  // Increment each element in the 2D matrix.
+  std::vector<std::vector<int>> x(3, {1, 2, 3});
+  ParallelFor(0, 3, 2, [&x](int i) {
+    std::vector<int>& y = x.at(i);
+    ParallelFor(0, 3, 2, [&y](int j) { ++y.at(j); });
+  });
 
-class ScopedExecutionTimer {
- public:
-  ScopedExecutionTimer(const std::string& name, ExecutionSummary* summary)
-      : start_time_(WallTimeInSeconds()), name_(name), summary_(summary) {}
-
-  ~ScopedExecutionTimer() {
-    summary_->IncrementTimeBy(name_, WallTimeInSeconds() - start_time_);
+  const std::vector<int> results = {2, 3, 4};
+  for (const std::vector<int>& value : x) {
+    EXPECT_THAT(value, ElementsAreArray(results));
   }
-
- private:
-  const double start_time_;
-  const std::string name_;
-  ExecutionSummary* summary_;
-};
+}
 
 }  // namespace internal
 }  // namespace ceres
 
-#endif  // CERES_INTERNAL_EXECUTION_SUMMARY_H_
+#endif // CERES_USE_TBB

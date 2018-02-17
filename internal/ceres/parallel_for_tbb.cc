@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2018 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,63 +26,45 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: sameeragarwal@google.com (Sameer Agarwal)
+// Author: vitus@google.com (Michael Vitus)
 
-#ifndef CERES_INTERNAL_EXECUTION_SUMMARY_H_
-#define CERES_INTERNAL_EXECUTION_SUMMARY_H_
-
-#include <map>
-#include <string>
-
+// This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
-#include "ceres/mutex.h"
-#include "ceres/wall_time.h"
+
+#ifdef CERES_USE_TBB
+
+#include "ceres/parallel_for.h"
+
+#include <tbb/parallel_for.h>
+#include <tbb/task_arena.h>
+
+#include "glog/logging.h"
 
 namespace ceres {
 namespace internal {
 
-struct CallStatistics {
-  CallStatistics() : time(0.), calls(0) {}
-  double time;
-  int calls;
-};
-
-// Struct used by various objects to report statistics about their
-// execution.
-class ExecutionSummary {
- public:
-  void IncrementTimeBy(const std::string& name, const double value) {
-    CeresMutexLock l(&mutex_);
-    CallStatistics& call_stats = statistics_[name];
-    call_stats.time += value;
-    ++call_stats.calls;
+void ParallelFor(int start, int end, int num_threads,
+                 const std::function<void(int)>& function) {
+  CHECK_GT(num_threads, 0);
+  if (end <= start) {
+    return;
   }
 
-  const std::map<std::string, CallStatistics>& statistics() const {
-    return statistics_;
+  // Fast path for when it is single threaded.
+  if (num_threads == 1) {
+    for (int i = start; i < end; ++i) {
+      function(i);
+    }
+    return;
   }
 
- private:
-  Mutex mutex_;
-  std::map<std::string, CallStatistics> statistics_;
-};
-
-class ScopedExecutionTimer {
- public:
-  ScopedExecutionTimer(const std::string& name, ExecutionSummary* summary)
-      : start_time_(WallTimeInSeconds()), name_(name), summary_(summary) {}
-
-  ~ScopedExecutionTimer() {
-    summary_->IncrementTimeBy(name_, WallTimeInSeconds() - start_time_);
-  }
-
- private:
-  const double start_time_;
-  const std::string name_;
-  ExecutionSummary* summary_;
-};
+  tbb::task_arena task_arena(num_threads);
+  task_arena.execute([&]{
+      tbb::parallel_for(start, end, function);
+    });
+}
 
 }  // namespace internal
 }  // namespace ceres
 
-#endif  // CERES_INTERNAL_EXECUTION_SUMMARY_H_
+#endif // CERES_USE_TBB

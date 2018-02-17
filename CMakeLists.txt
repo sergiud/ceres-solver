@@ -40,6 +40,8 @@ if (POLICY CMP0063)
   cmake_policy (SET CMP0063 NEW)
 endif (POLICY CMP0063)
 
+include(CMakeDependentOption)
+
 project(Ceres C CXX)
 
 set (CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -172,8 +174,16 @@ if (NOT MSVC)
 endif(NOT MSVC)
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
+cmake_dependent_option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON "CXX11" OFF)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
 if (MSVC)
+  # CXX11 is always enabled on Windows when using MSVC, as there, any new
+  # (C++11 etc) features available are on by default and there is no analogue to
+  # -std=c++11.  It is however optional for MinGW & CygWin, which can support
+  # -std=c++11.
+  update_cache_variable(CXX11 ON)
+  mark_as_advanced(FORCE CXX11)
+
   option(MSVC_USE_STATIC_CRT
     "MS Visual Studio: Use static C-Run Time Library in place of shared." OFF)
 
@@ -496,6 +506,17 @@ if (CXX11)
     endif()
   endif()
 endif(CXX11)
+
+if (BUILD_BENCHMARKS)
+  find_package(benchmark QUIET)
+  if (benchmark_FOUND)
+     message("-- Found Google benchmark library. Building Ceres benchmarks.")
+  else()
+     message("-- Failed to find Google benchmark library, disabling build of benchmarks.")
+     update_cache_variable(BUILD_BENCHMARKS OFF)
+  endif()
+  mark_as_advanced(benchmark_DIR)
+endif()
 
 include_directories(
   include

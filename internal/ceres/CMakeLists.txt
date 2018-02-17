@@ -89,6 +89,7 @@ set(CERES_INTERNAL_SRC
     low_rank_inverse_hessian.cc
     minimizer.cc
     normal_prior.cc
+    parallel_for_tbb.cc
     parameter_block_ordering.cc
     partitioned_matrix_view.cc
     polynomial.cc
@@ -370,6 +371,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(normal_prior)
   ceres_test(numeric_diff_cost_function)
   ceres_test(ordered_groups)
+  ceres_test(parallel_for)
   ceres_test(parameter_block)
   ceres_test(parameter_block_ordering)
   ceres_test(partitioned_matrix_view)
@@ -401,3 +403,8 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(bundle_adjustment)
 
 endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
+
+if (BUILD_BENCHMARKS)
+  add_executable(autodiff_cost_function_benchmark autodiff_cost_function_benchmark.cc)
+  target_link_libraries(autodiff_cost_function_benchmark ceres benchmark::benchmark)
+endif (BUILD_BENCHMARKS)

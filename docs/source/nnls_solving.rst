@@ -163,7 +163,7 @@ The matrix :math:`D(x)` is a non-negative diagonal matrix, typically
 the square root of the diagonal of the matrix :math:`J(x)^\top J(x)`.
 
 Before going further, let us make some notational simplifications. We
-will assume that the matrix :math:`\sqrt{\mu} D` has been concatenated
+will assume that the matrix :math:`\frac{1}{\sqrt{\mu}} D` has been concatenated
 at the bottom of the matrix :math:`J` and similarly a vector of zeros
 has been added to the bottom of the vector :math:`f` and the rest of
 our discussion will be in terms of :math:`J` and :math:`f`, i.e, the
@@ -2041,13 +2041,27 @@ The three arrays will be:
    Time (in seconds) spent in the linear solver computing the trust
    region step.
 
+.. member:: int Solver::Summary::num_linear_solves
+
+   Number of times the Newton step was computed by solving a linear
+   system. This does not include linear solves used by inner
+   iterations.
+
 .. member:: double Solver::Summary::residual_evaluation_time_in_seconds
 
    Time (in seconds) spent evaluating the residual vector.
 
+.. member:: int Solver::Summary::num_residual_evaluations
+
+   Number of times only the residuals were evaluated.
+
 .. member:: double Solver::Summary::jacobian_evaluation_time_in_seconds
 
    Time (in seconds) spent evaluating the Jacobian matrix.
+
+.. member:: int Solver::Summary::num_jacobian_evaluations
+
+   Number of times only the Jacobian and the residuals were evaluated.
 
 .. member:: double Solver::Summary::inner_iteration_time_in_seconds
 

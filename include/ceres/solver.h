@@ -843,11 +843,22 @@ class CERES_EXPORT Solver {
     // trust region step.
     double linear_solver_time_in_seconds;
 
+    // Number of times the Newton step was computed by solving a
+    // linear system. This does not include linear solves used by
+    // inner iterations.
+    int num_linear_solves;
+
     // Time (in seconds) spent evaluating the residual vector.
     double residual_evaluation_time_in_seconds;
 
+    // Number of residual only evaluations.
+    int num_residual_evaluations;
+
     // Time (in seconds) spent evaluating the jacobian matrix.
     double jacobian_evaluation_time_in_seconds;
+
+    // Number of Jacobian (and residual) evaluations.
+    int num_jacobian_evaluations;
 
     // Time (in seconds) spent doing inner iterations.
     double inner_iteration_time_in_seconds;

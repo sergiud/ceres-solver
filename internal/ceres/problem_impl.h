@@ -188,12 +188,6 @@ class CERES_EXPORT ProblemImpl {
   ParameterBlock* InternalAddParameterBlock(double* values, int size);
   void InternalRemoveResidualBlock(ResidualBlock* residual_block);
 
-  bool InternalEvaluate(Program* program,
-                        double* cost,
-                        std::vector<double>* residuals,
-                        std::vector<double>* gradient,
-                        CRSMatrix* jacobian);
-
   // Delete the arguments in question. These differ from the Remove* functions
   // in that they do not clean up references to the block to delete; they
   // merely delete them.
