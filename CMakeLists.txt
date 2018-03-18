@@ -369,7 +369,8 @@ else (WITH_MINILOG)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
   # Don't search with REQUIRED so that configuration continues if not found and
   # we can output an error messages explaining WITH_MINILOG option.
-  find_package(glog)
+  find_package(glog 0.3.5)
+
   if (glog_FOUND)
     set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION} NO_MODULE)")
   else (glog_FOUND)
