@@ -36,6 +36,7 @@
 #include <string>
 #include <vector>
 
+#include "ceres/context_impl.h"
 #include "ceres/execution_summary.h"
 #include "ceres/internal/port.h"
 #include "ceres/types.h"
@@ -46,6 +47,7 @@
 namespace ceres {
 
 struct CRSMatrix;
+class EvaluationCallback;
 
 namespace internal {
 
@@ -65,12 +67,16 @@ class CERES_EXPORT Evaluator {
         : num_threads(1),
           num_eliminate_blocks(-1),
           linear_solver_type(DENSE_QR),
-          dynamic_sparsity(false) {}
+          dynamic_sparsity(false),
+          context(NULL),
+          evaluation_callback(NULL) {}
 
     int num_threads;
     int num_eliminate_blocks;
     LinearSolverType linear_solver_type;
     bool dynamic_sparsity;
+    ContextImpl* context;
+    EvaluationCallback* evaluation_callback;
   };
 
   static Evaluator* Create(const Options& options,
@@ -98,12 +104,16 @@ class CERES_EXPORT Evaluator {
   // Options struct to control Evaluator::Evaluate;
   struct EvaluateOptions {
     EvaluateOptions()
-        : apply_loss_function(true) {
+        : apply_loss_function(true),
+          new_evaluation_point(true) {
     }
 
     // If false, the loss function correction is not applied to the
     // residual blocks.
     bool apply_loss_function;
+
+    // If false, this evaluation point is the same as the last one.
+    bool new_evaluation_point;
   };
 
   // Evaluate the cost function for the given state. Returns the cost,

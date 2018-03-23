@@ -49,6 +49,8 @@ CERES_SRCS = ["internal/ceres/" + filename for filename in [
     "compressed_row_sparse_matrix.cc",
     "conditioned_cost_function.cc",
     "conjugate_gradients_solver.cc",
+    "context.cc",
+    "context_impl.cc",
     "coordinate_descent_minimizer.cc",
     "corrector.cc",
     "covariance.cc",
@@ -87,6 +89,9 @@ CERES_SRCS = ["internal/ceres/" + filename for filename in [
     "low_rank_inverse_hessian.cc",
     "minimizer.cc",
     "normal_prior.cc",
+    "parallel_for_cxx.cc",
+    "parallel_for_tbb.cc",
+    "parallel_utils.cc",
     "parameter_block_ordering.cc",
     "partitioned_matrix_view.cc",
     "polynomial.cc",
@@ -111,7 +116,9 @@ CERES_SRCS = ["internal/ceres/" + filename for filename in [
     "sparse_normal_cholesky_solver.cc",
     "split.cc",
     "stringprintf.cc",
+    "subset_preconditioner.cc",
     "suitesparse.cc",
+    "thread_pool.cc",
     "thread_token_provider.cc",
     "triplet_sparse_matrix.cc",
     "trust_region_minimizer.cc",
@@ -127,7 +134,9 @@ CERES_SRCS = ["internal/ceres/" + filename for filename in [
 # TODO(rodrigoq): add support to configure Ceres into various permutations,
 # like SuiteSparse or not, threading or not, glog or not, and so on.
 # See https://github.com/ceres-solver/ceres-solver/issues/335.
-def ceres_library(name, restrict_schur_specializations=False):
+def ceres_library(name,
+                  restrict_schur_specializations=False,
+                  gflags_namespace="gflags"):
     # The path to internal/ depends on whether Ceres is the main workspace or
     # an external repository.
     if native.repository_name() != '@':
@@ -185,6 +194,7 @@ def ceres_library(name, restrict_schur_specializations=False):
             "CERES_NO_THREADS",
             "CERES_NO_LAPACK",
             "CERES_STD_UNORDERED_MAP",
+            "CERES_GFLAGS_NAMESPACE=" + gflags_namespace,
         ],
         includes = [
             "config",

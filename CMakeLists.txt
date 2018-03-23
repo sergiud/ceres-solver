@@ -40,8 +40,6 @@ if (POLICY CMP0063)
   cmake_policy (SET CMP0063 NEW)
 endif (POLICY CMP0063)
 
-include(CMakeDependentOption)
-
 project(Ceres C CXX)
 
 set (CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -62,6 +60,7 @@ set (CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 list(APPEND CMAKE_MODULE_PATH "${Ceres_SOURCE_DIR}/cmake")
 include(UpdateCacheVariable)
 
+include (CMakeDependentOption)
 include (GNUInstallDirs)
 include (GenerateExportHeader)
 
@@ -128,12 +127,16 @@ option(WITH_SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
 option(WITH_CUSTOM_BLAS
        "Use handcoded BLAS routines (usually faster) instead of Eigen."
        ON)
-# Multithreading using OpenMP
+option(WITH_CXX11 "Enable C++11" ON)
 
 set (WITH_THREADING_BACKEND "" CACHE STRING
   "Enable threaded solving using the specified backend")
 
 set_property (CACHE WITH_THREADING_BACKEND PROPERTY STRINGS OpenMP;TBB)
+
+if (WITH_CXX11)
+  set_property (CACHE WITH_THREADING_BACKEND APPEND PROPERTY STRINGS Threads)
+endif (WITH_CXX11)
 
 if (WITH_THREADING_BACKEND STREQUAL "")
   set (WITH_OPENMP TRUE)
@@ -144,6 +147,8 @@ elseif (WITH_THREADING_BACKEND STREQUAL OpenMP)
 elseif (WITH_THREADING_BACKEND STREQUAL TBB)
   set (WITH_OPENMP FALSE)
   set (WITH_TBB TRUE)
+elseif (WITH_THREADING_BACKEND STREQUAL Threads)
+  set (WITH_CXX11_THREADS TRUE)
 endif (WITH_THREADING_BACKEND STREQUAL "")
 
 # Enable the use of Eigen as a sparse linear algebra library for
@@ -174,7 +179,7 @@ if (NOT MSVC)
 endif(NOT MSVC)
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
-cmake_dependent_option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON "CXX11" OFF)
+cmake_dependent_option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON "WITH_CXX11" OFF)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
 
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
@@ -464,15 +469,23 @@ check_function_exists (_j0 HAVE__J0)
 check_function_exists (_j1 HAVE__J1)
 check_function_exists (_jn HAVE__JN)
 
-# To ensure that CXX11 accurately reflects whether we are using C++11,
+include(FindCXX11MathFunctions)
+find_cxx11_math_functions()
+if (WITH_CXX11 AND NOT CXX11_MATH_FUNCTIONS_FOUND)
+  message("-- Failed to find C++11 math functions (cbrt(), exp2() etc). "
+    "Disabling C++11.")
+  update_cache_variable(WITH_CXX11 OFF)
+endif()
+
+# To ensure that WITH_CXX11 accurately reflects whether we are using C++11,
 # check if it is required given where the potentially C++11 features Ceres
 # uses were found, and disable it if C++11 is not being used.
-if (CXX11)
+if (WITH_CXX11)
   if (NOT HAVE_SHARED_PTR_IN_STD_NAMESPACE AND
       NOT HAVE_UNORDERED_MAP_IN_STD_NAMESPACE)
     message("-- Failed to find C++11 components in C++11 locations & "
-      "namespaces, disabling CXX11.")
-    update_cache_variable(CXX11 OFF)
+      "namespaces, disabling WITH_CXX11.")
+    update_cache_variable(WITH_CXX11 OFF)
   else()
     message("   ==============================================================")
     message("   Compiling Ceres using C++11.  This will result in a version ")
@@ -488,7 +501,39 @@ if (CXX11)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     endif()
   endif()
-endif(CXX11)
+endif(WITH_CXX11)
+
+if (WITH_CXX11 AND (WITH_TBB OR WITH_CXX11_THREADS))
+  # We require <atomic> for both TBB & WITH_CXX11_THREADS. Not all compilers
+  # (MSVC 2010) have <atomic> even if they have other C++11 features.
+  check_include_file_cxx(atomic HAVE_STD_ATOMIC_HEADER)
+
+  if (NOT HAVE_STD_ATOMIC_HEADER)
+    message("-- Failed to find <atomic> (C++11) header. Disabling "
+      "TBB and C++11 threads.")
+    set (WITH_TBB FALSE)
+    set (WITH_CXX11_THREADS FALSE)
+  endif()
+endif()
+
+if (WITH_CXX11 AND WITH_CXX11_THREADS)
+  message("-- Building with C++11 threads.")
+  list(APPEND CERES_COMPILE_OPTIONS CERES_USE_CXX11_THREADS)
+endif()
+
+if (NOT WITH_OPENMP AND NOT WITH_TBB AND NOT WITH_CXX11_THREADS)
+  message("-- Neither OpenMP, TBB or C++11 threads is enabled, "
+    "disabling multithreading.")
+  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
+else (NOT WITH_OPENMP AND NOT WITH_TBB AND NOT WITH_CXX11_THREADS)
+  if (UNIX)
+    # At least on Linux, we need pthreads to be enabled for mutex to
+    # compile.  This may not work on Windows or Android.
+    find_package(Threads REQUIRED)
+    list(APPEND CERES_COMPILE_OPTIONS CERES_HAVE_PTHREAD)
+    list(APPEND CERES_COMPILE_OPTIONS CERES_HAVE_RWLOCK)
+  endif (UNIX)
+endif (NOT WITH_OPENMP AND NOT WITH_TBB AND NOT WITH_CXX11_THREADS)
 
 if (BUILD_BENCHMARKS)
   find_package(benchmark QUIET)

@@ -116,6 +116,7 @@ class CERES_EXPORT SchurComplementSolver : public BlockSparseMatrixSolver {
       : options_(options) {
     CHECK_GT(options.elimination_groups.size(), 1);
     CHECK_GT(options.elimination_groups[0], 0);
+    CHECK(options.context != NULL);
   }
 
   // LinearSolver methods

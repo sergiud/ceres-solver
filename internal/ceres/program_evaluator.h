@@ -85,6 +85,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "ceres/evaluation_callback.h"
 #include "ceres/execution_summary.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/scoped_ptr.h"
@@ -95,7 +96,7 @@
 #include "ceres/small_blas.h"
 #include "ceres/thread_token_provider.h"
 
-#ifdef CERES_USE_TBB
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
 #include <atomic>
 
 #include "ceres/parallel_for.h"
@@ -156,6 +157,14 @@ class ProgramEvaluator : public Evaluator {
       return false;
     }
 
+    // Notify the user about a new evaluation point if they are interested.
+    if (options_.evaluation_callback != NULL) {
+      program_->CopyParameterBlockStateToUserState();
+      options_.evaluation_callback->PrepareForEvaluation(
+          /*jacobians=*/(gradient != NULL || jacobian != NULL),
+          evaluate_options.new_evaluation_point);
+    }
+
     if (residuals != NULL) {
       VectorRef(residuals, program_->NumResiduals()).setZero();
     }
@@ -175,7 +184,9 @@ class ProgramEvaluator : public Evaluator {
 
     const int num_residual_blocks = program_->NumResidualBlocks();
 
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
     ThreadTokenProvider thread_token_provider(options_.num_threads);
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
 #ifdef CERES_USE_OPENMP
     // This bool is used to disable the loop if an error is encountered
@@ -193,22 +204,28 @@ class ProgramEvaluator : public Evaluator {
     for (int i = 0; i < num_residual_blocks; ++i) {
 #endif // CERES_NO_THREADS
 
-#ifdef CERES_USE_TBB
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
     std::atomic_bool abort(false);
 
-    ParallelFor(0, num_residual_blocks, options_.num_threads, [&](int i) {
-#endif // CERES_USE_TBB
+    ParallelFor(options_.context,
+                0,
+                num_residual_blocks,
+                options_.num_threads,
+                [&](int thread_id, int i) {
+#endif // defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
 
       if (abort) {
-#ifndef CERES_USE_TBB
-        continue;
-#else
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
         return;
-#endif // !CERES_USE_TBB
+#else
+        continue;
+#endif // defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
       }
 
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
       const ScopedThreadToken scoped_thread_token(&thread_token_provider);
       const int thread_id = scoped_thread_token.token();
+#endif  // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
       EvaluatePreparer* preparer = &evaluate_preparers_[thread_id];
       EvaluateScratch* scratch = &evaluate_scratch_[thread_id];
@@ -248,11 +265,11 @@ class ProgramEvaluator : public Evaluator {
 #pragma omp flush(abort)
 #endif // CERES_USE_OPENMP
 
-#ifndef CERES_USE_TBB
-        continue;
-#else
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
         return;
-#endif // !CERES_USE_TBB
+#else
+        continue;
+#endif // defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
       }
 
       scratch->cost += block_cost;
@@ -285,9 +302,9 @@ class ProgramEvaluator : public Evaluator {
         }
       }
     }
-#ifdef CERES_USE_TBB
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
     );
-#endif // CERES_USE_TBB
+#endif // defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
 
     if (!abort) {
       const int num_parameters = program_->NumEffectiveParameters();

@@ -49,6 +49,8 @@ set(CERES_INTERNAL_SRC
     compressed_row_sparse_matrix.cc
     conditioned_cost_function.cc
     conjugate_gradients_solver.cc
+    context.cc
+    context_impl.cc
     coordinate_descent_minimizer.cc
     corrector.cc
     cost_function.cc
@@ -89,7 +91,9 @@ set(CERES_INTERNAL_SRC
     low_rank_inverse_hessian.cc
     minimizer.cc
     normal_prior.cc
+    parallel_for_cxx.cc
     parallel_for_tbb.cc
+    parallel_utils.cc
     parameter_block_ordering.cc
     partitioned_matrix_view.cc
     polynomial.cc
@@ -112,9 +116,11 @@ set(CERES_INTERNAL_SRC
     sparse_matrix.cc
     sparse_cholesky.cc
     sparse_normal_cholesky_solver.cc
+    subset_preconditioner.cc
     split.cc
     stringprintf.cc
     suitesparse.cc
+    thread_pool.cc
     thread_token_provider.cc
     triplet_sparse_matrix.cc
     trust_region_preprocessor.cc
@@ -333,6 +339,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(canonical_views_clustering)
   ceres_test(compressed_col_sparse_matrix_utils)
   ceres_test(compressed_row_sparse_matrix)
+  ceres_test(concurrent_queue)
   ceres_test(conditioned_cost_function)
   ceres_test(conjugate_gradients_solver)
   ceres_test(corrector)
@@ -348,6 +355,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(dynamic_numeric_diff_cost_function)
   ceres_test(dynamic_sparse_normal_cholesky_solver)
   ceres_test(dynamic_sparsity)
+  ceres_test(evaluation_callback)
   ceres_test(evaluator)
   ceres_test(gradient_checker)
   ceres_test(gradient_checking_cost_function)
@@ -372,6 +380,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(numeric_diff_cost_function)
   ceres_test(ordered_groups)
   ceres_test(parallel_for)
+  ceres_test(parallel_utils)
   ceres_test(parameter_block)
   ceres_test(parameter_block_ordering)
   ceres_test(partitioned_matrix_view)
@@ -389,22 +398,29 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(solver)
   ceres_test(sparse_cholesky)
   ceres_test(sparse_normal_cholesky_solver)
+  ceres_test(subset_preconditioner)
   ceres_test(system)
   ceres_test(tiny_solver)
   ceres_test(tiny_solver_autodiff_function)
   ceres_test(tiny_solver_cost_function_adapter)
+  ceres_test(thread_pool)
   ceres_test(triplet_sparse_matrix)
   ceres_test(trust_region_minimizer)
   ceres_test(trust_region_preprocessor)
   ceres_test(visibility)
   ceres_test(visibility_based_preconditioner)
 
-  # Put the large end to end test last.
-  ceres_test(bundle_adjustment)
+  add_subdirectory(generated_bundle_adjustment_tests)
 
 endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
 if (BUILD_BENCHMARKS)
   add_executable(autodiff_cost_function_benchmark autodiff_cost_function_benchmark.cc)
   target_link_libraries(autodiff_cost_function_benchmark ceres benchmark::benchmark)
+
+  add_executable(small_blas_gemv_benchmark small_blas_gemv_benchmark.cc)
+  target_link_libraries(small_blas_gemv_benchmark ceres benchmark::benchmark)
+
+  add_executable(small_blas_gemm_benchmark small_blas_gemm_benchmark.cc)
+  target_link_libraries(small_blas_gemm_benchmark ceres benchmark::benchmark)
 endif (BUILD_BENCHMARKS)

@@ -38,14 +38,20 @@
 #include <tbb/parallel_for.h>
 #include <tbb/task_arena.h>
 
+#include "ceres/scoped_thread_token.h"
+#include "ceres/thread_token_provider.h"
 #include "glog/logging.h"
 
 namespace ceres {
 namespace internal {
 
-void ParallelFor(int start, int end, int num_threads,
+void ParallelFor(ContextImpl* context,
+                 int start,
+                 int end,
+                 int num_threads,
                  const std::function<void(int)>& function) {
   CHECK_GT(num_threads, 0);
+  CHECK(context != NULL);
   if (end <= start) {
     return;
   }
@@ -63,6 +69,22 @@ void ParallelFor(int start, int end, int num_threads,
       tbb::parallel_for(start, end, function);
     });
 }
+
+void ParallelFor(ContextImpl* context,
+                 int start,
+                 int end,
+                 int num_threads,
+                 const std::function<void(int thread_id, int i)>& function) {
+  CHECK(context != NULL);
+
+  ThreadTokenProvider thread_token_provider(num_threads);
+  ParallelFor(context, start, end, num_threads, [&](int i) {
+    const ScopedThreadToken scoped_thread_token(&thread_token_provider);
+    const int thread_id = scoped_thread_token.token();
+    function(thread_id, i);
+  });
+}
+
 
 }  // namespace internal
 }  // namespace ceres

@@ -30,7 +30,7 @@
 
 #include "ceres/covariance_impl.h"
 
-#ifdef CERES_USE_TBB
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
 #include "ceres/parallel_for.h"
 #endif
 
@@ -52,6 +52,7 @@
 #include "ceres/crs_matrix.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/map_util.h"
+#include "ceres/parallel_utils.h"
 #include "ceres/parameter_block.h"
 #include "ceres/problem_impl.h"
 #include "ceres/residual_block.h"
@@ -86,6 +87,7 @@ CovarianceImpl::CovarianceImpl(const Covariance::Options& options)
     options_.num_threads = 1;
   }
 #endif
+
   evaluate_options_.num_threads = options_.num_threads;
   evaluate_options_.apply_loss_function = options_.apply_loss_function;
 }
@@ -341,49 +343,37 @@ bool CovarianceImpl::GetCovarianceMatrixInTangentOrAmbientSpace(
 
   bool success = true;
 
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
   ThreadTokenProvider thread_token_provider(num_threads);
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
-#ifdef CERES_USE_OPENMP
-// The collapse() directive is only supported in OpenMP 3.0 and higher. OpenMP
-// 3.0 was released in May 2008 (hence the version number).
-#  if _OPENMP >= 200805
-#    pragma omp parallel for num_threads(num_threads) schedule(dynamic) collapse(2)
-#  else
+  // Technically the following code is a double nested loop where
+  // i = 1:n, j = i:n.
+  int iteration_count = (num_parameters * (num_parameters + 1)) / 2;
+#if defined(CERES_USE_OPENMP)
 #    pragma omp parallel for num_threads(num_threads) schedule(dynamic)
-#  endif
-  for (int i = 0; i < num_parameters; ++i) {
-    for (int j = 0; j < num_parameters; ++j) {
-      // The second loop can't start from j = i for compatibility with OpenMP
-      // collapse command. The conditional serves as a workaround
-      if (j < i) {
-        continue;
-      }
 #endif // CERES_USE_OPENMP
-
-#ifdef CERES_NO_THREADS
-  for (int i = 0; i < num_parameters; ++i) {
-    for (int j = i; j < num_parameters; ++j) {
-#endif // CERES_NO_THREADS
-
-#ifdef CERES_USE_TBB
-  // The parallel for abstraction does not have support for constraining the
-  // number of workers in nested parallel for loops. Consequently, we will try
-  // to evenly distribute the number of workers between the each parallel for
-  // loop.
-  // TODO(vitus): consolidate the nested for loops into a single loop which can
-  // be properly split between the threads.
-  const int num_outer_threads = std::sqrt(num_threads);
-  const int num_inner_threads = num_threads / num_outer_threads;
-  ParallelFor(0, num_parameters, num_outer_threads, [&](int i) {
-    ParallelFor(i, num_parameters, num_inner_threads, [&](int j) {
-#endif // CERES_USE_TBB
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
+  for (int k = 0; k < iteration_count; ++k) {
+#else
+  problem_->context()->EnsureMinimumThreads(num_threads);
+  ParallelFor(problem_->context(),
+              0,
+              iteration_count,
+              num_threads,
+              [&](int thread_id, int k) {
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
+      int i, j;
+      LinearIndexToUpperTriangularIndex(k, num_parameters, &i, &j);
 
       int covariance_row_idx = cum_parameter_size[i];
       int covariance_col_idx = cum_parameter_size[j];
       int size_i = parameter_sizes[i];
       int size_j = parameter_sizes[j];
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
       const ScopedThreadToken scoped_thread_token(&thread_token_provider);
       const int thread_id = scoped_thread_token.token();
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
       double* covariance_block =
           workspace.get() +
           thread_id * max_covariance_block_size * max_covariance_block_size;
@@ -404,12 +394,9 @@ bool CovarianceImpl::GetCovarianceMatrixInTangentOrAmbientSpace(
 
       }
     }
-#ifdef CERES_USE_TBB
-    );
-  });
-#else
-  }
-#endif // CERES_USE_TBB
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
+   );
+#endif // defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
   return success;
 }
 
@@ -724,23 +711,32 @@ bool CovarianceImpl::ComputeCovarianceValuesUsingSuiteSparseQR() {
   const int num_threads = options_.num_threads;
   scoped_array<double> workspace(new double[num_threads * num_cols]);
 
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
   ThreadTokenProvider thread_token_provider(num_threads);
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
 #ifdef CERES_USE_OPENMP
 #pragma omp parallel for num_threads(num_threads) schedule(dynamic)
 #endif // CERES_USE_OPENMP
 
-#ifndef CERES_USE_TBB
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
   for (int r = 0; r < num_cols; ++r) {
 #else
-  ParallelFor(0, num_cols, num_threads, [&](int r) {
-#endif // !CERES_USE_TBB
+  problem_->context()->EnsureMinimumThreads(num_threads);
+  ParallelFor(problem_->context(),
+              0,
+              num_cols,
+              num_threads,
+              [&](int thread_id, int r) {
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
     const int row_begin = rows[r];
     const int row_end = rows[r + 1];
     if (row_end != row_begin) {
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
       const ScopedThreadToken scoped_thread_token(&thread_token_provider);
       const int thread_id = scoped_thread_token.token();
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
       double* solution = workspace.get() + thread_id * num_cols;
       SolveRTRWithSparseRHS<SuiteSparse_long>(
@@ -756,9 +752,9 @@ bool CovarianceImpl::ComputeCovarianceValuesUsingSuiteSparseQR() {
       }
     }
   }
-#ifdef CERES_USE_TBB
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
   );
-#endif // CERES_USE_TBB
+#endif // defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
 
   free(permutation);
   cholmod_l_free_sparse(&R, &cc);
@@ -924,23 +920,32 @@ bool CovarianceImpl::ComputeCovarianceValuesUsingEigenSparseQR() {
   const int num_threads = options_.num_threads;
   scoped_array<double> workspace(new double[num_threads * num_cols]);
 
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
   ThreadTokenProvider thread_token_provider(num_threads);
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
 #ifdef CERES_USE_OPENMP
 #pragma omp parallel for num_threads(num_threads) schedule(dynamic)
 #endif // CERES_USE_OPENMP
 
-#ifndef CERES_USE_TBB
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
   for (int r = 0; r < num_cols; ++r) {
 #else
-  ParallelFor(0, num_cols, num_threads, [&](int r) {
-#endif // !CERES_USE_TBB
+  problem_->context()->EnsureMinimumThreads(num_threads);
+  ParallelFor(problem_->context(),
+              0,
+              num_cols,
+              num_threads,
+              [&](int thread_id, int r) {
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
     const int row_begin = rows[r];
     const int row_end = rows[r + 1];
     if (row_end != row_begin) {
+#if !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
       const ScopedThreadToken scoped_thread_token(&thread_token_provider);
       const int thread_id = scoped_thread_token.token();
+#endif // !(defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS))
 
       double* solution = workspace.get() + thread_id * num_cols;
       SolveRTRWithSparseRHS<int>(
@@ -960,9 +965,9 @@ bool CovarianceImpl::ComputeCovarianceValuesUsingEigenSparseQR() {
     }
   }
 
-#ifdef CERES_USE_TBB
+#if defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
   );
-#endif // CERES_USE_TBB
+#endif // defined(CERES_USE_TBB) || defined(CERES_USE_CXX11_THREADS)
 
   event_logger.AddEvent("Inverse");
 

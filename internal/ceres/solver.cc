@@ -32,8 +32,11 @@
 #include "ceres/solver.h"
 
 #include <algorithm>
-#include <sstream>   // NOLINT
+#include <sstream>  // NOLINT
 #include <vector>
+#include "ceres/casts.h"
+#include "ceres/context.h"
+#include "ceres/context_impl.h"
 #include "ceres/detect_structure.h"
 #include "ceres/gradient_checking_cost_function.h"
 #include "ceres/internal/port.h"
@@ -93,7 +96,6 @@ bool CommonOptionsAreValid(const Solver::Options& options, string* error) {
   OPTION_GE(gradient_tolerance, 0.0);
   OPTION_GE(parameter_tolerance, 0.0);
   OPTION_GT(num_threads, 0);
-  OPTION_GT(num_linear_solver_threads, 0);
   if (options.check_gradients) {
     OPTION_GT(gradient_check_relative_precision, 0.0);
     OPTION_GT(gradient_check_numeric_derivative_relative_step_size, 0.0);
@@ -122,6 +124,14 @@ bool TrustRegionOptionsAreValid(const Solver::Options& options, string* error) {
     OPTION_GE(inner_iteration_tolerance, 0.0);
   }
 
+  if (options.use_inner_iterations &&
+      options.evaluation_callback != NULL) {
+    *error =  "Inner iterations (use_inner_iterations = true) can't be "
+        "combined with an evaluation callback "
+        "(options.evaluation_callback != NULL).";
+    return false;
+  }
+
   if (options.use_nonmonotonic_steps) {
     OPTION_GT(max_consecutive_nonmonotonic_steps, 0);
   }
@@ -138,7 +148,7 @@ bool TrustRegionOptionsAreValid(const Solver::Options& options, string* error) {
       options.sparse_linear_algebra_library_type != SUITE_SPARSE) {
     *error =  "CLUSTER_JACOBI requires "
         "Solver::Options::sparse_linear_algebra_library_type to be "
-        "SUITE_SPARSE";
+        "SUITE_SPARSE.";
     return false;
   }
 
@@ -146,7 +156,7 @@ bool TrustRegionOptionsAreValid(const Solver::Options& options, string* error) {
       options.sparse_linear_algebra_library_type != SUITE_SPARSE) {
     *error =  "CLUSTER_TRIDIAGONAL requires "
         "Solver::Options::sparse_linear_algebra_library_type to be "
-        "SUITE_SPARSE";
+        "SUITE_SPARSE.";
     return false;
   }
 
@@ -366,7 +376,7 @@ void PreSolveSummarize(const Solver::Options& options,
   summary->max_lbfgs_rank                     = options.max_lbfgs_rank;
   summary->minimizer_type                     = options.minimizer_type;
   summary->nonlinear_conjugate_gradient_type  = options.nonlinear_conjugate_gradient_type;  //  NOLINT
-  summary->num_linear_solver_threads_given    = options.num_linear_solver_threads;          //  NOLINT
+  summary->num_linear_solver_threads_given    = options.num_threads;
   summary->num_threads_given                  = options.num_threads;
   summary->preconditioner_type_given          = options.preconditioner_type;
   summary->sparse_linear_algebra_library_type = options.sparse_linear_algebra_library_type; //  NOLINT
@@ -383,9 +393,9 @@ void PostSolveSummarize(const internal::PreprocessedProblem& pp,
 
   summary->inner_iterations_used          = pp.inner_iteration_minimizer.get() != NULL;     // NOLINT
   summary->linear_solver_type_used        = pp.linear_solver_options.type;
-  summary->num_linear_solver_threads_used = pp.options.num_linear_solver_threads;           // NOLINT
+  summary->num_linear_solver_threads_used = pp.options.num_threads;
   summary->num_threads_used               = pp.options.num_threads;
-  summary->preconditioner_type_used       = pp.options.preconditioner_type;                 // NOLINT
+  summary->preconditioner_type_used       = pp.options.preconditioner_type;
 
   internal::SetSummaryFinalCost(summary);
 
@@ -448,16 +458,18 @@ void Minimize(internal::PreprocessedProblem* pp,
     return;
   }
 
+  const Vector original_reduced_parameters = pp->reduced_parameters;
   scoped_ptr<Minimizer> minimizer(
       Minimizer::Create(pp->options.minimizer_type));
   minimizer->Minimize(pp->minimizer_options,
                       pp->reduced_parameters.data(),
                       summary);
 
-  if (summary->IsSolutionUsable()) {
-    program->StateVectorToParameterBlocks(pp->reduced_parameters.data());
-    program->CopyParameterBlockStateToUserState();
-  }
+  program->StateVectorToParameterBlocks(
+      summary->IsSolutionUsable()
+      ? pp->reduced_parameters.data()
+      : original_reduced_parameters.data());
+  program->CopyParameterBlockStateToUserState();
 }
 
 std::string SchurStructureToString(const int row_block_size,
@@ -523,6 +535,9 @@ void Solver::Solve(const Solver::Options& options,
   ProblemImpl* problem_impl = problem->problem_impl_.get();
   Program* program = problem_impl->mutable_program();
   PreSolveSummarize(options, problem_impl, summary);
+
+  // The main thread also does work so we only need to launch num_threads - 1.
+  problem_impl->context()->EnsureMinimumThreads(options.num_threads - 1);
 
   // Make sure that all the parameter blocks states are set to the
   // values provided by the user.
@@ -772,9 +787,6 @@ string Solver::Summary::FullReport() const {
     }
     StringAppendF(&report, "Threads             % 25d% 25d\n",
                   num_threads_given, num_threads_used);
-    StringAppendF(&report, "Linear solver threads % 23d% 25d\n",
-                  num_linear_solver_threads_given,
-                  num_linear_solver_threads_used);
 
     string given;
     StringifyOrdering(linear_solver_ordering_given, &given);
