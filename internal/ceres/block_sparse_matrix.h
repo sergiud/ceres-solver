@@ -34,13 +34,13 @@
 #ifndef CERES_INTERNAL_BLOCK_SPARSE_MATRIX_H_
 #define CERES_INTERNAL_BLOCK_SPARSE_MATRIX_H_
 
+#include <memory>
+
 #include "ceres/block_structure.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/macros.h"
-#include "ceres/internal/scoped_ptr.h"
 #include "ceres/internal/export.h"
-
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
@@ -99,27 +99,17 @@ class CERES_EXPORT BlockSparseMatrix : public SparseMatrix {
       const std::vector<Block>& column_blocks);
 
   struct RandomMatrixOptions {
-    RandomMatrixOptions()
-        : num_row_blocks(0),
-          min_row_block_size(0),
-          max_row_block_size(0),
-          num_col_blocks(0),
-          min_col_block_size(0),
-          max_col_block_size(0),
-          block_density(0.0) {
-    }
-
-    int num_row_blocks;
-    int min_row_block_size;
-    int max_row_block_size;
-    int num_col_blocks;
-    int min_col_block_size;
-    int max_col_block_size;
+    int num_row_blocks = 0;
+    int min_row_block_size = 0;
+    int max_row_block_size = 0;
+    int num_col_blocks = 0;
+    int min_col_block_size = 0;
+    int max_col_block_size = 0;
 
     // 0 < block_density <= 1 is the probability of a block being
     // present in the matrix. A given random matrix will not have
     // precisely this density.
-    double block_density;
+    double block_density = 0.0;
 
     // If col_blocks is non-empty, then the generated random matrix
     // has this block structure and the column related options in this
@@ -140,8 +130,8 @@ class CERES_EXPORT BlockSparseMatrix : public SparseMatrix {
   int num_cols_;
   int num_nonzeros_;
   int max_num_nonzeros_;
-  scoped_array<double> values_;
-  scoped_ptr<CompressedRowBlockStructure> block_structure_;
+  std::unique_ptr<double[]> values_;
+  std::unique_ptr<CompressedRowBlockStructure> block_structure_;
   CERES_DISALLOW_COPY_AND_ASSIGN(BlockSparseMatrix);
 };
 

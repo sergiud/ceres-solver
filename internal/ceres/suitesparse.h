@@ -102,6 +102,11 @@ class CERES_EXPORT SuiteSparse {
   // use the SuiteSparse machinery to allocate memory.
   cholmod_sparse CreateSparseMatrixTransposeView(CompressedRowSparseMatrix* A);
 
+  // Create a cholmod_dense vector around the contents of the array x.
+  // This is a shallow object, which refers to the contents of x and
+  // does not use the SuiteSparse machinery to allocate memory.
+  cholmod_dense CreateDenseVectorView(const double* x, int size);
+
   // Given a vector x, build a cholmod_dense vector of size out_size
   // with the first in_size entries copied from x. If x is NULL, then
   // an all zeros vector is returned. Caller owns the result.
@@ -283,7 +288,8 @@ class CERES_EXPORT SuiteSparse {
 
 class SuiteSparseCholesky : public SparseCholesky {
  public:
-  static SuiteSparseCholesky* Create(const OrderingType ordering_type);
+  static std::unique_ptr<SparseCholesky> Create(
+      OrderingType ordering_type);
 
   // SparseCholesky interface.
   virtual ~SuiteSparseCholesky();

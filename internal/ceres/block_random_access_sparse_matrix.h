@@ -31,17 +31,17 @@
 #ifndef CERES_INTERNAL_BLOCK_RANDOM_ACCESS_SPARSE_MATRIX_H_
 #define CERES_INTERNAL_BLOCK_RANDOM_ACCESS_SPARSE_MATRIX_H_
 
+#include <memory>
 #include <set>
-#include <vector>
+#include <unordered_map>
 #include <utility>
-#include "ceres/mutex.h"
+#include <vector>
+
 #include "ceres/block_random_access_matrix.h"
-#include "ceres/collections_port.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "ceres/integral_types.h"
 #include "ceres/internal/macros.h"
 #include "ceres/internal/port.h"
-#include "ceres/internal/scoped_ptr.h"
 #include "ceres/types.h"
 #include "ceres/small_blas.h"
 #include "ceres/internal/export.h"
@@ -62,7 +62,7 @@ class CERES_EXPORT BlockRandomAccessSparseMatrix : public BlockRandomAccessMatri
   // of this matrix.
   BlockRandomAccessSparseMatrix(
       const std::vector<int>& blocks,
-      const std::set<std::pair<int, int> >& block_pairs);
+      const std::set<std::pair<int, int>>& block_pairs);
 
   // The destructor is not thread safe. It assumes that no one is
   // modifying any cells when the matrix is being destroyed.
@@ -112,15 +112,15 @@ class CERES_EXPORT BlockRandomAccessSparseMatrix : public BlockRandomAccessMatri
 
   // A mapping from <row_block_id, col_block_id> to the position in
   // the values array of tsm_ where the block is stored.
-  typedef HashMap<long int, CellInfo* > LayoutType;
+  typedef std::unordered_map<long int, CellInfo* > LayoutType;
   LayoutType layout_;
 
   // In order traversal of contents of the matrix. This allows us to
   // implement a matrix-vector which is 20% faster than using the
   // iterator in the Layout object instead.
-  std::vector<std::pair<std::pair<int, int>, double*> > cell_values_;
+  std::vector<std::pair<std::pair<int, int>, double*>> cell_values_;
   // The underlying matrix object which actually stores the cells.
-  scoped_ptr<TripletSparseMatrix> tsm_;
+  std::unique_ptr<TripletSparseMatrix> tsm_;
 
   friend class BlockRandomAccessSparseMatrixTest;
   CERES_DISALLOW_COPY_AND_ASSIGN(BlockRandomAccessSparseMatrix);

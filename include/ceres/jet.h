@@ -258,7 +258,7 @@ struct Jet {
   // supported is < 16, in which case we do not specify an alignment, as this
   // implies the host is not a modern x86 machine.  If using < C++11, we cannot
   // specify alignment.
-#if !defined(CERES_USE_CXX11) || defined(EIGEN_DONT_VECTORIZE)
+#if defined(EIGEN_DONT_VECTORIZE)
   // Without >= C++11, we cannot specify the alignment so fall back to safe,
   // unvectorised version.
   Eigen::Matrix<T, N, 1, Eigen::DontAlign> v;
@@ -445,16 +445,12 @@ inline double floor   (double x) { return std::floor(x);    }
 inline double ceil    (double x) { return std::ceil(x);     }
 inline double pow  (double x, double y) { return std::pow(x, y);   }
 inline double atan2(double y, double x) { return std::atan2(y, x); }
-
-#ifdef CERES_USE_CXX11
-// Some new additions to C++11:
 inline double cbrt  (double x) { return std::cbrt(x);  }
 inline double exp2  (double x) { return std::exp2(x);  }
 inline double log2  (double x) { return std::log2(x);  }
 inline double hypot(double x, double y) { return std::hypot(x, y); }
 inline double fmax(double  x, double y) { return std::fmax(x, y);  }
 inline double fmin(double  x, double y) { return std::fmin(x, y);  }
-#endif
 
 // In general, f(a + h) ~= f(a) + f'(a) h, via the chain rule.
 
@@ -565,7 +561,6 @@ Jet<T, N> ceil(const Jet<T, N>& f) {
   return Jet<T, N>(ceil(f.a));
 }
 
-#ifdef CERES_USE_CXX11
 // Some new additions to C++11:
 
 // cbrt(a + h) ~= cbrt(a) + h / (3 a ^ (2/3))
@@ -614,7 +609,6 @@ template <typename T, int N> inline
 const Jet<T, N>& fmin(const Jet<T, N>& x, const Jet<T, N>& y) {
   return y < x ? y : x;
 }
-#endif // CERES_USE_CXX11
 
 // Bessel functions of the first kind with integer order equal to 0, 1, n.
 // Microsoft has deprecated the j[0,1,n]() POSIX Bessel functions in favour of
@@ -917,7 +911,7 @@ namespace Eigen {
 // Creating a specialization of NumTraits enables placing Jet objects inside
 // Eigen arrays, getting all the goodness of Eigen combined with autodiff.
 template<typename T, int N>
-struct NumTraits<ceres::Jet<T, N> > {
+struct NumTraits<ceres::Jet<T, N>> {
   typedef ceres::Jet<T, N> Real;
   typedef ceres::Jet<T, N> NonInteger;
   typedef ceres::Jet<T, N> Nested;

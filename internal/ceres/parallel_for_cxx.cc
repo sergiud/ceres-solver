@@ -60,7 +60,7 @@ class BlockUntilFinished {
   // Increment the number of jobs that have finished and signal the blocking
   // thread if all jobs have finished.
   void Finished() {
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     ++num_finished_;
     CHECK_LE(num_finished_, num_total_);
     if (num_finished_ == num_total_) {
@@ -182,11 +182,11 @@ void ParallelFor(ContextImpl* context,
     return;
   }
 
-  // We use a shared_ptr because the main thread can finish all the work before
-  // the tasks have been popped off the queue.  So the shared state needs to
-  // exist for the duration of all the tasks.
+  // We use a std::shared_ptr because the main thread can finish all
+  // the work before the tasks have been popped off the queue.  So the
+  // shared state needs to exist for the duration of all the tasks.
   const int num_work_items = std::min((end - start), num_threads);
-  shared_ptr<SharedState> shared_state(
+  std::shared_ptr<SharedState> shared_state(
       new SharedState(start, end, num_work_items));
 
   // A function which tries to perform a chunk of work. This returns false if
@@ -196,7 +196,7 @@ void ParallelFor(ContextImpl* context,
     {
       // Get the next available chunk of work to be performed. If there is no
       // work, return false.
-      std::unique_lock<std::mutex> lock(shared_state->mutex_i);
+      std::lock_guard<std::mutex> lock(shared_state->mutex_i);
       if (shared_state->i >= shared_state->num_work_items) {
         return false;
       }

@@ -58,19 +58,7 @@
 #  error One of CERES_USE_OPENMP, CERES_USE_TBB,CERES_USE_CXX11_THREADS or CERES_NO_THREADS must be defined.
 #endif
 
-#if defined(CERES_TR1_MEMORY_HEADER)
-#include <tr1/memory>
-#else
-#include <memory>
-#endif
-
 namespace ceres {
-
-#if defined(CERES_TR1_SHARED_PTR)
-using std::tr1::shared_ptr;
-#else
-using std::shared_ptr;
-#endif
 
 // We allocate some Eigen objects on the stack and other places they
 // might not be aligned to X(=16 [SSE], 32 [AVX] etc)-byte boundaries.  If we
@@ -81,7 +69,6 @@ using std::shared_ptr;
 // on some platforms, in which case even if using C++11, on these platforms
 // we should not attempt to align to X-byte boundaries.  If using < C++11,
 // we cannot specify the alignment.
-#ifdef CERES_USE_CXX11
 namespace port_constants {
 static constexpr size_t kMaxAlignBytes =
     // Work around a GCC 4.8 bug
@@ -93,7 +80,6 @@ static constexpr size_t kMaxAlignBytes =
     alignof(std::max_align_t);
 #endif
 }  // namespace port_constants
-#endif
 
 }  // namespace ceres
 

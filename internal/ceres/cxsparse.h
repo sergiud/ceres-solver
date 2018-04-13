@@ -37,6 +37,7 @@
 
 #ifndef CERES_NO_CXSPARSE
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -147,7 +148,7 @@ class CERES_EXPORT CXSparse {
 class CXSparseCholesky : public SparseCholesky {
  public:
   // Factory
-  static CXSparseCholesky* Create(const OrderingType ordering_type);
+  static std::unique_ptr<SparseCholesky> Create(OrderingType ordering_type);
 
   // SparseCholesky interface.
   virtual ~CXSparseCholesky();

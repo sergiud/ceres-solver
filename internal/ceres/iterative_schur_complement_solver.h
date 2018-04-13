@@ -31,9 +31,9 @@
 #ifndef CERES_INTERNAL_ITERATIVE_SCHUR_COMPLEMENT_SOLVER_H_
 #define CERES_INTERNAL_ITERATIVE_SCHUR_COMPLEMENT_SOLVER_H_
 
+#include <memory>
 #include "ceres/linear_solver.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/scoped_ptr.h"
 #include "ceres/types.h"
 #include "ceres/internal/export.h"
 
@@ -85,8 +85,8 @@ class CERES_EXPORT IterativeSchurComplementSolver : public BlockSparseMatrixSolv
   void CreatePreconditioner(BlockSparseMatrix* A);
 
   LinearSolver::Options options_;
-  scoped_ptr<internal::ImplicitSchurComplement> schur_complement_;
-  scoped_ptr<Preconditioner> preconditioner_;
+  std::unique_ptr<internal::ImplicitSchurComplement> schur_complement_;
+  std::unique_ptr<Preconditioner> preconditioner_;
   Vector reduced_linear_system_solution_;
   CERES_DISALLOW_COPY_AND_ASSIGN(IterativeSchurComplementSolver);
 };

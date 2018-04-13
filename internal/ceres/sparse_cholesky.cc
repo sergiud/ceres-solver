@@ -32,46 +32,69 @@
 
 #include "ceres/cxsparse.h"
 #include "ceres/eigensparse.h"
+#include "ceres/float_cxsparse.h"
+#include "ceres/float_suitesparse.h"
+#include "ceres/iterative_refiner.h"
 #include "ceres/suitesparse.h"
 
 namespace ceres {
 namespace internal {
 
-SparseCholesky* SparseCholesky::Create(
-    SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
-    OrderingType ordering_type) {
-  switch (sparse_linear_algebra_library_type) {
+std::unique_ptr<SparseCholesky> SparseCholesky::Create(
+    const LinearSolver::Options& options) {
+  const OrderingType ordering_type = options.use_postordering ? AMD : NATURAL;
+  std::unique_ptr<SparseCholesky> sparse_cholesky;
+
+  switch (options.sparse_linear_algebra_library_type) {
     case SUITE_SPARSE:
 #ifndef CERES_NO_SUITESPARSE
-      return SuiteSparseCholesky::Create(ordering_type);
+      if (options.use_mixed_precision_solves) {
+        sparse_cholesky = FloatSuiteSparseCholesky::Create(ordering_type);
+      } else {
+        sparse_cholesky = SuiteSparseCholesky::Create(ordering_type);
+      }
+      break;
 #else
       LOG(FATAL) << "Ceres was compiled without support for SuiteSparse.";
-      return NULL;
 #endif
 
     case EIGEN_SPARSE:
 #ifdef CERES_USE_EIGEN_SPARSE
-      return EigenSparseCholesky::Create(ordering_type);
+      if (options.use_mixed_precision_solves) {
+        sparse_cholesky = FloatEigenSparseCholesky::Create(ordering_type);
+      } else {
+        sparse_cholesky = EigenSparseCholesky::Create(ordering_type);
+      }
+      break;
 #else
       LOG(FATAL) << "Ceres was compiled without support for "
                  << "Eigen's sparse Cholesky factorization routines.";
-      return NULL;
 #endif
 
     case CX_SPARSE:
 #ifndef CERES_NO_CXSPARSE
-      return CXSparseCholesky::Create(ordering_type);
+      if (options.use_mixed_precision_solves) {
+        sparse_cholesky = FloatCXSparseCholesky::Create(ordering_type);
+      } else {
+        sparse_cholesky = CXSparseCholesky::Create(ordering_type);
+      }
 #else
       LOG(FATAL) << "Ceres was compiled without support for CXSparse.";
-      return NULL;
 #endif
-
+      break;
     default:
       LOG(FATAL) << "Unknown sparse linear algebra library type : "
                  << SparseLinearAlgebraLibraryTypeToString(
-                        sparse_linear_algebra_library_type);
+                        options.sparse_linear_algebra_library_type);
   }
-  return NULL;
+
+  if (options.max_num_refinement_iterations > 0) {
+    std::unique_ptr<IterativeRefiner> refiner(
+        new IterativeRefiner(options.max_num_refinement_iterations));
+    sparse_cholesky = std::unique_ptr<SparseCholesky>(new RefinedSparseCholesky(
+        std::move(sparse_cholesky), std::move(refiner)));
+  }
+  return sparse_cholesky;
 }
 
 SparseCholesky::~SparseCholesky() {}
@@ -94,6 +117,38 @@ CompressedRowSparseMatrix::StorageType StorageTypeForSparseLinearAlgebraLibrary(
     return CompressedRowSparseMatrix::UPPER_TRIANGULAR;
   }
   return CompressedRowSparseMatrix::LOWER_TRIANGULAR;
+}
+
+RefinedSparseCholesky::RefinedSparseCholesky(
+    std::unique_ptr<SparseCholesky> sparse_cholesky,
+    std::unique_ptr<IterativeRefiner> iterative_refiner)
+    : sparse_cholesky_(std::move(sparse_cholesky)),
+      iterative_refiner_(std::move(iterative_refiner)) {}
+
+RefinedSparseCholesky::~RefinedSparseCholesky() {}
+
+CompressedRowSparseMatrix::StorageType RefinedSparseCholesky::StorageType()
+    const {
+  return sparse_cholesky_->StorageType();
+}
+
+LinearSolverTerminationType RefinedSparseCholesky::Factorize(
+    CompressedRowSparseMatrix* lhs, std::string* message) {
+  lhs_ = lhs;
+  return sparse_cholesky_->Factorize(lhs, message);
+}
+
+LinearSolverTerminationType RefinedSparseCholesky::Solve(const double* rhs,
+                                                         double* solution,
+                                                         std::string* message) {
+  CHECK(lhs_ != nullptr);
+  auto termination_type = sparse_cholesky_->Solve(rhs, solution, message);
+  if (termination_type != LINEAR_SOLVER_SUCCESS) {
+    return termination_type;
+  }
+
+  iterative_refiner_->Refine(*lhs_, rhs, sparse_cholesky_.get(), solution);
+  return LINEAR_SOLVER_SUCCESS;
 }
 
 }  // namespace internal

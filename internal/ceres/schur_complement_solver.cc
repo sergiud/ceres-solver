@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <ctime>
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -45,7 +46,6 @@
 #include "ceres/conjugate_gradients_solver.h"
 #include "ceres/detect_structure.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/scoped_ptr.h"
 #include "ceres/lapack.h"
 #include "ceres/linear_solver.h"
 #include "ceres/sparse_cholesky.h"
@@ -227,9 +227,7 @@ SparseSchurComplementSolver::SparseSchurComplementSolver(
     const LinearSolver::Options& options)
     : SchurComplementSolver(options) {
   if (options.type != ITERATIVE_SCHUR) {
-    sparse_cholesky_.reset(
-        SparseCholesky::Create(options.sparse_linear_algebra_library_type,
-                               options.use_postordering ? AMD : NATURAL));
+    sparse_cholesky_ = SparseCholesky::Create(options);
   }
 }
 
@@ -249,7 +247,7 @@ void SparseSchurComplementSolver::InitStorage(
     blocks_[i - num_eliminate_blocks] = bs->cols[i].size;
   }
 
-  set<pair<int, int> > block_pairs;
+  set<pair<int, int>> block_pairs;
   for (int i = 0; i < blocks_.size(); ++i) {
     block_pairs.insert(make_pair(i, i));
   }
@@ -325,7 +323,7 @@ LinearSolver::Summary SparseSchurComplementSolver::SolveReducedLinearSystem(
     return summary;
   }
 
-  scoped_ptr<CompressedRowSparseMatrix> lhs;
+  std::unique_ptr<CompressedRowSparseMatrix> lhs;
   const CompressedRowSparseMatrix::StorageType storage_type =
       sparse_cholesky_->StorageType();
   if (storage_type == CompressedRowSparseMatrix::UPPER_TRIANGULAR) {
@@ -399,9 +397,9 @@ SparseSchurComplementSolver::SolveReducedLinearSystemUsingConjugateGradients(
 
   VectorRef(solution, num_rows).setZero();
 
-  scoped_ptr<LinearOperator> lhs_adapter(
+  std::unique_ptr<LinearOperator> lhs_adapter(
       new BlockRandomAccessSparseMatrixAdapter(*sc));
-  scoped_ptr<LinearOperator> preconditioner_adapter(
+  std::unique_ptr<LinearOperator> preconditioner_adapter(
       new BlockRandomAccessDiagonalMatrixAdapter(*preconditioner_));
 
 

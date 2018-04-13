@@ -32,14 +32,15 @@
 #define CERES_INTERNAL_SCHUR_ELIMINATOR_H_
 
 #include <map>
+#include <memory>
+#include <mutex>
 #include <vector>
+
 #include "ceres/block_random_access_matrix.h"
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/block_structure.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/scoped_ptr.h"
 #include "ceres/linear_solver.h"
-#include "ceres/mutex.h"
 #include "ceres/internal/export.h"
 #include "ceres/internal/prefix.h"
 
@@ -345,7 +346,7 @@ class SchurEliminator : public SchurEliminatorBase {
   //
   //   [thread_id * buffer_size_ , (thread_id + 1) * buffer_size_]
   //
-  scoped_array<double> buffer_;
+  std::unique_ptr<double[]> buffer_;
 
   // Buffer to store per thread matrix matrix products used by
   // ChunkOuterProduct. Like buffer_ it is of size num_threads *
@@ -353,14 +354,14 @@ class SchurEliminator : public SchurEliminatorBase {
   //
   //   [thread_id * buffer_size_ , (thread_id + 1) * buffer_size_ -1]
   //
-  scoped_array<double> chunk_outer_product_buffer_;
+  std::unique_ptr<double[]> chunk_outer_product_buffer_;
 
   int buffer_size_;
   int uneliminated_row_begins_;
 
   // Locks for the blocks in the right hand side of the reduced linear
   // system.
-  std::vector<Mutex*> rhs_locks_;
+ std::vector<std::mutex*> rhs_locks_;
 };
 
 }  // namespace internal

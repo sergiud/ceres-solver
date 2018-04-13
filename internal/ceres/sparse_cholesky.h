@@ -35,6 +35,7 @@
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
+#include <memory>
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
 
@@ -55,7 +56,7 @@ namespace internal {
 //
 // Example usage:
 //
-//  scoped_ptr<SparseCholesky>
+//  std::unique_ptr<SparseCholesky>
 //  sparse_cholesky(SparseCholesky::Create(SUITE_SPARSE, AMD));
 //
 //  CompressedRowSparseMatrix lhs = ...;
@@ -68,14 +69,8 @@ namespace internal {
 
 class CERES_EXPORT SparseCholesky {
  public:
-  // Factory which returns an instance of SparseCholesky for the given
-  // sparse linear algebra library and fill reducing ordering
-  // strategy.
-  //
-  // Caller owns the result.
-  static SparseCholesky* Create(
-      SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
-      OrderingType ordering_type);
+  static std::unique_ptr<SparseCholesky> Create(
+      const LinearSolver::Options& options);
 
   virtual ~SparseCholesky();
 
@@ -102,8 +97,6 @@ class CERES_EXPORT SparseCholesky {
   // Computes the solution to the equation
   //
   // lhs * solution = rhs
-  //
-  // rhs and solution can point to the same memory location.
   virtual LinearSolverTerminationType Solve(const double* rhs,
                                             double* solution,
                                             std::string* message) = 0;
@@ -117,6 +110,29 @@ class CERES_EXPORT SparseCholesky {
       double* solution,
       std::string* message);
 
+};
+
+class IterativeRefiner;
+
+// Computes an initial solution using the given instance of
+// SparseCholesky, and then refines it using the IterativeRefiner.
+class RefinedSparseCholesky : public SparseCholesky {
+ public:
+  RefinedSparseCholesky(std::unique_ptr<SparseCholesky> sparse_cholesky,
+                        std::unique_ptr<IterativeRefiner> iterative_refiner);
+  virtual ~RefinedSparseCholesky();
+
+  virtual CompressedRowSparseMatrix::StorageType StorageType() const;
+  virtual LinearSolverTerminationType Factorize(
+      CompressedRowSparseMatrix* lhs, std::string* message);
+  virtual LinearSolverTerminationType Solve(const double* rhs,
+                                            double* solution,
+                                            std::string* message);
+
+ private:
+  std::unique_ptr<SparseCholesky> sparse_cholesky_;
+  std::unique_ptr<IterativeRefiner> iterative_refiner_;
+  CompressedRowSparseMatrix* lhs_ = nullptr;
 };
 
 }  // namespace internal

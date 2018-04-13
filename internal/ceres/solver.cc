@@ -32,8 +32,10 @@
 #include "ceres/solver.h"
 
 #include <algorithm>
+#include <memory>
 #include <sstream>  // NOLINT
 #include <vector>
+
 #include "ceres/casts.h"
 #include "ceres/context.h"
 #include "ceres/context_impl.h"
@@ -444,7 +446,6 @@ void PostSolveSummarize(const internal::PreprocessedProblem& pp,
 void Minimize(internal::PreprocessedProblem* pp,
               Solver::Summary* summary) {
   using internal::Program;
-  using internal::scoped_ptr;
   using internal::Minimizer;
 
   Program* program = pp->reduced_program.get();
@@ -459,7 +460,7 @@ void Minimize(internal::PreprocessedProblem* pp,
   }
 
   const Vector original_reduced_parameters = pp->reduced_parameters;
-  scoped_ptr<Minimizer> minimizer(
+  std::unique_ptr<Minimizer> minimizer(
       Minimizer::Create(pp->options.minimizer_type));
   minimizer->Minimize(pp->minimizer_options,
                       pp->reduced_parameters.data(),
@@ -519,7 +520,6 @@ void Solver::Solve(const Solver::Options& options,
   using internal::Preprocessor;
   using internal::ProblemImpl;
   using internal::Program;
-  using internal::scoped_ptr;
   using internal::WallTimeInSeconds;
 
   CHECK_NOTNULL(problem);
@@ -546,7 +546,7 @@ void Solver::Solve(const Solver::Options& options,
   // If gradient_checking is enabled, wrap all cost functions in a
   // gradient checker and install a callback that terminates if any gradient
   // error is detected.
-  scoped_ptr<internal::ProblemImpl> gradient_checking_problem;
+  std::unique_ptr<internal::ProblemImpl> gradient_checking_problem;
   internal::GradientCheckingIterationCallback gradient_checking_callback;
   Solver::Options modified_options = options;
   if (options.check_gradients) {
@@ -561,7 +561,7 @@ void Solver::Solve(const Solver::Options& options,
     program = problem_impl->mutable_program();
   }
 
-  scoped_ptr<Preprocessor> preprocessor(
+  std::unique_ptr<Preprocessor> preprocessor(
       Preprocessor::Create(modified_options.minimizer_type));
   PreprocessedProblem pp;
 
@@ -633,66 +633,6 @@ void Solve(const Solver::Options& options,
            Solver::Summary* summary) {
   Solver solver;
   solver.Solve(options, problem, summary);
-}
-
-Solver::Summary::Summary()
-    // Invalid values for most fields, to ensure that we are not
-    // accidentally reporting default values.
-    : minimizer_type(TRUST_REGION),
-      termination_type(FAILURE),
-      message("ceres::Solve was not called."),
-      initial_cost(-1.0),
-      final_cost(-1.0),
-      fixed_cost(-1.0),
-      num_successful_steps(-1),
-      num_unsuccessful_steps(-1),
-      num_inner_iteration_steps(-1),
-      num_line_search_steps(-1),
-      preprocessor_time_in_seconds(-1.0),
-      minimizer_time_in_seconds(-1.0),
-      postprocessor_time_in_seconds(-1.0),
-      total_time_in_seconds(-1.0),
-      linear_solver_time_in_seconds(-1.0),
-      num_linear_solves(-1),
-      residual_evaluation_time_in_seconds(-1.0),
-      num_residual_evaluations(-1),
-      jacobian_evaluation_time_in_seconds(-1.0),
-      num_jacobian_evaluations(-1),
-      inner_iteration_time_in_seconds(-1.0),
-      line_search_cost_evaluation_time_in_seconds(-1.0),
-      line_search_gradient_evaluation_time_in_seconds(-1.0),
-      line_search_polynomial_minimization_time_in_seconds(-1.0),
-      line_search_total_time_in_seconds(-1.0),
-      num_parameter_blocks(-1),
-      num_parameters(-1),
-      num_effective_parameters(-1),
-      num_residual_blocks(-1),
-      num_residuals(-1),
-      num_parameter_blocks_reduced(-1),
-      num_parameters_reduced(-1),
-      num_effective_parameters_reduced(-1),
-      num_residual_blocks_reduced(-1),
-      num_residuals_reduced(-1),
-      is_constrained(false),
-      num_threads_given(-1),
-      num_threads_used(-1),
-      num_linear_solver_threads_given(-1),
-      num_linear_solver_threads_used(-1),
-      linear_solver_type_given(SPARSE_NORMAL_CHOLESKY),
-      linear_solver_type_used(SPARSE_NORMAL_CHOLESKY),
-      inner_iterations_given(false),
-      inner_iterations_used(false),
-      preconditioner_type_given(IDENTITY),
-      preconditioner_type_used(IDENTITY),
-      visibility_clustering_type(CANONICAL_VIEWS),
-      trust_region_strategy_type(LEVENBERG_MARQUARDT),
-      dense_linear_algebra_library_type(EIGEN),
-      sparse_linear_algebra_library_type(SUITE_SPARSE),
-      line_search_direction_type(LBFGS),
-      line_search_type(ARMIJO),
-      line_search_interpolation_type(BISECTION),
-      nonlinear_conjugate_gradient_type(FLETCHER_REEVES),
-      max_lbfgs_rank(-1) {
 }
 
 using internal::StringAppendF;

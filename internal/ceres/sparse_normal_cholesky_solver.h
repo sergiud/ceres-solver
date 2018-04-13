@@ -63,8 +63,9 @@ class SparseNormalCholeskySolver : public BlockSparseMatrixSolver {
       double* x);
 
   const LinearSolver::Options options_;
-  scoped_ptr<SparseCholesky> sparse_cholesky_;
-  scoped_ptr<InnerProductComputer> inner_product_computer_;
+  Vector rhs_;
+  std::unique_ptr<SparseCholesky> sparse_cholesky_;
+  std::unique_ptr<InnerProductComputer> inner_product_computer_;
   CERES_DISALLOW_COPY_AND_ASSIGN(SparseNormalCholeskySolver);
 };
 

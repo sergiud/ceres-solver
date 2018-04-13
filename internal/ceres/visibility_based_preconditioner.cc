@@ -33,17 +33,17 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <set>
 #include <utility>
 #include <vector>
+
 #include "Eigen/Dense"
 #include "ceres/block_random_access_sparse_matrix.h"
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/canonical_views_clustering.h"
-#include "ceres/collections_port.h"
 #include "ceres/graph.h"
 #include "ceres/graph_algorithms.h"
-#include "ceres/internal/scoped_ptr.h"
 #include "ceres/linear_solver.h"
 #include "ceres/schur_eliminator.h"
 #include "ceres/single_linkage_clustering.h"
@@ -105,8 +105,18 @@ VisibilityBasedPreconditioner::VisibilityBasedPreconditioner(
   InitEliminator(bs);
   const time_t eliminator_time = time(NULL);
 
-  sparse_cholesky_.reset(
-      SparseCholesky::Create(options_.sparse_linear_algebra_library_type, AMD));
+  LinearSolver::Options sparse_cholesky_options;
+  sparse_cholesky_options.sparse_linear_algebra_library_type =
+      options_.sparse_linear_algebra_library_type;
+
+  // The preconditioner's sparsity is not available in the
+  // preprocessor, so the columns of the Jacobian have not been
+  // reordered to minimize fill in when computing its sparse Cholesky
+  // factorization. So we must tell the SparseCholesky object to
+  // perform approximiate minimum-degree reordering, which is done by
+  // setting use_postordering to true.
+  sparse_cholesky_options.use_postordering = true;
+  sparse_cholesky_ = SparseCholesky::Create(sparse_cholesky_options);
 
   const time_t init_time = time(NULL);
   VLOG(2) << "init time: " << init_time - start_time
@@ -123,7 +133,7 @@ VisibilityBasedPreconditioner::~VisibilityBasedPreconditioner() {}
 // preconditioner matrix.
 void VisibilityBasedPreconditioner::ComputeClusterJacobiSparsity(
     const CompressedRowBlockStructure& bs) {
-  vector<set<int> > visibility;
+  vector<set<int>> visibility;
   ComputeVisibility(bs, options_.elimination_groups[0], &visibility);
   CHECK_EQ(num_blocks_, visibility.size());
   ClusterCameras(visibility);
@@ -141,7 +151,7 @@ void VisibilityBasedPreconditioner::ComputeClusterJacobiSparsity(
 // forest. The set of edges in this forest are the cluster pairs.
 void VisibilityBasedPreconditioner::ComputeClusterTridiagonalSparsity(
     const CompressedRowBlockStructure& bs) {
-  vector<set<int> > visibility;
+  vector<set<int>> visibility;
   ComputeVisibility(bs, options_.elimination_groups[0], &visibility);
   CHECK_EQ(num_blocks_, visibility.size());
   ClusterCameras(visibility);
@@ -150,11 +160,11 @@ void VisibilityBasedPreconditioner::ComputeClusterTridiagonalSparsity(
   // edges are the number of 3D points/e_blocks visible in both the
   // clusters at the ends of the edge. Return an approximate degree-2
   // maximum spanning forest of this graph.
-  vector<set<int> > cluster_visibility;
+  vector<set<int>> cluster_visibility;
   ComputeClusterVisibility(visibility, &cluster_visibility);
-  scoped_ptr<WeightedGraph<int> > cluster_graph(
+  std::unique_ptr<WeightedGraph<int> > cluster_graph(
       CHECK_NOTNULL(CreateClusterGraph(cluster_visibility)));
-  scoped_ptr<WeightedGraph<int> > forest(
+  std::unique_ptr<WeightedGraph<int> > forest(
       CHECK_NOTNULL(Degree2MaximumSpanningForest(*cluster_graph)));
   ForestToClusterPairs(*forest, &cluster_pairs_);
 }
@@ -174,10 +184,10 @@ void VisibilityBasedPreconditioner::InitStorage(
 // memberships for each camera block.
 void VisibilityBasedPreconditioner::ClusterCameras(
     const vector<set<int> >& visibility) {
-  scoped_ptr<WeightedGraph<int> > schur_complement_graph(
+  std::unique_ptr<WeightedGraph<int> > schur_complement_graph(
       CHECK_NOTNULL(CreateSchurComplementGraph(visibility)));
 
-  HashMap<int, int> membership;
+  std::unordered_map<int, int> membership;
 
   if (options_.visibility_clustering_type == CANONICAL_VIEWS) {
     vector<int> centers;
@@ -382,11 +392,9 @@ bool VisibilityBasedPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
 // matrix. Scaling these off-diagonal entries by 1/2 forces this
 // matrix to be positive definite.
 void VisibilityBasedPreconditioner::ScaleOffDiagonalCells() {
-  for (set<pair<int, int> >::const_iterator it = block_pairs_.begin();
-       it != block_pairs_.end();
-       ++it) {
-    const int block1 = it->first;
-    const int block2 = it->second;
+  for (const auto& block_pair : block_pairs_) {
+    const int block1 = block_pair.first;
+    const int block2 = block_pair.second;
     if (!IsBlockPairOffDiagonal(block1, block2)) {
       continue;
     }
@@ -415,7 +423,7 @@ LinearSolverTerminationType VisibilityBasedPreconditioner::Factorize() {
   const TripletSparseMatrix* tsm =
       down_cast<BlockRandomAccessSparseMatrix*>(m_.get())->mutable_matrix();
 
-  scoped_ptr<CompressedRowSparseMatrix> lhs;
+  std::unique_ptr<CompressedRowSparseMatrix> lhs;
   const CompressedRowSparseMatrix::StorageType storage_type =
       sparse_cholesky_->StorageType();
   if (storage_type == CompressedRowSparseMatrix::UPPER_TRIANGULAR) {
@@ -464,23 +472,17 @@ bool VisibilityBasedPreconditioner::IsBlockPairOffDiagonal(
 // each vertex.
 void VisibilityBasedPreconditioner::ForestToClusterPairs(
     const WeightedGraph<int>& forest,
-    HashSet<pair<int, int> >* cluster_pairs) const {
+    std::unordered_set<pair<int, int>, pair_hash >* cluster_pairs) const {
   CHECK_NOTNULL(cluster_pairs)->clear();
-  const HashSet<int>& vertices = forest.vertices();
+  const std::unordered_set<int>& vertices = forest.vertices();
   CHECK_EQ(vertices.size(), num_clusters_);
 
   // Add all the cluster pairs corresponding to the edges in the
   // forest.
-  for (HashSet<int>::const_iterator it1 = vertices.begin();
-       it1 != vertices.end();
-       ++it1) {
-    const int cluster1 = *it1;
+  for (const int cluster1 : vertices) {
     cluster_pairs->insert(make_pair(cluster1, cluster1));
-    const HashSet<int>& neighbors = forest.Neighbors(cluster1);
-    for (HashSet<int>::const_iterator it2 = neighbors.begin();
-         it2 != neighbors.end();
-         ++it2) {
-      const int cluster2 = *it2;
+    const std::unordered_set<int>& neighbors = forest.Neighbors(cluster1);
+    for (const int cluster2 : neighbors) {
       if (cluster1 < cluster2) {
         cluster_pairs->insert(make_pair(cluster1, cluster2));
       }
@@ -492,8 +494,8 @@ void VisibilityBasedPreconditioner::ForestToClusterPairs(
 // of all its cameras. In other words, the set of points visible to
 // any camera in the cluster.
 void VisibilityBasedPreconditioner::ComputeClusterVisibility(
-    const vector<set<int> >& visibility,
-    vector<set<int> >* cluster_visibility) const {
+    const vector<set<int>>& visibility,
+    vector<set<int>>* cluster_visibility) const {
   CHECK_NOTNULL(cluster_visibility)->resize(0);
   cluster_visibility->resize(num_clusters_);
   for (int i = 0; i < num_blocks_; ++i) {
@@ -507,7 +509,7 @@ void VisibilityBasedPreconditioner::ComputeClusterVisibility(
 // weights are the number of 3D points visible to cameras in both the
 // vertices.
 WeightedGraph<int>* VisibilityBasedPreconditioner::CreateClusterGraph(
-    const vector<set<int> >& cluster_visibility) const {
+    const vector<set<int>>& cluster_visibility) const {
   WeightedGraph<int>* cluster_graph = new WeightedGraph<int>;
 
   for (int i = 0; i < num_clusters_; ++i) {
@@ -538,7 +540,7 @@ WeightedGraph<int>* VisibilityBasedPreconditioner::CreateClusterGraph(
   return cluster_graph;
 }
 
-// Canonical views clustering returns a HashMap from vertices to
+// Canonical views clustering returns a std::unordered_map from vertices to
 // cluster ids. Convert this into a flat array for quick lookup. It is
 // possible that some of the vertices may not be associated with any
 // cluster. In that case, randomly assign them to one of the clusters.
@@ -547,20 +549,18 @@ WeightedGraph<int>* VisibilityBasedPreconditioner::CreateClusterGraph(
 // the membership_map, we also map the cluster ids to a contiguous set
 // of integers so that the cluster ids are in [0, num_clusters_).
 void VisibilityBasedPreconditioner::FlattenMembershipMap(
-    const HashMap<int, int>& membership_map,
+    const std::unordered_map<int, int>& membership_map,
     vector<int>* membership_vector) const {
   CHECK_NOTNULL(membership_vector)->resize(0);
   membership_vector->resize(num_blocks_, -1);
 
-  HashMap<int, int> cluster_id_to_index;
+  std::unordered_map<int, int> cluster_id_to_index;
   // Iterate over the cluster membership map and update the
   // cluster_membership_ vector assigning arbitrary cluster ids to
   // the few cameras that have not been clustered.
-  for (HashMap<int, int>::const_iterator it = membership_map.begin();
-       it != membership_map.end();
-       ++it) {
-    const int camera_id = it->first;
-    int cluster_id = it->second;
+  for (const auto& m : membership_map) {
+    const int camera_id = m.first;
+    int cluster_id = m.second;
 
     // If the view was not clustered, randomly assign it to one of the
     // clusters. This preserves the mathematical correctness of the

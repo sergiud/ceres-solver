@@ -31,11 +31,12 @@
 
 #include "ceres/visibility.h"
 
+#include <memory>
 #include <set>
 #include <vector>
+
 #include "ceres/block_structure.h"
 #include "ceres/graph.h"
-#include "ceres/internal/scoped_ptr.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
@@ -99,14 +100,14 @@ TEST(VisibilityTest, SimpleMatrix) {
   }
   bs.cols.resize(num_cols);
 
-  vector< set<int> > visibility;
+  vector< set<int>> visibility;
   ComputeVisibility(bs, num_eliminate_blocks, &visibility);
   ASSERT_EQ(visibility.size(), num_cols - num_eliminate_blocks);
   for (int i = 0; i < visibility.size(); ++i) {
     ASSERT_EQ(visibility[i].size(), 1);
   }
 
-  scoped_ptr<WeightedGraph<int> > graph(CreateSchurComplementGraph(visibility));
+  std::unique_ptr<WeightedGraph<int> > graph(CreateSchurComplementGraph(visibility));
   EXPECT_EQ(graph->vertices().size(), visibility.size());
   for (int i = 0; i < visibility.size(); ++i) {
     EXPECT_EQ(graph->VertexWeight(i), 1.0);
@@ -175,14 +176,15 @@ TEST(VisibilityTest, NoEBlocks) {
   }
   bs.cols.resize(num_cols);
 
-  vector<set<int> > visibility;
+  vector<set<int>> visibility;
   ComputeVisibility(bs, num_eliminate_blocks, &visibility);
   ASSERT_EQ(visibility.size(), num_cols - num_eliminate_blocks);
   for (int i = 0; i < visibility.size(); ++i) {
     ASSERT_EQ(visibility[i].size(), 0);
   }
 
-  scoped_ptr<WeightedGraph<int> > graph(CreateSchurComplementGraph(visibility));
+  std::unique_ptr<WeightedGraph<int> > graph(
+					     CreateSchurComplementGraph(visibility));
   EXPECT_EQ(graph->vertices().size(), visibility.size());
   for (int i = 0; i < visibility.size(); ++i) {
     EXPECT_EQ(graph->VertexWeight(i), 1.0);

@@ -30,6 +30,7 @@
 
 #include "ceres/gradient_problem_solver.h"
 
+#include <memory>
 #include "ceres/callbacks.h"
 #include "ceres/gradient_problem.h"
 #include "ceres/gradient_problem_evaluator.h"
@@ -103,7 +104,6 @@ void GradientProblemSolver::Solve(const GradientProblemSolver::Options& options,
   using internal::GradientProblemSolverStateUpdatingCallback;
   using internal::LoggingCallback;
   using internal::Minimizer;
-  using internal::scoped_ptr;
   using internal::SetSummaryFinalCost;
   using internal::WallTimeInSeconds;
 
@@ -135,7 +135,7 @@ void GradientProblemSolver::Solve(const GradientProblemSolver::Options& options,
       Minimizer::Options(GradientProblemSolverOptionsToSolverOptions(options));
   minimizer_options.evaluator.reset(new GradientProblemEvaluator(problem));
 
-  scoped_ptr<IterationCallback> logging_callback;
+  std::unique_ptr<IterationCallback> logging_callback;
   if (options.logging_type != SILENT) {
     logging_callback.reset(
         new LoggingCallback(LINE_SEARCH, options.minimizer_progress_to_stdout));
@@ -143,7 +143,7 @@ void GradientProblemSolver::Solve(const GradientProblemSolver::Options& options,
                                        logging_callback.get());
   }
 
-  scoped_ptr<IterationCallback> state_updating_callback;
+  std::unique_ptr<IterationCallback> state_updating_callback;
   if (options.update_state_every_iteration) {
     state_updating_callback.reset(
         new GradientProblemSolverStateUpdatingCallback(
@@ -152,7 +152,7 @@ void GradientProblemSolver::Solve(const GradientProblemSolver::Options& options,
                                        state_updating_callback.get());
   }
 
-  scoped_ptr<Minimizer> minimizer(Minimizer::Create(LINE_SEARCH));
+  std::unique_ptr<Minimizer> minimizer(Minimizer::Create(LINE_SEARCH));
 
   Solver::Summary solver_summary;
   solver_summary.fixed_cost = 0.0;
@@ -192,26 +192,6 @@ void GradientProblemSolver::Solve(const GradientProblemSolver::Options& options,
   }
 
   summary->total_time_in_seconds = WallTimeInSeconds() - start_time;
-}
-
-// Invalid values for most fields, to ensure that we are not
-// accidentally reporting default values.
-GradientProblemSolver::Summary::Summary()
-    : termination_type(FAILURE),
-      message("ceres::GradientProblemSolve was not called."),
-      initial_cost(-1.0),
-      final_cost(-1.0),
-      total_time_in_seconds(-1.0),
-      cost_evaluation_time_in_seconds(-1.0),
-      gradient_evaluation_time_in_seconds(-1.0),
-      line_search_polynomial_minimization_time_in_seconds(-1.0),
-      num_parameters(-1),
-      num_local_parameters(-1),
-      line_search_direction_type(LBFGS),
-      line_search_type(ARMIJO),
-      line_search_interpolation_type(BISECTION),
-      nonlinear_conjugate_gradient_type(FLETCHER_REEVES),
-      max_lbfgs_rank(-1) {
 }
 
 bool GradientProblemSolver::Summary::IsSolutionUsable() const {

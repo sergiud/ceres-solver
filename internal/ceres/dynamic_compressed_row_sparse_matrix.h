@@ -94,8 +94,8 @@ class CERES_EXPORT DynamicCompressedRowSparseMatrix : public CompressedRowSparse
   void Finalize(int num_additional_elements);
 
  private:
-  std::vector<std::vector<int> > dynamic_cols_;
-  std::vector<std::vector<double> > dynamic_values_;
+  std::vector<std::vector<int>> dynamic_cols_;
+  std::vector<std::vector<double>> dynamic_values_;
 };
 
 }  // namespace internal

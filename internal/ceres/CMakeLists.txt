@@ -68,6 +68,8 @@ set(CERES_INTERNAL_SRC
     evaluator.cc
     eigensparse.cc
     file.cc
+    float_suitesparse.cc
+    float_cxsparse.cc
     function_sample.cc
     gradient_checker.cc
     gradient_checking_cost_function.cc
@@ -76,6 +78,7 @@ set(CERES_INTERNAL_SRC
     implicit_schur_complement.cc
     inner_product_computer.cc
     is_close.cc
+    iterative_refiner.cc
     iterative_schur_complement_solver.cc
     levenberg_marquardt_strategy.cc
     lapack.cc
@@ -91,6 +94,7 @@ set(CERES_INTERNAL_SRC
     low_rank_inverse_hessian.cc
     minimizer.cc
     normal_prior.cc
+    parallel_for_openmp.cc
     parallel_for_cxx.cc
     parallel_for_tbb.cc
     parallel_utils.cc
@@ -254,26 +258,26 @@ set_target_properties(ceres PROPERTIES
   VERSION ${CERES_VERSION}
   SOVERSION ${CERES_VERSION_MAJOR})
 
+# The ability to specify a minimum language version via cxx_std_[11,14,17]
+# requires CMake >= 3.8.  Prior to that we have to specify the compiler features
+# we require.
+if (CMAKE_VERSION VERSION_LESS 3.8)
+  set(REQUIRED_PUBLIC_CXX_FEATURES cxx_alignas cxx_alignof cxx_constexpr)
+else()
+  # Forward whatever C++ version Ceres was compiled with as our requirement
+  # for downstream clients.
+  set(REQUIRED_PUBLIC_CXX_FEATURES cxx_std_${CMAKE_CXX_STANDARD})
+endif()
+target_compile_features(ceres PUBLIC ${REQUIRED_PUBLIC_CXX_FEATURES})
+
 include(AppendTargetProperty)
 # Always build position-independent code (PIC), even when building Ceres as a
 # static library so that shared libraries can link against it, not just
 # executables (PIC does not apply on Windows).
 if (NOT WIN32 AND NOT BUILD_SHARED_LIBS)
-  # Use the explicit POSITION_INDEPENDENT_CODE target property on CMake versions
-  # that support it (>= 2.8.9).  Otherwise, manually add the -fPIC flag as an
-  # additional compile definitions for the target.
-  if (CMAKE_VERSION VERSION_LESS "2.8.9")
-    append_target_property(ceres COMPILE_FLAGS "-fPIC")
-  else()
-    # Use set_target_properties() not append_target_property() here as
-    # POSITION_INDEPENDENT_CODE is a binary ON/OFF switch.
-    set_target_properties(ceres PROPERTIES POSITION_INDEPENDENT_CODE ON)
-  endif()
-endif()
-
-if (WITH_CXX11)
-  include(AddCeresCXX11RequirementsToTarget)
-  add_ceres_cxx11_requirements_to_target(ceres)
+  # Use set_target_properties() not append_target_property() here as
+  # POSITION_INDEPENDENT_CODE is a binary ON/OFF switch.
+  set_target_properties(ceres PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 
@@ -368,6 +372,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(inner_product_computer)
   ceres_test(invert_psd_matrix)
   ceres_test(is_close)
+  ceres_test(iterative_refiner)
   ceres_test(iterative_schur_complement_solver)
   ceres_test(jet)
   ceres_test(levenberg_marquardt_strategy)

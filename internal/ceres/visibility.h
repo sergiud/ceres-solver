@@ -59,7 +59,7 @@ struct CompressedRowBlockStructure;
 CERES_EXPORT
 void ComputeVisibility(const CompressedRowBlockStructure& block_structure,
                        int num_eliminate_blocks,
-                       std::vector<std::set<int> >* visibility);
+                       std::vector<std::set<int>>* visibility);
 
 // Given f_block visibility as computed by the ComputeVisibility
 // function above, construct and return a graph whose vertices are
@@ -76,7 +76,7 @@ void ComputeVisibility(const CompressedRowBlockStructure& block_structure,
 // (heap-allocated).
 CERES_EXPORT
 WeightedGraph<int>* CreateSchurComplementGraph(
-    const std::vector<std::set<int> >& visibility);
+    const std::vector<std::set<int>>& visibility);
 
 }  // namespace internal
 }  // namespace ceres
