@@ -45,7 +45,6 @@
 #define CERES_PUBLIC_COST_FUNCTION_H_
 
 #include <vector>
-#include "ceres/internal/macros.h"
 #include "ceres/internal/port.h"
 #include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
@@ -66,6 +65,8 @@ namespace ceres {
 class CERES_EXPORT CostFunction {
  public:
   CostFunction();
+  CostFunction(const CostFunction&) = delete;
+  void operator=(const CostFunction&) = delete;
 
   virtual ~CostFunction();
 
@@ -139,7 +140,6 @@ class CERES_EXPORT CostFunction {
   // number of outputs (residuals).
   std::vector<int32> parameter_block_sizes_;
   int num_residuals_;
-  CERES_DISALLOW_COPY_AND_ASSIGN(CostFunction);
 };
 
 }  // namespace ceres

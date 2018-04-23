@@ -38,7 +38,6 @@
 
 #include "ceres/block_random_access_matrix.h"
 #include "ceres/integral_types.h"
-#include "ceres/internal/macros.h"
 #include "ceres/internal/port.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "ceres/types.h"
@@ -55,6 +54,8 @@ class CERES_EXPORT BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMat
  public:
   // blocks is an array of block sizes.
   explicit BlockRandomAccessDiagonalMatrix(const std::vector<int>& blocks);
+  BlockRandomAccessDiagonalMatrix(const BlockRandomAccessDiagonalMatrix&) = delete;
+  void operator=(const BlockRandomAccessDiagonalMatrix&) = delete;
 
   // The destructor is not thread safe. It assumes that no one is
   // modifying any cells when the matrix is being destroyed.
@@ -94,7 +95,6 @@ class CERES_EXPORT BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMat
   std::unique_ptr<TripletSparseMatrix> tsm_;
 
   friend class BlockRandomAccessDiagonalMatrixTest;
-  CERES_DISALLOW_COPY_AND_ASSIGN(BlockRandomAccessDiagonalMatrix);
 };
 
 }  // namespace internal
