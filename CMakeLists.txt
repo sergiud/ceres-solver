@@ -110,7 +110,7 @@ set (CPACK_PACKAGE_VERSION ${CERES_VERSION})
 
 include (CMakePackageConfigHelpers)
 include (CPack)
-include(CheckFunctionExists)
+include (CheckFunctionExists)
 
 option(BUILD_TESTING "Enable tests" ON)
 
@@ -599,13 +599,8 @@ endif (APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 # built against this configured header, it needs to have the same relative
 # include path as it would if it were in the source tree (or installed).
 create_ceres_config("${CERES_COMPILE_OPTIONS}"
-  ${Ceres_BINARY_DIR}/config/ceres/internal)
-# Force the location containing the configured config.h to the front of the
-# include_directories list (by default it is appended to the back) to ensure
-# that if the user has an installed version of Ceres in the same location as one
-# of the dependencies (e.g. /usr/local) that we find the config.h we just
-# configured, not the (older) installed config.h.
-include_directories(BEFORE ${Ceres_BINARY_DIR}/config)
+  ${Ceres_BINARY_DIR}/include/ceres/internal
+)
 
 if (CMAKE_CL OR CMAKE_CL_64)
   add_compile_options (/bigobj)
@@ -646,7 +641,7 @@ install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
 
 # Also setup installation of Ceres config.h configured with the current
 # build options into the installed headers directory.
-install(FILES ${Ceres_BINARY_DIR}/config/ceres/internal/config.h
+install(FILES ${Ceres_BINARY_DIR}/include/ceres/internal/config.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
 if (WITH_MINILOG)
@@ -678,14 +673,6 @@ export (PACKAGE Ceres)
 # as a normal library target created via a normal ADD_LIBRARY().
 install(EXPORT CeresTargets NAMESPACE  Ceres::
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-
-# Figure out the relative path from the installed Config.cmake file to the
-# install prefix (which may be at runtime different from the chosen
-# CMAKE_INSTALL_PREFIX if under Windows the package was installed anywhere)
-# This relative path will be configured into the CeresConfig.cmake.
-file(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
-     ${CMAKE_INSTALL_PREFIX}/${RELATIVE_CMAKECONFIG_INSTALL_DIR}
-     ${CMAKE_INSTALL_PREFIX})
 
 configure_package_config_file (
   CeresConfig.cmake.in

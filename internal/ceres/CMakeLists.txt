@@ -216,7 +216,6 @@ endif (WITH_TBB AND TBB_FOUND)
 
 target_include_directories (ceres
   PUBLIC
-  "$<BUILD_INTERFACE:${Ceres_BINARY_DIR}/config>"
   "$<BUILD_INTERFACE:${Ceres_BINARY_DIR}/include>"
   "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/include>"
   "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal>"
