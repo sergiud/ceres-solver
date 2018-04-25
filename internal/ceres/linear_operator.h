@@ -34,13 +34,14 @@
 #define CERES_INTERNAL_LINEAR_OPERATOR_H_
 
 #include "ceres/types.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
 
 // This is an abstract base class for linear operators. It supports
 // access to size information and left and right multiply operators.
-class LinearOperator {
+class CERES_EXPORT LinearOperator {
  public:
   virtual ~LinearOperator();
 

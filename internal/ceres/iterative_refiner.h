@@ -34,6 +34,7 @@
 // This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -54,7 +55,7 @@ class SparseMatrix;
 // Definite linear systems.
 //
 // The above iterative loop is run until max_num_iterations is reached.
-class IterativeRefiner {
+class CERES_EXPORT IterativeRefiner {
  public:
   // max_num_iterations is the number of refinement iterations to
   // perform.

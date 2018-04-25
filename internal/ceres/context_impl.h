@@ -33,6 +33,7 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 #include "ceres/context.h"
 
@@ -43,13 +44,13 @@
 namespace ceres {
 namespace internal {
 
-class ContextImpl : public Context {
+class CERES_EXPORT ContextImpl : public Context {
  public:
   ContextImpl() {}
   ContextImpl(const ContextImpl&) = delete;
   void operator=(const ContextImpl&) = delete;
 
-  virtual ~ContextImpl() {}
+  virtual ~ContextImpl();
 
   // When compiled with C++11 threading support, resize the thread pool to have
   // at min(num_thread, num_hardware_threads) where num_hardware_threads is

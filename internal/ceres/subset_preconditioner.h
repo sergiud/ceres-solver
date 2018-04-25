@@ -33,6 +33,7 @@
 
 #include <memory>
 #include "ceres/preconditioner.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -65,7 +66,7 @@ class InnerProductComputer;
 // computationally expensive this preconditioner will be.
 //
 // See the tests for example usage.
-class SubsetPreconditioner : public BlockSparseMatrixPreconditioner {
+class CERES_EXPORT SubsetPreconditioner : public BlockSparseMatrixPreconditioner {
  public:
   SubsetPreconditioner(const Preconditioner::Options& options,
                        const BlockSparseMatrix& A);

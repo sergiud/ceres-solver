@@ -37,6 +37,7 @@
 #include "ceres/linear_operator.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/types.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -62,7 +63,7 @@ namespace internal {
 // matrix type dependent and we are at this stage unable to come up
 // with an efficient high level interface that spans multiple sparse
 // matrix types.
-class SparseMatrix : public LinearOperator {
+class CERES_EXPORT SparseMatrix : public LinearOperator {
  public:
   virtual ~SparseMatrix();
 
