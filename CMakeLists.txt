@@ -680,7 +680,7 @@ configure_package_config_file (
   INSTALL_DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR}
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file (CeresConfigVersion.cmake VERSION
-  ${CERES_VERSION} COMPATIBILITY SameMajorVersion)
+  ${CERES_VERSION} COMPATIBILITY AnyNewerVersion)
 
 generate_export_header (ceres EXPORT_FILE_NAME
     ${CMAKE_CURRENT_BINARY_DIR}/include/ceres/internal/export.h)
