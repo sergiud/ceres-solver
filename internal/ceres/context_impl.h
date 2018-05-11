@@ -34,6 +34,7 @@
 // This include must come before any #ifndef check on Ceres compile options.
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/prefix.h"
 
 #include "ceres/context.h"
 
@@ -64,5 +65,7 @@ class CERES_EXPORT ContextImpl : public Context {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/suffix.h"
 
 #endif  // CERES_INTERNAL_CONTEXT_IMPL_H_
