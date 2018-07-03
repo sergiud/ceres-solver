@@ -77,7 +77,7 @@ CovarianceImpl::CovarianceImpl(const Covariance::Options& options)
 #ifdef CERES_NO_THREADS
   if (options_.num_threads > 1) {
     LOG(WARNING)
-        << "Neither OpenMP nor TBB support is compiled into this binary; "
+        << "No threading support is compiled into this binary; "
         << "only options.num_threads = 1 is supported. Switching "
         << "to single threaded mode.";
     options_.num_threads = 1;
@@ -651,7 +651,6 @@ bool CovarianceImpl::ComputeCovarianceValuesUsingSuiteSparseQR() {
                             &permutation,
                             &cc);
   event_logger.AddEvent("Numeric Factorization");
-  CHECK_NOTNULL(permutation);
   CHECK_NOTNULL(R);
 
   if (rank < cholmod_jacobian.ncol) {
@@ -665,8 +664,14 @@ bool CovarianceImpl::ComputeCovarianceValuesUsingSuiteSparseQR() {
   }
 
   vector<int> inverse_permutation(num_cols);
-  for (SuiteSparse_long i = 0; i < num_cols; ++i) {
-    inverse_permutation[permutation[i]] = i;
+  if (permutation) {
+    for (SuiteSparse_long i = 0; i < num_cols; ++i) {
+      inverse_permutation[permutation[i]] = i;
+    }
+  } else {
+    for (SuiteSparse_long i = 0; i < num_cols; ++i) {
+      inverse_permutation[i] = i;
+    }
   }
 
   const int* rows = covariance_matrix_->rows();

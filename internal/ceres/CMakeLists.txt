@@ -34,14 +34,13 @@ if (WITH_CXX11_THREADS)
   set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
 elseif (WITH_OPENMP)
   set(CERES_PARALLEL_FOR_SRC parallel_for_openmp.cc)
-elseif (WITH_TBB)
-  set(CERES_PARALLEL_FOR_SRC parallel_for_tbb.cc)
 else()
   set(CERES_PARALLEL_FOR_SRC parallel_for_nothreads.cc)
 endif()
 
 set(CERES_INTERNAL_SRC
     ${CERES_PARALLEL_FOR_SRC}
+    accelerate_sparse.cc
     array_utils.cc
     blas.cc
     block_evaluate_preparer.cc
@@ -151,6 +150,9 @@ file(GLOB CERES_INTERNAL_HDRS *.h)
 if (MINIGLOG)
   file(GLOB MINIGLOG_HDRS miniglog/glog/*.h)
   list(APPEND CERES_INTERNAL_HDRS ${MINIGLOG_HDRS})
+  if (ANDROID)
+    list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES log)
+  endif()
 endif()
 
 # Depend also on public headers so they appear in IDEs.
@@ -326,6 +328,11 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
   macro (CERES_TEST NAME)
     add_executable(${NAME}_test ${NAME}_test.cc)
+    # Pull in local headers from the generated test directories when ceres_test()
+    # is invoked there, as well as the private headers in this directory which
+    # may be referenced without the 'ceres' path prefix.
+    target_include_directories(${NAME}_test PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+    target_include_directories(${NAME}_test PUBLIC ${Ceres_SOURCE_DIR}/internal/ceres)
     target_link_libraries(${NAME}_test test_util ceres gtest)
     if (BUILD_SHARED_LIBS)
       # Define gtest-specific shared library flags for linking.
@@ -427,13 +434,18 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
 endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
+macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
+  target_link_libraries(${BENCHMARK_TARGET} ceres benchmark::benchmark)
+  target_include_directories(${BENCHMARK_TARGET} PUBLIC ${Ceres_SOURCE_DIR}/internal)
+endmacro()
+
 if (BUILD_BENCHMARKS)
   add_executable(autodiff_cost_function_benchmark autodiff_cost_function_benchmark.cc)
-  target_link_libraries(autodiff_cost_function_benchmark ceres benchmark::benchmark)
+  add_dependencies_to_benchmark(autodiff_cost_function_benchmark)
 
   add_executable(small_blas_gemv_benchmark small_blas_gemv_benchmark.cc)
-  target_link_libraries(small_blas_gemv_benchmark ceres benchmark::benchmark)
+  add_dependencies_to_benchmark(small_blas_gemv_benchmark)
 
   add_executable(small_blas_gemm_benchmark small_blas_gemm_benchmark.cc)
-  target_link_libraries(small_blas_gemm_benchmark ceres benchmark::benchmark)
+  add_dependencies_to_benchmark(small_blas_gemm_benchmark)
 endif (BUILD_BENCHMARKS)

@@ -135,13 +135,11 @@ set (WITH_THREADING_BACKEND "" CACHE STRING
   "Enable threaded solving using the specified backend")
 
 set_property (CACHE WITH_THREADING_BACKEND PROPERTY STRINGS
-  OpenMP;TBB;Threads;None)
+  OpenMP;Threads;None)
 
 if (WITH_THREADING_BACKEND STREQUAL "")
   if (OPENMP_FOUND)
     set (WITH_THREADING_BACKEND OpenMP CACHE STRING "" FORCE)
-  elseif (TBB_FOUND)
-    set (WITH_THREADING_BACKEND TBB CACHE STRING "" FORCE)
   else (OPENMP_FOUND)
     set (WITH_THREADING_BACKEND Threads CACHE STRING "" FORCE)
   endif (OPENMP_FOUND)
@@ -149,15 +147,9 @@ endif (WITH_THREADING_BACKEND STREQUAL "")
 
 if (WITH_THREADING_BACKEND STREQUAL "")
   set (WITH_OPENMP TRUE)
-  set (WITH_TBB TRUE)
 elseif (WITH_THREADING_BACKEND STREQUAL OpenMP)
   set (WITH_OPENMP TRUE)
-  set (WITH_TBB FALSE)
   list(APPEND CERES_COMPILE_OPTIONS CERES_USE_OPENMP)
-elseif (WITH_THREADING_BACKEND STREQUAL TBB)
-  set (WITH_OPENMP FALSE)
-  set (WITH_TBB TRUE)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_USE_TBB)
 elseif (WITH_THREADING_BACKEND STREQUAL Threads)
   set (WITH_CXX11_THREADS TRUE)
   list(APPEND CERES_COMPILE_OPTIONS CERES_USE_CXX11_THREADS)
@@ -328,12 +320,30 @@ else (WITH_CXSPARSE)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
 endif (WITH_CXSPARSE)
 
+if (WITH_ACCELERATESPARSE)
+  find_package(AccelerateSparse)
+  if (AccelerateSparse_FOUND)
+    message("-- Found Apple's Accelerate framework with sparse solvers, "
+      "building with Accelerate sparse support.")
+  else()
+    message("-- Failed to find Apple's Accelerate framework with sparse solvers, "
+      "building without Accelerate sparse support.")
+    update_cache_variable(ACCELERATESPARSE OFF)
+    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_ACCELERATE_SPARSE)
+  endif()
+else()
+  message("-- Building without Apple's Accelerate sparse support.")
+  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_ACCELERATE_SPARSE)
+  mark_as_advanced(FORCE AccelerateSparse_INCLUDE_DIR
+                         AccelerateSparse_LIBRARY)
+endif()
+
 # Ensure that the user understands they have disabled all sparse libraries.
 if (NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
   message("   ===============================================================")
   message("   Compiling without any sparse library: SuiteSparse, CXSparse ")
-  message("   & Eigen (Sparse) are all disabled or unavailable.  No sparse ")
-  message("   linear solvers (SPARSE_NORMAL_CHOLESKY & SPARSE_SCHUR)")
+  message("   EigenSparse & Apple's Accelerate are all disabled or unavailable.  ")
+  message("   No sparse linear solvers (SPARSE_NORMAL_CHOLESKY & SPARSE_SCHUR)")
   message("   will be available when Ceres is used.")
   message("   ===============================================================")
 endif(NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
@@ -398,7 +408,6 @@ if (WITH_OPENMP)
   find_package(OpenMP)
   if (OPENMP_FOUND)
     message("-- Building with OpenMP.")
-    set (WITH_TBB FALSE)
     list(APPEND CERES_COMPILE_OPTIONS CERES_USE_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -418,11 +427,11 @@ check_function_exists (_j0 HAVE__J0)
 check_function_exists (_j1 HAVE__J1)
 check_function_exists (_jn HAVE__JN)
 
-if (NOT WITH_OPENMP AND NOT WITH_TBB AND NOT WITH_CXX11_THREADS)
-  message("-- Neither OpenMP, TBB or C++11 threads is enabled, "
+if (NOT WITH_OPENMP AND NOT WITH_CXX11_THREADS)
+  message("-- Neither OpenMP, or C++11 threads is enabled, "
     "disabling multithreading.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
-endif (NOT WITH_OPENMP AND NOT WITH_TBB AND NOT WITH_CXX11_THREADS)
+endif (NOT WITH_OPENMP AND NOT WITH_CXX11_THREADS)
 
 if (BUILD_BENCHMARKS)
   find_package(benchmark QUIET)
@@ -470,35 +479,6 @@ else (NOT CMAKE_BUILD_TYPE)
     message("\n=================================================================================")
   endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif (NOT CMAKE_BUILD_TYPE)
-
-# Set the default Ceres flags to an empty string.
-set (CERES_CXX_FLAGS)
-
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-  if (CMAKE_COMPILER_IS_GNUCXX)
-    # Linux
-    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-      if (NOT GCC_VERSION VERSION_LESS 4.2)
-        set (CERES_CXX_FLAGS "${CERES_CXX_FLAGS} -march=native -mtune=native")
-      endif (NOT GCC_VERSION VERSION_LESS 4.2)
-    endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    # Mac OS X
-    if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-      set (CERES_CXX_FLAGS "${CERES_CXX_FLAGS} -msse3")
-      # Use of -fast only applicable for Apple's GCC
-      # Assume this is being used if GCC version < 4.3 on OSX
-      execute_process(COMMAND ${CMAKE_C_COMPILER}
-        ARGS ${CMAKE_CXX_COMPILER_ARG1} -dumpversion
-        OUTPUT_VARIABLE GCC_VERSION
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-      if (GCC_VERSION VERSION_LESS 4.3)
-        set (CERES_CXX_FLAGS "${CERES_CXX_FLAGS} -fast")
-      endif (GCC_VERSION VERSION_LESS 4.3)
-    endif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  endif (CMAKE_COMPILER_IS_GNUCXX)
-endif (CMAKE_BUILD_TYPE STREQUAL "Release")
-
-set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CERES_CXX_FLAGS}")
 
 if (MINGW)
   # MinGW produces code that segfaults when performing matrix multiplications
@@ -560,7 +540,7 @@ endif (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 # resulting in an unreasonably slow version of the blas routines. The
 # -Qunused-arguments is needed because CMake passes the inline
 # threshold to the linker and clang complains about it and dies.
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang") # Matches Clang & AppleClang.
   set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -Qunused-arguments -mllvm -inline-threshold=600")
 
@@ -573,24 +553,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-return-type-c-linkage")
   endif(HAVE_RETURN_TYPE_C_LINKAGE)
 endif ()
-
-# Xcode 4.5.x used Clang 4.1 (Apple version), this has a bug that prevents
-# compilation of Ceres.
-if (APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  execute_process(COMMAND ${CMAKE_CXX_COMPILER}
-    ARGS ${CMAKE_CXX_COMPILER_ARG1} -dumpversion
-    OUTPUT_VARIABLE CLANG_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-  # Use version > 4.0 & < 4.2 to catch all 4.1(.x) versions.
-  if (CLANG_VERSION VERSION_GREATER 4.0 AND
-      CLANG_VERSION VERSION_LESS 4.2)
-    message(FATAL_ERROR "You are attempting to build Ceres on OS X using Xcode "
-      "4.5.x (Clang version: ${CLANG_VERSION}). This version of Clang has a "
-      "bug that prevents compilation of Ceres, please update to "
-      "Xcode >= 4.6.3.")
-  endif (CLANG_VERSION VERSION_GREATER 4.0 AND
-    CLANG_VERSION VERSION_LESS 4.2)
-endif (APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
 # Configure the Ceres config.h compile options header using the current
 # compile options and put the configured header into the Ceres build
