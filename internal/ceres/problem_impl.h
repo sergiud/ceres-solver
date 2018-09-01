@@ -143,6 +143,8 @@ class CERES_EXPORT ProblemImpl {
 
   void SetParameterLowerBound(double* values, int index, double lower_bound);
   void SetParameterUpperBound(double* values, int index, double upper_bound);
+  double GetParameterLowerBound(double* values, int index) const;
+  double GetParameterUpperBound(double* values, int index) const;
 
   bool Evaluate(const Problem::EvaluateOptions& options,
                 double* cost,

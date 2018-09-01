@@ -34,6 +34,7 @@
 #ifndef CERES_INTERNAL_RESIDUAL_BLOCK_H_
 #define CERES_INTERNAL_RESIDUAL_BLOCK_H_
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -142,7 +143,7 @@ class CERES_EXPORT ResidualBlock {
   // The index of the residual, typically in a Program. This is only to permit
   // switching from a ResidualBlock* to an index in the Program's array, needed
   // to do efficient removals.
-  int32 index_;
+  int32_t index_;
 };
 
 }  // namespace internal

@@ -33,6 +33,7 @@
 #define CERES_PUBLIC_NUMERIC_DIFF_OPTIONS_H_
 
 #include "ceres/internal/prefix.h"
+#include "ceres/internal/port.h"
 
 namespace ceres {
 

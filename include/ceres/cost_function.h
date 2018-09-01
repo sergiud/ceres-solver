@@ -44,9 +44,9 @@
 #ifndef CERES_PUBLIC_COST_FUNCTION_H_
 #define CERES_PUBLIC_COST_FUNCTION_H_
 
+#include <cstdint>
 #include <vector>
 #include "ceres/internal/port.h"
-#include "ceres/types.h"
 #include "ceres/internal/disable_warnings.h"
 
 #include "ceres/internal/prefix.h"
@@ -118,7 +118,7 @@ class CERES_EXPORT CostFunction {
                         double* residuals,
                         double** jacobians) const = 0;
 
-  const std::vector<int32>& parameter_block_sizes() const {
+  const std::vector<int32_t>& parameter_block_sizes() const {
     return parameter_block_sizes_;
   }
 
@@ -127,7 +127,7 @@ class CERES_EXPORT CostFunction {
   }
 
  protected:
-  std::vector<int32>* mutable_parameter_block_sizes() {
+  std::vector<int32_t>* mutable_parameter_block_sizes() {
     return &parameter_block_sizes_;
   }
 
@@ -138,7 +138,7 @@ class CERES_EXPORT CostFunction {
  private:
   // Cost function signature metadata: number of inputs & their sizes,
   // number of outputs (residuals).
-  std::vector<int32> parameter_block_sizes_;
+  std::vector<int32_t> parameter_block_sizes_;
   int num_residuals_;
 };
 

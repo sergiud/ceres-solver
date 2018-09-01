@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -61,11 +62,11 @@ bool EvaluateCostFunction(
     Vector* residuals,
     std::vector<Matrix>* jacobians,
     std::vector<Matrix>* local_jacobians) {
-  CHECK_NOTNULL(residuals);
-  CHECK_NOTNULL(jacobians);
-  CHECK_NOTNULL(local_jacobians);
+  CHECK(residuals != nullptr);
+  CHECK(jacobians != nullptr);
+  CHECK(local_jacobians != nullptr);
 
-  const vector<int32>& block_sizes = function->parameter_block_sizes();
+  const vector<int32_t>& block_sizes = function->parameter_block_sizes();
   const int num_parameter_blocks = block_sizes.size();
 
   // Allocate Jacobian matrices in local space.
@@ -122,7 +123,7 @@ GradientChecker::GradientChecker(
       const vector<const LocalParameterization*>* local_parameterizations,
       const NumericDiffOptions& options) :
         function_(function) {
-  CHECK_NOTNULL(function);
+  CHECK(function != nullptr);
   if (local_parameterizations != NULL) {
     local_parameterizations_ = *local_parameterizations;
   } else {
@@ -135,7 +136,7 @@ GradientChecker::GradientChecker(
           function, DO_NOT_TAKE_OWNERSHIP, options);
   finite_diff_cost_function_.reset(finite_diff_cost_function);
 
-  const vector<int32>& parameter_block_sizes =
+  const vector<int32_t>& parameter_block_sizes =
       function->parameter_block_sizes();
   const int num_parameter_blocks = parameter_block_sizes.size();
   for (int i = 0; i < num_parameter_blocks; ++i) {

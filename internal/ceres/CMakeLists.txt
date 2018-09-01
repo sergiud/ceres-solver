@@ -330,9 +330,13 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
     add_executable(${NAME}_test ${NAME}_test.cc)
     # Pull in local headers from the generated test directories when ceres_test()
     # is invoked there, as well as the private headers in this directory which
-    # may be referenced without the 'ceres' path prefix.
-    target_include_directories(${NAME}_test PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-    target_include_directories(${NAME}_test PUBLIC ${Ceres_SOURCE_DIR}/internal/ceres)
+    # may be referenced without the 'ceres' path prefix and all private
+    # dependencies that may be directly referenced.
+    target_include_directories(${NAME}_test
+      PUBLIC ${CMAKE_CURRENT_LIST_DIR}
+             ${Ceres_SOURCE_DIR}/internal/ceres
+             ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
+
     target_link_libraries(${NAME}_test test_util ceres gtest)
     if (BUILD_SHARED_LIBS)
       # Define gtest-specific shared library flags for linking.
@@ -436,7 +440,9 @@ endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
   target_link_libraries(${BENCHMARK_TARGET} ceres benchmark::benchmark)
-  target_include_directories(${BENCHMARK_TARGET} PUBLIC ${Ceres_SOURCE_DIR}/internal)
+  target_include_directories(${BENCHMARK_TARGET} PUBLIC
+                             ${Ceres_SOURCE_DIR}/internal
+                             ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
 endmacro()
 
 if (BUILD_BENCHMARKS)

@@ -220,9 +220,6 @@ class CERES_EXPORT SchurEliminatorBase {
 // parameters as template arguments so that they are visible to the
 // compiler and can be used for compile time optimization of the low
 // level linear algebra routines.
-//
-// This implementation is mulithreaded using OpenMP. The level of
-// parallelism is controlled by LinearSolver::Options::num_threads.
 template <int kRowBlockSize = Eigen::Dynamic,
           int kEBlockSize = Eigen::Dynamic,
           int kFBlockSize = Eigen::Dynamic >
@@ -230,8 +227,9 @@ class SchurEliminator : public SchurEliminatorBase {
  public:
   explicit SchurEliminator(const LinearSolver::Options& options)
       : num_threads_(options.num_threads),
-        context_(CHECK_NOTNULL(options.context)) {
-  }
+        context_(options.context) {
+    CHECK(context_ != nullptr);
+}
 
   // SchurEliminatorBase Interface
   virtual ~SchurEliminator();
