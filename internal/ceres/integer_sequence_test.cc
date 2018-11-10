@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2018 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,46 +26,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: keir@google.com (Keir Mierle)
-//
-// A convenience class for cost functions which are statically sized.
-// Compared to the dynamically-sized base class, this reduces boilerplate.
-//
-// The kNumResiduals template parameter can be a constant such as 2 or 5, or it
-// can be ceres::DYNAMIC. If kNumResiduals is ceres::DYNAMIC, then subclasses
-// are responsible for calling set_num_residuals() at runtime.
+// Author: jodebo_beck@gmx.de (Johannes Beck)
 
-#ifndef CERES_PUBLIC_SIZED_COST_FUNCTION_H_
-#define CERES_PUBLIC_SIZED_COST_FUNCTION_H_
+#include "ceres/internal/integer_sequence.h"
 
-#include "ceres/cost_function.h"
-#include "ceres/types.h"
-#include "glog/logging.h"
-#include "internal/parameter_dims.h"
+#include <type_traits>
 
 namespace ceres {
+namespace internal {
 
-template <int kNumResiduals, int... Ns>
-class SizedCostFunction : public CostFunction {
- public:
-  static_assert(kNumResiduals > 0 || kNumResiduals == DYNAMIC,
-                "Cost functions must have at least one residual block.");
-  static_assert(internal::StaticParameterDims<Ns...>::kIsValid,
-                "Invalid parameter block dimension detected. Each parameter "
-                "block dimension must be bigger than zero.");
- 
-  using ParameterDims = internal::StaticParameterDims<Ns...>;
+// Unit test for integer_sequence<...>::value_type
+static_assert(std::is_same<integer_sequence<unsigned int, 0>::value_type,
+                           unsigned int>::value,
+              "Unit test of integer sequence value type failed.");
 
-  SizedCostFunction() {
-    set_num_residuals(kNumResiduals);
-    *mutable_parameter_block_sizes() = std::vector<int32_t>{Ns...};
-  }
+// Unit tests for make_integer_sequence
+static_assert(
+    std::is_same<make_integer_sequence<int, 0>, integer_sequence<int>>::value,
+    "Unit test of make integer sequence failed.");
+static_assert(std::is_same<make_integer_sequence<int, 1>,
+                           integer_sequence<int, 0>>::value,
+              "Unit test of make integer sequence failed.");
+static_assert(std::is_same<make_integer_sequence<int, 2>,
+                           integer_sequence<int, 0, 1>>::value,
+              "Unit test of make integer sequence failed.");
+static_assert(std::is_same<make_integer_sequence<int, 3>,
+                           integer_sequence<int, 0, 1, 2>>::value,
+              "Unit test of make integer sequence failed.");
 
-  virtual ~SizedCostFunction() { }
-
-  // Subclasses must implement Evaluate().
-};
-
+}  // namespace internal
 }  // namespace ceres
-
-#endif  // CERES_PUBLIC_SIZED_COST_FUNCTION_H_

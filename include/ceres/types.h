@@ -148,7 +148,7 @@ enum SparseLinearAlgebraLibraryType {
   // minimum degree ordering.
   SUITE_SPARSE,
 
-  // A lightweight replacment for SuiteSparse, which does not require
+  // A lightweight replacement for SuiteSparse, which does not require
   // a LAPACK/BLAS implementation. Consequently, its performance is
   // also a bit lower than SuiteSparse.
   CX_SPARSE,
@@ -203,7 +203,7 @@ enum LineSearchDirectionType {
   // symmetric matrix but only N conditions are specified by the Secant
   // equation. The requirement that the Hessian approximation be positive
   // definite imposes another N additional constraints, but that still leaves
-  // remaining degrees-of-freedom.  (L)BFGS methods uniquely deteremine the
+  // remaining degrees-of-freedom.  (L)BFGS methods uniquely determine the
   // approximate Hessian by imposing the additional constraints that the
   // approximation at the next iteration must be the 'closest' to the current
   // approximation (the nature of how this proximity is measured is actually
@@ -251,7 +251,7 @@ enum LineSearchDirectionType {
   BFGS,
 };
 
-// Nonliner conjugate gradient methods are a generalization of the
+// Nonlinear conjugate gradient methods are a generalization of the
 // method of Conjugate Gradients for linear systems. The
 // generalization can be carried out in a number of different ways
 // leading to number of different rules for computing the search

@@ -90,7 +90,7 @@ class CERES_EXPORT ResidualBlock {
   // space available.
   //
   // The return value indicates the success or failure. If the function returns
-  // false, the caller should expect the the output memory locations to have
+  // false, the caller should expect the output memory locations to have
   // been modified.
   //
   // The returned cost and jacobians have had robustification and local

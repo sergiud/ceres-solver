@@ -82,7 +82,7 @@ TEST(SubsetParameterization, NegativeParameterIndexDeathTest) {
   constant_parameters.push_back(-1);
   EXPECT_DEATH_IF_SUPPORTED(
       SubsetParameterization parameterization(2, constant_parameters),
-      "greater than zero");
+      "greater than equal to zero");
 }
 
 TEST(SubsetParameterization, GreaterThanSizeParameterIndexDeathTest) {
@@ -265,14 +265,12 @@ void QuaternionParameterizationTestHelper(
   double* jacobian_array[2] = { NULL, jacobian_ref };
 
   // Autodiff jacobian at delta_x = 0.
-  internal::AutoDiff<Plus,
-                     double,
-                     kGlobalSize,
-                     kLocalSize>::Differentiate(Plus(),
-                                                parameters,
-                                                kGlobalSize,
-                                                x_plus_delta,
-                                                jacobian_array);
+  internal::AutoDifferentiate<StaticParameterDims<kGlobalSize, kLocalSize>>(
+      Plus(),
+      parameters,
+      kGlobalSize,
+      x_plus_delta,
+      jacobian_array);
 
   double jacobian[12];
   parameterization.ComputeJacobian(x, jacobian);

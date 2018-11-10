@@ -39,6 +39,7 @@
 #ifndef CERES_PUBLIC_PROBLEM_IMPL_H_
 #define CERES_PUBLIC_PROBLEM_IMPL_H_
 
+#include <array>
 #include <map>
 #include <memory>
 #include <unordered_set>
@@ -82,49 +83,21 @@ class CERES_EXPORT ProblemImpl {
   ResidualBlockId AddResidualBlock(
       CostFunction* cost_function,
       LossFunction* loss_function,
-      const std::vector<double*>& parameter_blocks);
+      double* const* const parameter_blocks,
+      int num_parameter_blocks);
+
+  template <typename... Ts>
   ResidualBlockId AddResidualBlock(CostFunction* cost_function,
                                    LossFunction* loss_function,
-                                   double* x0);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2,
-                                   double* x3);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2,
-                                   double* x3, double* x4);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2,
-                                   double* x3, double* x4, double* x5);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2,
-                                   double* x3, double* x4, double* x5,
-                                   double* x6);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2,
-                                   double* x3, double* x4, double* x5,
-                                   double* x6, double* x7);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2,
-                                   double* x3, double* x4, double* x5,
-                                   double* x6, double* x7, double* x8);
-  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
-                                   LossFunction* loss_function,
-                                   double* x0, double* x1, double* x2,
-                                   double* x3, double* x4, double* x5,
-                                   double* x6, double* x7, double* x8,
-                                   double* x9);
+                                   double* x0,
+                                   Ts*... xs) {
+    const std::array<double*, sizeof...(Ts) + 1> parameter_blocks{{x0, xs...}};
+    return AddResidualBlock(cost_function,
+                            loss_function,
+                            parameter_blocks.data(),
+                            static_cast<int>(parameter_blocks.size()));
+  }
+
   void AddParameterBlock(double* values, int size);
   void AddParameterBlock(double* values,
                          int size,
@@ -197,7 +170,7 @@ class CERES_EXPORT ProblemImpl {
   // Delete the arguments in question. These differ from the Remove* functions
   // in that they do not clean up references to the block to delete; they
   // merely delete them.
-  template<typename Block>
+  template <typename Block>
   void DeleteBlockInVector(std::vector<Block*>* mutable_blocks,
                            Block* block_to_remove);
   void DeleteBlock(ResidualBlock* residual_block);
@@ -231,7 +204,6 @@ class CERES_EXPORT ProblemImpl {
   // destroyed.
   CostFunctionRefCount cost_function_ref_count_;
   LossFunctionRefCount loss_function_ref_count_;
-  std::vector<double*> residual_parameters_;
 };
 
 }  // namespace internal

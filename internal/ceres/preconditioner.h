@@ -56,7 +56,7 @@ class CERES_EXPORT Preconditioner : public LinearOperator {
     // When using the subset preconditioner, all row blocks starting
     // from this row block are used to construct the preconditioner.
     //
-    // i.e., the Jacobian matrix A is horizonatally partitioned as
+    // i.e., the Jacobian matrix A is horizontally partitioned as
     //
     // A = [P]
     //     [Q]
@@ -158,7 +158,7 @@ class TypedPreconditioner : public Preconditioner {
   virtual bool UpdateImpl(const MatrixType& A, const double* D) = 0;
 };
 
-// Preconditioners that depend on acccess to the low level structure
+// Preconditioners that depend on access to the low level structure
 // of a SparseMatrix.
 typedef TypedPreconditioner<SparseMatrix>              SparseMatrixPreconditioner;               // NOLINT
 typedef TypedPreconditioner<BlockSparseMatrix>         BlockSparseMatrixPreconditioner;          // NOLINT

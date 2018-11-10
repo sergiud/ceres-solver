@@ -1,5 +1,6 @@
+
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2017 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,46 +27,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: keir@google.com (Keir Mierle)
-//
-// A convenience class for cost functions which are statically sized.
-// Compared to the dynamically-sized base class, this reduces boilerplate.
-//
-// The kNumResiduals template parameter can be a constant such as 2 or 5, or it
-// can be ceres::DYNAMIC. If kNumResiduals is ceres::DYNAMIC, then subclasses
-// are responsible for calling set_num_residuals() at runtime.
+// Author: mierle@gmail.com (Keir Mierle)
 
-#ifndef CERES_PUBLIC_SIZED_COST_FUNCTION_H_
-#define CERES_PUBLIC_SIZED_COST_FUNCTION_H_
-
-#include "ceres/cost_function.h"
-#include "ceres/types.h"
-#include "glog/logging.h"
-#include "internal/parameter_dims.h"
+#ifndef CERES_INTERNAL_TINY_SOLVER_TEST_UTIL_H_
+#define CERES_INTERNAL_TINY_SOLVER_TEST_UTIL_H_
 
 namespace ceres {
 
-template <int kNumResiduals, int... Ns>
-class SizedCostFunction : public CostFunction {
- public:
-  static_assert(kNumResiduals > 0 || kNumResiduals == DYNAMIC,
-                "Cost functions must have at least one residual block.");
-  static_assert(internal::StaticParameterDims<Ns...>::kIsValid,
-                "Invalid parameter block dimension detected. Each parameter "
-                "block dimension must be bigger than zero.");
- 
-  using ParameterDims = internal::StaticParameterDims<Ns...>;
+template<typename T>
+bool EvaluateResidualsAndJacobians(const T* parameters,
+                                   T* residuals,
+                                   T* jacobian) {
+  T x = parameters[0];
+  T y = parameters[1];
+  T z = parameters[2];
 
-  SizedCostFunction() {
-    set_num_residuals(kNumResiduals);
-    *mutable_parameter_block_sizes() = std::vector<int32_t>{Ns...};
+  residuals[0] = x + static_cast<T>(2) * y + static_cast<T>(4) * z;
+  residuals[1] = y * z;
+
+  if (jacobian) {
+    jacobian[0 * 2 + 0] = static_cast<T>(1);
+    jacobian[0 * 2 + 1] = static_cast<T>(0);
+
+    jacobian[1 * 2 + 0] = static_cast<T>(2);
+    jacobian[1 * 2 + 1] = z;
+
+    jacobian[2 * 2 + 0] = static_cast<T>(4);
+    jacobian[2 * 2 + 1] = y;
   }
-
-  virtual ~SizedCostFunction() { }
-
-  // Subclasses must implement Evaluate().
-};
+  return true;
+}
 
 }  // namespace ceres
 
-#endif  // CERES_PUBLIC_SIZED_COST_FUNCTION_H_
+#endif  // CERES_INTERNAL_TINY_SOLVER_TEST_UTIL_H_
