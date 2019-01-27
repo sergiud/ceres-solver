@@ -40,7 +40,7 @@ if (POLICY CMP0063)
   cmake_policy (SET CMP0063 NEW)
 endif (POLICY CMP0063)
 
-project(Ceres C CXX)
+project(Ceres LANGUAGES C CXX VERSION 2.0.0)
 
 set (CMAKE_CXX_VISIBILITY_PRESET hidden)
 set (CMAKE_VISIBILITY_INLINES_HIDDEN 1)
@@ -63,6 +63,7 @@ list(APPEND CMAKE_MODULE_PATH "${Ceres_SOURCE_DIR}/cmake")
 
 include (CMakeDependentOption)
 include (CreateCeresConfig)
+include (FeatureSummary)
 include (GenerateExportHeader)
 include (GNUInstallDirs)
 include (UpdateCacheVariable)
@@ -199,43 +200,40 @@ if (IOS)
   message(STATUS "Building for iOS: Will not build examples.")
 endif (IOS)
 
-message("-- Building with C++${CMAKE_CXX_STANDARD}")
+add_feature_info (C++${CMAKE_CXX_STANDARD} ON
+  "Building in C++${CMAKE_CXX_STANDARD} mode")
 
-# Eigen.
-find_package(Eigen REQUIRED)
-if (EIGEN_FOUND)
-  if (EIGEN_VERSION VERSION_LESS 3.1.0)
-    message(FATAL_ERROR "-- Ceres requires Eigen version >= 3.1.0 in order "
-      "that Eigen/SparseCore be available, detected version of Eigen is: "
-      "${EIGEN_VERSION}")
-  endif (EIGEN_VERSION VERSION_LESS 3.1.0)
+find_package(Eigen3 REQUIRED)
 
-  message("-- Found Eigen version ${EIGEN_VERSION}: ${EIGEN_INCLUDE_DIRS}")
-  # Ensure that only MPL2 licensed code is part of the default build.
-  message("")
-  message("   ===============================================================")
-  if (WITH_EIGENSPARSE)
-    list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
-    message("   Enabling the use of Eigen as a sparse linear algebra library ")
-    message("   for solving the nonlinear least squares problems. Enabling ")
-    message("   this option results in an LGPL licensed version of ")
-    message("   Ceres Solver as the Simplicial Cholesky factorization in Eigen")
-    message("   is licensed under the LGPL. ")
+if (Eigen3_VERSION VERSION_LESS 3.1.0)
+  message(FATAL_ERROR "-- Ceres requires Eigen version >= 3.1.0 in order "
+    "that Eigen/SparseCore be available, detected version of Eigen is: "
+    "${Eigen3_VERSION}")
+endif (Eigen3_VERSION VERSION_LESS 3.1.0)
 
-    if (EIGEN_VERSION VERSION_LESS 3.2.2)
-      message("   WARNING:")
-      message("")
-      message("   Your version of Eigen (${EIGEN_VERSION}) is older than ")
-      message("   version 3.2.2.  The performance of SPARSE_NORMAL_CHOLESKY ")
-      message("   and SPARSE_SCHUR linear solvers will suffer.")
-    endif (EIGEN_VERSION VERSION_LESS 3.2.2)
-  else (WITH_EIGENSPARSE)
-    message("-- Disabling use of Eigen as a sparse linear algebra library.")
-    message("   This does not affect the covariance estimation algorithm ")
-    message("   which can still use the EIGEN_SPARSE_QR algorithm.")
-    add_definitions(-DEIGEN_MPL2_ONLY)
-  endif (WITH_EIGENSPARSE)
-endif (EIGEN_FOUND)
+# Ensure that only MPL2 licensed code is part of the default build.
+if (WITH_EIGENSPARSE)
+  list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
+  message("   Enabling the use of Eigen as a sparse linear algebra library ")
+  message("   for solving the nonlinear least squares problems. Enabling ")
+  message("   this option results in an LGPL licensed version of ")
+  message("   Ceres Solver as the Simplicial Cholesky factorization in Eigen")
+  message("   is licensed under the LGPL. ")
+
+  if (Eigen3_VERSION VERSION_LESS 3.2.2)
+    message("   WARNING:")
+    message("")
+    message("   Your version of Eigen (${Eigen3_VERSION}) is older than ")
+    message("   version 3.2.2.  The performance of SPARSE_NORMAL_CHOLESKY ")
+    message("   and SPARSE_SCHUR linear solvers will suffer.")
+  endif (Eigen3_VERSION VERSION_LESS 3.2.2)
+else (WITH_EIGENSPARSE)
+  add_definitions(-DEIGEN_MPL2_ONLY)
+endif (WITH_EIGENSPARSE)
+
+add_feature_info (EigenSparse WITH_EIGENSPARSE
+"Use Eigen as a sparse linear algebra library for solving the nonlinear \
+least squares problems (LGPL licensed Ceres)")
 
 # SuiteSparse.
 if (WITH_SUITESPARSE)
@@ -263,11 +261,6 @@ if (WITH_SUITESPARSE)
         "see http://ceres-solver.org/building.html for more information.")
     endif (BUILD_SHARED_LIBS AND
       SUITESPARSE_IS_BROKEN_SHARED_LINKING_UBUNTU_SYSTEM_VERSION)
-
-    # By default, if all of SuiteSparse's dependencies are found, Ceres is
-    # built with SuiteSparse support.
-    message("-- Found SuiteSparse ${SuiteSparse_VERSION}, "
-            "building with SuiteSparse.")
   else (SuiteSparse_FOUND)
     # Disable use of SuiteSparse if it cannot be found and continue.
     message("-- Did not find all SuiteSparse dependencies, disabling "
@@ -275,7 +268,6 @@ if (WITH_SUITESPARSE)
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
   endif (SuiteSparse_FOUND)
 else (WITH_SUITESPARSE)
-  message("-- Building without SuiteSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
 endif (WITH_SUITESPARSE)
 
@@ -294,7 +286,6 @@ if (WITH_LAPACK)
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
   endif (NOT (LAPACK_FOUND))
 else (WITH_LAPACK)
-  message("-- Building without LAPACK.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
 endif (WITH_LAPACK)
 
@@ -306,33 +297,25 @@ if (WITH_CXSPARSE)
     # Avoid I conflict
     set_property (DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NCOMPLEX)
     set (CXSPARSE_DEPENDENCY "find_dependency (CXSparse ${CXSparse_VERSION} NO_MODULE)")
-    # By default, if CXSparse and all dependencies are found, Ceres is
-    # built with CXSparse support.
-    message("-- Found CXSparse version: ${CXSparse_VERSION}, "
-      "building with CXSparse.")
   else (TARGET CXSparse::CXSparse)
     # Disable use of CXSparse if it cannot be found and continue.
-    message("-- Did not find CXSparse, Building without CXSparse.")
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
   endif (TARGET CXSparse::CXSparse)
 else (WITH_CXSPARSE)
-  message("-- Building without CXSparse.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
 endif (WITH_CXSPARSE)
+
+add_feature_info (AccelerateSparse WITH_ACCELERATESPARSE
+  "Apple's Accelerate sparse support")
 
 if (WITH_ACCELERATESPARSE)
   find_package(AccelerateSparse)
   if (AccelerateSparse_FOUND)
-    message("-- Found Apple's Accelerate framework with sparse solvers, "
-      "building with Accelerate sparse support.")
   else()
-    message("-- Failed to find Apple's Accelerate framework with sparse solvers, "
-      "building without Accelerate sparse support.")
     update_cache_variable(ACCELERATESPARSE OFF)
     list(APPEND CERES_COMPILE_OPTIONS CERES_NO_ACCELERATE_SPARSE)
   endif()
 else()
-  message("-- Building without Apple's Accelerate sparse support.")
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_ACCELERATE_SPARSE)
   mark_as_advanced(FORCE AccelerateSparse_INCLUDE_DIR
                          AccelerateSparse_LIBRARY)
@@ -406,11 +389,12 @@ endif (NOT WITH_CUSTOM_BLAS)
 if (WITH_OPENMP)
   # Find quietly, as we can continue without OpenMP if it is not found.
   find_package(OpenMP)
+
   if (OPENMP_FOUND)
-    message("-- Building with OpenMP.")
     list(APPEND CERES_COMPILE_OPTIONS CERES_USE_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+
     if (UNIX)
       # At least on Linux, we need pthreads to be enabled for mutex to
       # compile.  This may not work on Windows or Android.
@@ -433,17 +417,19 @@ if (NOT WITH_OPENMP AND NOT WITH_CXX11_THREADS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
 endif (NOT WITH_OPENMP AND NOT WITH_CXX11_THREADS)
 
+
 if (BUILD_BENCHMARKS)
   find_package(benchmark QUIET)
 
   if (benchmark_FOUND)
-     message("-- Found Google benchmark library. Building Ceres benchmarks.")
   else()
-     message("-- Failed to find Google benchmark library, disabling build of benchmarks.")
      update_cache_variable(BUILD_BENCHMARKS OFF)
   endif()
   mark_as_advanced(benchmark_DIR)
 endif()
+
+add_feature_info (Benchmarks BUILD_BENCHMARKS
+  "Build Ceres benchmarks")
 
 include_directories(
   include
@@ -460,25 +446,6 @@ include_directories(
 # used by clients after find_package(Ceres) does not identify Eigen as
 # as system headers.
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
-
-# Change the default build type from Debug to Release, while still
-# supporting overriding the build type.
-#
-# The CACHE STRING logic here and elsewhere is needed to force CMake
-# to pay attention to the value of these variables.
-if (NOT CMAKE_BUILD_TYPE)
-  message("-- No build type specified; defaulting to CMAKE_BUILD_TYPE=Release.")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-    FORCE)
-else (NOT CMAKE_BUILD_TYPE)
-  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message("\n=================================================================================")
-    message("\n-- Build type: Debug. Performance will be terrible!")
-    message("-- Add -DCMAKE_BUILD_TYPE=Release to the CMake command line to get an optimized build.")
-    message("\n=================================================================================")
-  endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
-endif (NOT CMAKE_BUILD_TYPE)
 
 if (MINGW)
   # MinGW produces code that segfaults when performing matrix multiplications
@@ -575,22 +542,21 @@ if (BUILD_DOCUMENTATION)
       "Ceres docs install path relative to CMAKE_INSTALL_PREFIX")
 
   find_package(Sphinx QUIET)
+
   if (NOT SPHINX_FOUND)
-    message("-- Failed to find Sphinx, disabling build of documentation.")
     update_cache_variable(BUILD_DOCUMENTATION OFF)
   else()
     # Generate the User's Guide (html).
     # The corresponding target is ceres_docs, but is included in ALL.
-    message("-- Build the HTML documentation.")
     add_subdirectory(docs)
   endif()
 endif (BUILD_DOCUMENTATION)
 
+add_feature_info (Documentation BUILD_DOCUMENTATION
+  "Build the HTML documentation")
+
 if (BUILD_EXAMPLES)
-  message("-- Build the examples.")
   add_subdirectory(examples)
-else (BUILD_EXAMPLES)
-  message("-- Do not build any example.")
 endif (BUILD_EXAMPLES)
 
 # Setup installation of Ceres public headers.
@@ -657,3 +623,44 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake"
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ceres/internal/export.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
+add_feature_info (Examples BUILD_EXAMPLES "Build the examples")
+
+set_package_properties (glog PROPERTIES
+  DESCRIPTION "C++ implementation of the Google logging module"
+  URL "https://github.com/google/glog"
+)
+
+set_package_properties (gflags PROPERTIES
+  DESCRIPTION "C++ library from commandline flags processing"
+  URL "https://github.com/gflags/gflags"
+)
+
+set_package_properties (Eigen3 PROPERTIES
+  DESCRIPTION "C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms"
+  URL "http://eigen.tuxfamily.org"
+)
+
+set_package_properties (CXSparse PROPERTIES
+  URL "http://faculty.cse.tamu.edu/davis/suitesparse.html"
+)
+
+set_package_properties (SuiteSparse PROPERTIES
+  TYPE RECOMMENDED
+  URL "http://faculty.cse.tamu.edu/davis/suitesparse.html"
+)
+
+set_package_properties (LAPACK PROPERTIES
+  DESCRIPTION "Linear Algebra PACKage"
+  TYPE RECOMMENDED
+)
+
+set_package_properties (Threads PROPERTIES
+  DESCRIPTION "Multithreading support"
+)
+
+set_package_properties (OpenMP PROPERTIES
+  DESCRIPTION "Multiprocessing API support"
+  PURPOSE "Used for the implementation of the OpenMP multithreading backend"
+)
+
+feature_summary (WHAT ALL)

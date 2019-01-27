@@ -214,6 +214,8 @@ endif (WITH_MINILOG)
 
 add_library(ceres ${CERES_LIBRARY_SOURCE})
 
+target_link_libraries(ceres PUBLIC Eigen3::Eigen)
+
 if (WITH_TBB AND TBB_FOUND)
   target_compile_features (ceres PUBLIC cxx_lambdas)
 endif (WITH_TBB AND TBB_FOUND)
