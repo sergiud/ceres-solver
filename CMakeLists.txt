@@ -72,24 +72,6 @@ include (UpdateCacheVariable)
 include(AddGerritCommitHook)
 add_gerrit_commit_hook(${Ceres_SOURCE_DIR} ${Ceres_BINARY_DIR})
 
-# On OS X, add the Homebrew prefix to the set of prefixes searched by
-# CMake in find_path & find_library.  This should ensure that we can
-# still build Ceres even if Homebrew is installed in a non-standard
-# location (not /usr/local).
-if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  find_program(HOMEBREW_EXECUTABLE brew)
-  mark_as_advanced(FORCE HOMEBREW_EXECUTABLE)
-  if (HOMEBREW_EXECUTABLE)
-    # Detected a Homebrew install, query for its install prefix.
-    execute_process(COMMAND ${HOMEBREW_EXECUTABLE} --prefix
-      OUTPUT_VARIABLE HOMEBREW_INSTALL_PREFIX
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-    message(STATUS "Detected Homebrew with install prefix: "
-      "${HOMEBREW_INSTALL_PREFIX}, adding to CMake search paths.")
-    list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_INSTALL_PREFIX}")
-  endif()
-endif()
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib)
@@ -159,12 +141,7 @@ elseif (WITH_THREADING_BACKEND STREQUAL None)
 endif (WITH_THREADING_BACKEND STREQUAL "")
 
 # Enable the use of Eigen as a sparse linear algebra library for
-# solving the nonlinear least squares problems. Enabling this
-# option will result in an LGPL licensed version of Ceres Solver
-# as the Simplicial Cholesky factorization in Eigen is licensed under the LGPL.
-# This does not affect the covariance estimation algorithm, as it
-# depends on the sparse QR factorization algorithm, which is licensed
-# under the MPL.
+# solving the nonlinear least squares problems.
 OPTION(WITH_EIGENSPARSE
   "Enable Eigen as a sparse linear algebra library, WARNING: results in an LGPL licensed Ceres." OFF)
 
@@ -172,6 +149,9 @@ option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
+set(SANITIZERS "" CACHE STRING "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
+include(EnableSanitizer)
+enable_sanitizer(${SANITIZERS})
 
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
 # library for iOS.

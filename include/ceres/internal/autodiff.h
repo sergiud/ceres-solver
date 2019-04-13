@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2019 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -289,8 +289,8 @@ inline bool AutoDifferentiate(const Functor& functor,
 
   // These are the positions of the respective jets in the fixed array x.
   std::array<JetT*, ParameterDims::kNumParameterBlocks> unpacked_parameters =
-      ParameterDims::GetUnpackedParameters(x.get());
-  JetT* output = x.get() + ParameterDims::kNumParameters;
+      ParameterDims::GetUnpackedParameters(x.data());
+  JetT* output = x.data() + ParameterDims::kNumParameters;
 
   // Invalidate the output Jets, so that we can detect if the user
   // did not assign values to all of them.
@@ -299,7 +299,7 @@ inline bool AutoDifferentiate(const Functor& functor,
     output[i].v.setConstant(kImpossibleValue);
   }
 
-  Make1stOrderPerturbations<Parameters>::Apply(parameters, x.get());
+  Make1stOrderPerturbations<Parameters>::Apply(parameters, x.data());
 
   if (!VariadicEvaluate<ParameterDims>(functor, unpacked_parameters.data(),
                                        output)) {
