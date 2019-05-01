@@ -85,6 +85,8 @@ class CERES_EXPORT ResidualBlock {
   // computed. If jacobians[i] is NULL, then the jacobian for that parameter is
   // not computed.
   //
+  // cost must not be null.
+  //
   // Evaluate needs scratch space which must be supplied by the caller via
   // scratch. The array should have at least NumScratchDoublesForEvaluate()
   // space available.
