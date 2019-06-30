@@ -190,9 +190,15 @@ class CERES_EXPORT Solver {
     //
     double min_line_search_step_contraction = 0.6;
 
-    // Maximum number of trial step size iterations during each line search,
-    // if a step size satisfying the search conditions cannot be found within
-    // this number of trials, the line search will terminate.
+    // Maximum number of trial step size iterations during each line
+    // search, if a step size satisfying the search conditions cannot
+    // be found within this number of trials, the line search will
+    // terminate.
+
+    // The minimum allowed value is 0 for trust region minimizer and 1
+    // otherwise. If 0 is specified for the trust region minimizer,
+    // then line search will not be used when solving constrained
+    // optimization problems.
     int max_num_line_search_step_size_iterations = 20;
 
     // Maximum number of restarts of the line search direction algorithm before
@@ -354,12 +360,12 @@ class CERES_EXPORT Solver {
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type =
 #if !defined(CERES_NO_SUITESPARSE)
         SUITE_SPARSE;
-#elif !defined(CERES_NO_ACCELERATE_SPARSE)
-        ACCELERATE_SPARSE;
-#elif !defined(CERES_NO_CXSPARSE)
-        CX_SPARSE;
 #elif defined(CERES_USE_EIGEN_SPARSE)
         EIGEN_SPARSE;
+#elif !defined(CERES_NO_CXSPARSE)
+        CX_SPARSE;
+#elif !defined(CERES_NO_ACCELERATE_SPARSE)
+        ACCELERATE_SPARSE;
 #else
         NO_SPARSE;
 #endif

@@ -222,10 +222,16 @@ bool TrustRegionOptionsAreValid(const Solver::Options& options, string* error) {
     return false;
   }
 
-  if (options.dynamic_sparsity &&
-      options.linear_solver_type != SPARSE_NORMAL_CHOLESKY) {
-    *error = "Dynamic sparsity is only supported with SPARSE_NORMAL_CHOLESKY.";
-    return false;
+  if (options.dynamic_sparsity) {
+    if (options.linear_solver_type != SPARSE_NORMAL_CHOLESKY) {
+      *error = "Dynamic sparsity is only supported with SPARSE_NORMAL_CHOLESKY.";
+      return false;
+    }
+    if (options.sparse_linear_algebra_library_type == ACCELERATE_SPARSE) {
+      *error = "ACCELERATE_SPARSE is not currently supported with dynamic "
+          "sparsity.";
+      return false;
+    }
   }
 
   return true;
@@ -239,7 +245,8 @@ bool LineSearchOptionsAreValid(const Solver::Options& options, string* error) {
   OPTION_LT_OPTION(max_line_search_step_contraction,
                    min_line_search_step_contraction);
   OPTION_LE(min_line_search_step_contraction, 1.0);
-  OPTION_GT(max_num_line_search_step_size_iterations, 0);
+  OPTION_GE(max_num_line_search_step_size_iterations,
+            (options.minimizer_type == ceres::TRUST_REGION ? 0 : 1));
   OPTION_GT(line_search_sufficient_function_decrease, 0.0);
   OPTION_LT_OPTION(line_search_sufficient_function_decrease,
                    line_search_sufficient_curvature_decrease);
