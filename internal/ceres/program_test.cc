@@ -51,9 +51,9 @@ using std::vector;
 // A cost function that simply returns its argument.
 class UnaryIdentityCostFunction : public SizedCostFunction<1, 1> {
  public:
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     residuals[0] = parameters[0][0];
     if (jacobians != nullptr && jacobians[0] != nullptr) {
       jacobians[0][0] = 1.0;
@@ -66,9 +66,9 @@ class UnaryIdentityCostFunction : public SizedCostFunction<1, 1> {
 template <int kNumResiduals, int... Ns>
 class MockCostFunctionBase : public SizedCostFunction<kNumResiduals, Ns...> {
  public:
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     const int kNumParameters = Sum<integer_sequence<int, Ns...>>::Value;
 
     for (int i = 0; i < kNumResiduals; ++i) {
@@ -238,7 +238,9 @@ TEST(Program, RemoveFixedBlocksFixedCost) {
   EXPECT_DOUBLE_EQ(fixed_cost, expected_fixed_cost);
 }
 
-TEST(Program, CreateJacobianBlockSparsityTranspose) {
+class BlockJacobianTest : public ::testing::TestWithParam<int> {};
+
+TEST_P(BlockJacobianTest, CreateJacobianBlockSparsityTranspose) {
   ProblemImpl problem;
   double x[2];
   double y[3];
@@ -304,16 +306,25 @@ TEST(Program, CreateJacobianBlockSparsityTranspose) {
   Program* program = problem.mutable_program();
   program->SetParameterOffsetsAndIndex();
 
+  const int start_row_block = GetParam();
   std::unique_ptr<TripletSparseMatrix> actual_block_sparse_jacobian(
-      program->CreateJacobianBlockSparsityTranspose());
+      program->CreateJacobianBlockSparsityTranspose(start_row_block));
 
-  Matrix expected_dense_jacobian;
-  expected_block_sparse_jacobian.ToDenseMatrix(&expected_dense_jacobian);
+  Matrix expected_full_dense_jacobian;
+  expected_block_sparse_jacobian.ToDenseMatrix(&expected_full_dense_jacobian);
+  Matrix expected_dense_jacobian =
+      expected_full_dense_jacobian.rightCols(8 - start_row_block);
 
   Matrix actual_dense_jacobian;
   actual_block_sparse_jacobian->ToDenseMatrix(&actual_dense_jacobian);
+  EXPECT_EQ(expected_dense_jacobian.rows(), actual_dense_jacobian.rows());
+  EXPECT_EQ(expected_dense_jacobian.cols(), actual_dense_jacobian.cols());
   EXPECT_EQ((expected_dense_jacobian - actual_dense_jacobian).norm(), 0.0);
 }
+
+INSTANTIATE_TEST_SUITE_P(AllColumns,
+                         BlockJacobianTest,
+                         ::testing::Range(0, 7));
 
 template <int kNumResiduals, int kNumParameterBlocks>
 class NumParameterBlocksCostFunction : public CostFunction {
@@ -328,9 +339,9 @@ class NumParameterBlocksCostFunction : public CostFunction {
   virtual ~NumParameterBlocksCostFunction() {
   }
 
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     return true;
   }
 };

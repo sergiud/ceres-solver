@@ -61,16 +61,16 @@ class CERES_EXPORT BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMat
   virtual ~BlockRandomAccessDiagonalMatrix();
 
   // BlockRandomAccessMatrix Interface.
-  virtual CellInfo* GetCell(int row_block_id,
-                            int col_block_id,
-                            int* row,
-                            int* col,
-                            int* row_stride,
-                            int* col_stride);
+  CellInfo* GetCell(int row_block_id,
+                    int col_block_id,
+                    int* row,
+                    int* col,
+                    int* row_stride,
+                    int* col_stride) final;
 
   // This is not a thread safe method, it assumes that no cell is
   // locked.
-  virtual void SetZero();
+  void SetZero() final;
 
   // Invert the matrix assuming that each block is positive definite.
   void Invert();
@@ -79,8 +79,8 @@ class CERES_EXPORT BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMat
   void RightMultiply(const double* x, double* y) const;
 
   // Since the matrix is square, num_rows() == num_cols().
-  virtual int num_rows() const { return tsm_->num_rows(); }
-  virtual int num_cols() const { return tsm_->num_cols(); }
+  int num_rows() const final { return tsm_->num_rows(); }
+  int num_cols() const final { return tsm_->num_cols(); }
 
   const TripletSparseMatrix* matrix() const { return tsm_.get(); }
   TripletSparseMatrix* mutable_matrix() { return tsm_.get(); }

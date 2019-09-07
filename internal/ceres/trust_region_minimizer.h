@@ -54,9 +54,9 @@ class CERES_EXPORT TrustRegionMinimizer : public Minimizer {
   ~TrustRegionMinimizer();
 
   // This method is not thread safe.
-  virtual void Minimize(const Minimizer::Options& options,
-                        double* parameters,
-                        Solver::Summary* solver_summary);
+  void Minimize(const Minimizer::Options& options,
+                double* parameters,
+                Solver::Summary* solver_summary) override;
 
  private:
   void Init(const Minimizer::Options& options,

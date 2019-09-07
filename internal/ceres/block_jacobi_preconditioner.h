@@ -64,13 +64,13 @@ class CERES_EXPORT BlockJacobiPreconditioner : public BlockSparseMatrixPrecondit
   virtual ~BlockJacobiPreconditioner();
 
   // Preconditioner interface
-  virtual void RightMultiply(const double* x, double* y) const;
-  virtual int num_rows() const { return m_->num_rows(); }
-  virtual int num_cols() const { return m_->num_rows(); }
+  void RightMultiply(const double* x, double* y) const final;
+  int num_rows() const final { return m_->num_rows(); }
+  int num_cols() const final { return m_->num_rows(); }
   const BlockRandomAccessDiagonalMatrix& matrix() const { return *m_; }
 
  private:
-  virtual bool UpdateImpl(const BlockSparseMatrix& A, const double* D);
+  bool UpdateImpl(const BlockSparseMatrix& A, const double* D) final;
 
   std::unique_ptr<BlockRandomAccessDiagonalMatrix> m_;
 };

@@ -34,9 +34,10 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include "ceres/crs_matrix.h"
-#include "ceres/evaluation_callback.h"
+#include "ceres/problem.h"
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/port.h"
 #include "ceres/iteration_callback.h"
@@ -46,8 +47,6 @@
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
-
-class Problem;
 
 // Interface for non-linear least squares solvers.
 class CERES_EXPORT Solver {
@@ -339,6 +338,30 @@ class CERES_EXPORT Solver {
     // preconditioning. This option is used only when the
     // preconditioner_type is CLUSTER_JACOBI or CLUSTER_TRIDIAGONAL.
     VisibilityClusteringType visibility_clustering_type = CANONICAL_VIEWS;
+
+    // Subset preconditioner is a general purpose preconditioner for
+    // linear least squares problems. Given a set of residual blocks,
+    // it uses the corresponding subset of the rows of the Jacobian to
+    // construct a preconditioner.
+    //
+    // Suppose the Jacobian J has been horizontally partitioned as
+    //
+    // J = [P]
+    //     [Q]
+    //
+    // Where, Q is the set of rows corresponding to the residual
+    // blocks in residual_blocks_for_subset_preconditioner.
+    //
+    // The preconditioner is the inverse of the matrix Q'Q.
+    //
+    // Obviously, the efficacy of the preconditioner depends on how
+    // well the matrix Q approximates J'J, or how well the chosen
+    // residual blocks approximate the non-linear least squares
+    // problem.
+    //
+    // If Solver::Options::preconditioner_type == SUBSET, then
+    // residual_blocks_for_subset_preconditioner must be non-empty.
+    std::unordered_set<ResidualBlockId> residual_blocks_for_subset_preconditioner;
 
     // Ceres supports using multiple dense linear algebra libraries
     // for dense matrix factorizations. Currently EIGEN and LAPACK are
@@ -699,26 +722,18 @@ class CERES_EXPORT Solver {
     // optimistic. This number should be exposed for users to change.
     double gradient_check_numeric_derivative_relative_step_size = 1e-6;
 
-    // If true, the user's parameter blocks are updated at the end of
-    // every Minimizer iteration, otherwise they are updated when the
-    // Minimizer terminates. This is useful if, for example, the user
-    // wishes to visualize the state of the optimization every iteration
-    // (in combination with an IterationCallback).
-    //
-    // NOTE: If an evaluation_callback is provided, then the behaviour
-    // of this flag is slightly different in each case:
-    //
-    // (1) If update_state_every_iteration = false, then the user's
-    // state is changed at every residual and/or jacobian evaluation.
-    // Any user provided IterationCallbacks should NOT inspect and
-    // depend on the user visible state while the solver is running,
-    // since there will be undefined contents.
-    //
-    // (2) If update_state_every_iteration is true, then the user's
-    // state is changed at every residual and/or jacobian evaluation,
-    // BUT the solver will ensure that before the user provided
-    // IterationCallbacks are called, the user visible state will be
-    // updated to the current best point found by the solver.
+    // If update_state_every_iteration is true, then Ceres Solver will
+    // guarantee that at the end of every iteration and before any
+    // user provided IterationCallback is called, the parameter blocks
+    // are updated to the current best solution found by the
+    // solver. Thus the IterationCallback can inspect the values of
+    // the parameter blocks for purposes of computation, visualization
+    // or termination.
+
+    // If update_state_every_iteration is false then there is no such
+    // guarantee, and user provided IterationCallbacks should not
+    // expect to look at the parameter blocks and interpret their
+    // values.
     bool update_state_every_iteration = false;
 
     // Callbacks that are executed at the end of each iteration of the
@@ -737,19 +752,6 @@ class CERES_EXPORT Solver {
     //
     // The solver does NOT take ownership of these pointers.
     std::vector<IterationCallback*> callbacks;
-
-    // If non-NULL, gets notified when Ceres is about to evaluate the
-    // residuals and/or Jacobians. This enables sharing computation
-    // between residuals, which in some cases is important for efficient
-    // cost evaluation. See evaluation_callback.h for details.
-    //
-    // NOTE: Evaluation callbacks are incompatible with inner iterations.
-    //
-    // WARNING: This interacts with update_state_every_iteration. See
-    // the documentation for that option for more details.
-    //
-    // The solver does NOT take ownership of the pointer.
-    EvaluationCallback* evaluation_callback = nullptr;
   };
 
   struct CERES_EXPORT Summary {

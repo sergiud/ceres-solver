@@ -76,9 +76,10 @@
 #define CERES_PUBLIC_LOSS_FUNCTION_H_
 
 #include <memory>
-#include "glog/logging.h"
-#include "ceres/types.h"
+
 #include "ceres/internal/disable_warnings.h"
+#include "ceres/types.h"
+#include "glog/logging.h"
 
 #include "ceres/internal/prefix.h"
 
@@ -120,7 +121,6 @@ class CERES_EXPORT LossFunction {
 // Note: in the region of interest (i.e. s < 3) we have:
 //   TrivialLoss >= HuberLoss >= SoftLOneLoss >= CauchyLoss
 
-
 // This corresponds to no robustification.
 //
 //   rho(s) = s
@@ -132,7 +132,7 @@ class CERES_EXPORT LossFunction {
 // thing.
 class CERES_EXPORT TrivialLoss : public LossFunction {
  public:
-  virtual void Evaluate(double, double*) const;
+  void Evaluate(double, double*) const override;
 };
 
 // Scaling
@@ -175,8 +175,8 @@ class CERES_EXPORT TrivialLoss : public LossFunction {
 //   http://en.wikipedia.org/wiki/Huber_Loss_Function
 class CERES_EXPORT HuberLoss : public LossFunction {
  public:
-  explicit HuberLoss(double a) : a_(a), b_(a * a) { }
-  virtual void Evaluate(double, double*) const;
+  explicit HuberLoss(double a) : a_(a), b_(a * a) {}
+  void Evaluate(double, double*) const override;
 
  private:
   const double a_;
@@ -191,8 +191,8 @@ class CERES_EXPORT HuberLoss : public LossFunction {
 // At s = 0: rho = [0, 1, -1/2].
 class CERES_EXPORT SoftLOneLoss : public LossFunction {
  public:
-  explicit SoftLOneLoss(double a) : b_(a * a), c_(1 / b_) { }
-  virtual void Evaluate(double, double*) const;
+  explicit SoftLOneLoss(double a) : b_(a * a), c_(1 / b_) {}
+  void Evaluate(double, double*) const override;
 
  private:
   // b = a^2.
@@ -208,8 +208,8 @@ class CERES_EXPORT SoftLOneLoss : public LossFunction {
 // At s = 0: rho = [0, 1, -1].
 class CERES_EXPORT CauchyLoss : public LossFunction {
  public:
-  explicit CauchyLoss(double a) : b_(a * a), c_(1 / b_) { }
-  virtual void Evaluate(double, double*) const;
+  explicit CauchyLoss(double a) : b_(a * a), c_(1 / b_) {}
+  void Evaluate(double, double*) const override;
 
  private:
   // b = a^2.
@@ -229,8 +229,8 @@ class CERES_EXPORT CauchyLoss : public LossFunction {
 // At s = 0: rho = [0, 1, 0].
 class CERES_EXPORT ArctanLoss : public LossFunction {
  public:
-  explicit ArctanLoss(double a) : a_(a), b_(1 / (a * a)) { }
-  virtual void Evaluate(double, double*) const;
+  explicit ArctanLoss(double a) : a_(a), b_(1 / (a * a)) {}
+  void Evaluate(double, double*) const override;
 
  private:
   const double a_;
@@ -269,7 +269,7 @@ class CERES_EXPORT ArctanLoss : public LossFunction {
 class CERES_EXPORT TolerantLoss : public LossFunction {
  public:
   explicit TolerantLoss(double a, double b);
-  virtual void Evaluate(double, double*) const;
+  void Evaluate(double, double*) const override;
 
  private:
   const double a_, b_, c_;
@@ -286,8 +286,8 @@ class CERES_EXPORT TolerantLoss : public LossFunction {
 // At s = 0: rho = [0, 0.5, -1 / a^2]
 class CERES_EXPORT TukeyLoss : public ceres::LossFunction {
  public:
-  explicit TukeyLoss(double a) : a_squared_(a * a) { }
-  virtual void Evaluate(double, double*) const;
+  explicit TukeyLoss(double a) : a_squared_(a * a) {}
+  void Evaluate(double, double*) const override;
 
  private:
   const double a_squared_;
@@ -298,10 +298,12 @@ class CERES_EXPORT TukeyLoss : public ceres::LossFunction {
 // The loss functions must not be NULL.
 class CERES_EXPORT ComposedLoss : public LossFunction {
  public:
-  explicit ComposedLoss(const LossFunction* f, Ownership ownership_f,
-                        const LossFunction* g, Ownership ownership_g);
+  explicit ComposedLoss(const LossFunction* f,
+                        Ownership ownership_f,
+                        const LossFunction* g,
+                        Ownership ownership_g);
   virtual ~ComposedLoss();
-  virtual void Evaluate(double, double*) const;
+  void Evaluate(double, double*) const override;
 
  private:
   std::unique_ptr<const LossFunction> f_, g_;
@@ -330,8 +332,8 @@ class CERES_EXPORT ScaledLoss : public LossFunction {
   // Constructs a ScaledLoss wrapping another loss function. Takes
   // ownership of the wrapped loss function or not depending on the
   // ownership parameter.
-  ScaledLoss(const LossFunction* rho, double a, Ownership ownership) :
-      rho_(rho), a_(a), ownership_(ownership) { }
+  ScaledLoss(const LossFunction* rho, double a, Ownership ownership)
+      : rho_(rho), a_(a), ownership_(ownership) {}
   ScaledLoss(const ScaledLoss&) = delete;
   void operator=(const ScaledLoss&) = delete;
 
@@ -340,7 +342,7 @@ class CERES_EXPORT ScaledLoss : public LossFunction {
       rho_.release();
     }
   }
-  virtual void Evaluate(double, double*) const;
+  void Evaluate(double, double*) const override;
 
  private:
   std::unique_ptr<const LossFunction> rho_;
@@ -389,8 +391,7 @@ class CERES_EXPORT ScaledLoss : public LossFunction {
 class CERES_EXPORT LossFunctionWrapper : public LossFunction {
  public:
   LossFunctionWrapper(LossFunction* rho, Ownership ownership)
-      : rho_(rho), ownership_(ownership) {
-  }
+      : rho_(rho), ownership_(ownership) {}
 
   LossFunctionWrapper(const LossFunctionWrapper&) = delete;
   void operator=(const LossFunctionWrapper&) = delete;
@@ -401,13 +402,12 @@ class CERES_EXPORT LossFunctionWrapper : public LossFunction {
     }
   }
 
-  virtual void Evaluate(double sq_norm, double out[3]) const {
+  void Evaluate(double sq_norm, double out[3]) const override {
     if (rho_.get() == NULL) {
       out[0] = sq_norm;
       out[1] = 1.0;
       out[2] = 0.0;
-    }
-    else {
+    } else {
       rho_->Evaluate(sq_norm, out);
     }
   }

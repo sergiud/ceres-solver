@@ -52,14 +52,14 @@ class CERES_EXPORT LevenbergMarquardtStrategy : public TrustRegionStrategy {
   virtual ~LevenbergMarquardtStrategy();
 
   // TrustRegionStrategy interface
-  virtual TrustRegionStrategy::Summary ComputeStep(
+  TrustRegionStrategy::Summary ComputeStep(
       const TrustRegionStrategy::PerSolveOptions& per_solve_options,
       SparseMatrix* jacobian,
       const double* residuals,
-      double* step);
-  virtual void StepAccepted(double step_quality);
-  virtual void StepRejected(double step_quality);
-  virtual void StepIsInvalid() {
+      double* step) final;
+  void StepAccepted(double step_quality) final;
+  void StepRejected(double step_quality) final;
+  void StepIsInvalid() final {
     // Treat the current step as a rejected step with no increase in
     // solution quality. Since rejected steps lead to decrease in the
     // size of the trust region, the next time ComputeStep is called,
@@ -67,7 +67,7 @@ class CERES_EXPORT LevenbergMarquardtStrategy : public TrustRegionStrategy {
     StepRejected(0.0);
   }
 
-  virtual double Radius() const;
+  double Radius() const final;
 
  private:
   LinearSolver* linear_solver_;

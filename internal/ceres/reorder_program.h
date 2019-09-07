@@ -96,11 +96,27 @@ bool ReorderProgramForSchurTypeLinearSolver(
 // library (SuiteSparse version >= 4.2.0) then the fill reducing
 // ordering will take it into account, otherwise it will be ignored.
 CERES_EXPORT
-bool ReorderProgramForSparseNormalCholesky(
+bool ReorderProgramForSparseCholesky(
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
     const ParameterBlockOrdering& parameter_block_ordering,
+    int start_row_block,
     Program* program,
     std::string* error);
+
+// Reorder the residual blocks in the program so that all the residual
+// blocks in bottom_residual_blocks are at the bottom. The return
+// value is the number of residual blocks in the program in "top" part
+// of the Program, i.e., the ones not included in
+// bottom_residual_blocks.
+//
+// This number can be different from program->NumResidualBlocks() -
+// bottom_residual_blocks.size() because we allow
+// bottom_residual_blocks to contain residual blocks not present in
+// the Program.
+CERES_EXPORT
+int ReorderResidualBlocksByPartition(
+    const std::unordered_set<ResidualBlockId>& bottom_residual_blocks,
+    Program* program);
 
 }  // namespace internal
 }  // namespace ceres

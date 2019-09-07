@@ -101,6 +101,8 @@ class AccelerateSparse {
 
  private:
   std::vector<long> column_starts_;
+  std::vector<uint8_t> solve_workspace_;
+  std::vector<uint8_t> factorization_workspace_;
   // Storage for the values of A if Scalar != double (necessitating a copy).
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> values_;
 };
@@ -115,12 +117,12 @@ class AppleAccelerateCholesky : public SparseCholesky {
 
   // SparseCholesky interface.
   virtual ~AppleAccelerateCholesky();
-  virtual CompressedRowSparseMatrix::StorageType StorageType() const;
-  virtual LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
-                                                std::string* message);
-  virtual LinearSolverTerminationType Solve(const double* rhs,
-                                            double* solution,
-                                            std::string* message);
+  CompressedRowSparseMatrix::StorageType StorageType() const;
+  LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
+                                        std::string* message) final;
+  LinearSolverTerminationType Solve(const double* rhs,
+                                    double* solution,
+                                    std::string* message) final ;
 
  private:
   AppleAccelerateCholesky(const OrderingType ordering_type);

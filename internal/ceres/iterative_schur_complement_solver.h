@@ -79,11 +79,11 @@ class CERES_EXPORT IterativeSchurComplementSolver : public BlockSparseMatrixSolv
   virtual ~IterativeSchurComplementSolver();
 
  private:
-  virtual LinearSolver::Summary SolveImpl(
+  LinearSolver::Summary SolveImpl(
       BlockSparseMatrix* A,
       const double* b,
       const LinearSolver::PerSolveOptions& options,
-      double* x);
+      double* x) final;
 
   void CreatePreconditioner(BlockSparseMatrix* A);
 

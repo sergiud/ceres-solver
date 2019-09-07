@@ -31,6 +31,7 @@
 #ifndef CERES_INTERNAL_PROGRAM_H_
 #define CERES_INTERNAL_PROGRAM_H_
 
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -40,6 +41,9 @@
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
+
+class EvaluationCallback;
+
 namespace internal {
 
 class ParameterBlock;
@@ -67,6 +71,7 @@ class CERES_EXPORT Program {
   const std::vector<ResidualBlock*>& residual_blocks() const;
   std::vector<ParameterBlock*>* mutable_parameter_blocks();
   std::vector<ResidualBlock*>* mutable_residual_blocks();
+  EvaluationCallback* mutable_evaluation_callback();
 
   // Serialize to/from the program and update states.
   //
@@ -130,8 +135,10 @@ class CERES_EXPORT Program {
   // structure corresponding to the block sparsity of the transpose of
   // the Jacobian matrix.
   //
-  // Caller owns the result.
-  TripletSparseMatrix* CreateJacobianBlockSparsityTranspose() const;
+  // start_residual_block which allows the user to ignore the first
+  // start_residual_block residuals.
+  std::unique_ptr<TripletSparseMatrix> CreateJacobianBlockSparsityTranspose(
+      int start_residual_block = 0) const;
 
   // Create a copy of this program and removes constant parameter
   // blocks and residual blocks with no varying parameter blocks while
@@ -185,6 +192,7 @@ class CERES_EXPORT Program {
   // The Program does not own the ParameterBlock or ResidualBlock objects.
   std::vector<ParameterBlock*> parameter_blocks_;
   std::vector<ResidualBlock*> residual_blocks_;
+  EvaluationCallback* evaluation_callback_ = nullptr;
 
   friend class ProblemImpl;
 };

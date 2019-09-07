@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "ceres/evaluation_callback.h"
 #include "ceres/sized_cost_function.h"
 #include "ceres/problem.h"
 #include "ceres/problem_impl.h"
@@ -76,8 +77,8 @@ struct WigglyBowlCostFunctionAndEvaluationCallback :
 
   // Evaluation callback interface. This checks that all the preconditions are
   // met at the point that Ceres calls into it.
-  virtual void PrepareForEvaluation(bool evaluate_jacobians,
-                                    bool new_evaluation_point) {
+  void PrepareForEvaluation(bool evaluate_jacobians,
+                            bool new_evaluation_point) final {
     // At this point, the incoming parameters are implicitly pushed by Ceres
     // into the user parameter blocks; in contrast to in Evaluate().
     uint64_t incoming_parameter_hash = Djb2Hash(user_parameter_block, 2);
@@ -110,9 +111,9 @@ struct WigglyBowlCostFunctionAndEvaluationCallback :
 
   // Cost function interface. This checks that preconditions that were
   // set as part of the PrepareForEvaluation() call are met in this one.
-  virtual bool Evaluate(double const* const* parameters,
-                        double* residuals,
-                        double** jacobians) const {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const final {
     // Cost function implementation of the "Wiggly Bowl" function:
     //
     //   1/2 * [(y - a*sin(x))^2 + x^2],
@@ -193,6 +194,7 @@ TEST(EvaluationCallback, WithTrustRegionMinimizer) {
 
   WigglyBowlCostFunctionAndEvaluationCallback cost_function(parameters);
   Problem::Options problem_options;
+  problem_options.evaluation_callback = &cost_function;
   problem_options.cost_function_ownership = DO_NOT_TAKE_OWNERSHIP;
   Problem problem(problem_options);
   problem.AddResidualBlock(&cost_function, NULL, parameters);
@@ -200,7 +202,6 @@ TEST(EvaluationCallback, WithTrustRegionMinimizer) {
   Solver::Options options;
   options.linear_solver_type = DENSE_QR;
   options.max_num_iterations = 300;  // Cost function is hard.
-  options.evaluation_callback = &cost_function;
 
   // Run the solve. Checking is done inside the cost function / callback.
   Solver::Summary summary;
@@ -240,6 +241,7 @@ static void WithLineSearchMinimizerImpl(
 
   WigglyBowlCostFunctionAndEvaluationCallback cost_function(parameters);
   Problem::Options problem_options;
+  problem_options.evaluation_callback = &cost_function;
   problem_options.cost_function_ownership = DO_NOT_TAKE_OWNERSHIP;
   Problem problem(problem_options);
   problem.AddResidualBlock(&cost_function, NULL, parameters);
@@ -248,7 +250,7 @@ static void WithLineSearchMinimizerImpl(
   options.linear_solver_type = DENSE_QR;
   options.max_num_iterations = 300;  // Cost function is hard.
   options.minimizer_type = ceres::LINE_SEARCH;
-  options.evaluation_callback = &cost_function;
+
   options.line_search_type = line_search;
   options.line_search_direction_type = line_search_direction;
   options.line_search_interpolation_type = line_search_interpolation;

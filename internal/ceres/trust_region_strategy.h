@@ -76,6 +76,11 @@ class CERES_EXPORT TrustRegionStrategy {
     DoglegType dogleg_type = TRADITIONAL_DOGLEG;
   };
 
+  // Factory.
+  static TrustRegionStrategy* Create(const Options& options);
+
+  virtual ~TrustRegionStrategy();
+
   // Per solve options.
   struct PerSolveOptions {
     // Forcing sequence for inexact solves.
@@ -110,8 +115,6 @@ class CERES_EXPORT TrustRegionStrategy {
     LinearSolverTerminationType termination_type = LINEAR_SOLVER_FAILURE;
   };
 
-  virtual ~TrustRegionStrategy();
-
   // Use the current radius to solve for the trust region step.
   virtual Summary ComputeStep(const PerSolveOptions& per_solve_options,
                               SparseMatrix* jacobian,
@@ -136,9 +139,6 @@ class CERES_EXPORT TrustRegionStrategy {
 
   // Current trust region radius.
   virtual double Radius() const = 0;
-
-  // Factory.
-  static TrustRegionStrategy* Create(const Options& options);
 };
 
 }  // namespace internal

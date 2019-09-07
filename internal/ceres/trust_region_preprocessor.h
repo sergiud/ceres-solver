@@ -42,9 +42,9 @@ namespace internal {
 class CERES_EXPORT TrustRegionPreprocessor : public Preprocessor {
  public:
   virtual ~TrustRegionPreprocessor();
-  virtual bool Preprocess(const Solver::Options& options,
-                          ProblemImpl* problem,
-                          PreprocessedProblem* preprocessed_problem);
+  bool Preprocess(const Solver::Options& options,
+                  ProblemImpl* problem,
+                  PreprocessedProblem* preprocessed_problem) override;
 };
 
 }  // namespace internal
