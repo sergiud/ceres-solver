@@ -197,7 +197,7 @@ class CERES_EXPORT SchurEliminatorBase {
   //
   // Since the Schur complement is a symmetric matrix, only the upper
   // triangular part of the Schur complement is computed.
-  virtual void Eliminate(const BlockSparseMatrix* A,
+  virtual void Eliminate(const BlockSparseMatrixData& A,
                          const double* b,
                          const double* D,
                          BlockRandomAccessMatrix* lhs,
@@ -206,7 +206,7 @@ class CERES_EXPORT SchurEliminatorBase {
   // Given values for the variables z in the F block of A, solve for
   // the optimal values of the variables y corresponding to the E
   // block in A.
-  virtual void BackSubstitute(const BlockSparseMatrix* A,
+  virtual void BackSubstitute(const BlockSparseMatrixData& A,
                               const double* b,
                               const double* D,
                               const double* z,
@@ -237,12 +237,12 @@ class SchurEliminator : public SchurEliminatorBase {
   void Init(int num_eliminate_blocks,
             bool assume_full_rank_ete,
             const CompressedRowBlockStructure* bs) final;
-  void Eliminate(const BlockSparseMatrix* A,
+  void Eliminate(const BlockSparseMatrixData& A,
                  const double* b,
                  const double* D,
                  BlockRandomAccessMatrix* lhs,
                  double* rhs) final;
-  void BackSubstitute(const BlockSparseMatrix* A,
+  void BackSubstitute(const BlockSparseMatrixData& A,
                       const double* b,
                       const double* D,
                       const double* z,
@@ -284,7 +284,7 @@ class SchurEliminator : public SchurEliminatorBase {
 
   void ChunkDiagonalBlockAndGradient(
       const Chunk& chunk,
-      const BlockSparseMatrix* A,
+      const BlockSparseMatrixData& A,
       const double* b,
       int row_block_counter,
       typename EigenTypes<kEBlockSize, kEBlockSize>::Matrix* eet,
@@ -293,7 +293,7 @@ class SchurEliminator : public SchurEliminatorBase {
       BlockRandomAccessMatrix* lhs);
 
   void UpdateRhs(const Chunk& chunk,
-                 const BlockSparseMatrix* A,
+                 const BlockSparseMatrixData& A,
                  const double* b,
                  int row_block_counter,
                  const double* inverse_ete_g,
@@ -305,17 +305,17 @@ class SchurEliminator : public SchurEliminatorBase {
                          const double* buffer,
                          const BufferLayoutType& buffer_layout,
                          BlockRandomAccessMatrix* lhs);
-  void EBlockRowOuterProduct(const BlockSparseMatrix* A,
+  void EBlockRowOuterProduct(const BlockSparseMatrixData& A,
                              int row_block_index,
                              BlockRandomAccessMatrix* lhs);
 
-  void NoEBlockRowsUpdate(const BlockSparseMatrix* A,
+  void NoEBlockRowsUpdate(const BlockSparseMatrixData& A,
                           const double* b,
                           int row_block_counter,
                           BlockRandomAccessMatrix* lhs,
                           double* rhs);
 
-  void NoEBlockRowOuterProduct(const BlockSparseMatrix* A,
+  void NoEBlockRowOuterProduct(const BlockSparseMatrixData& A,
                                int row_block_index,
                                BlockRandomAccessMatrix* lhs);
 
@@ -427,7 +427,7 @@ class SchurEliminatorForOneFBlock : public SchurEliminatorBase {
         e_t_e_inverse_matrices_.begin(), e_t_e_inverse_matrices_.end(), 0.0);
   }
 
-  void Eliminate(const BlockSparseMatrix* A,
+  void Eliminate(const BlockSparseMatrixData& A,
                  const double* b,
                  const double* D,
                  BlockRandomAccessMatrix* lhs_bram,
@@ -444,8 +444,8 @@ class SchurEliminatorForOneFBlock : public SchurEliminatorBase {
     lhs.setZero();
     rhs.setZero();
 
-    const CompressedRowBlockStructure* bs = A->block_structure();
-    const double* values = A->values();
+    const CompressedRowBlockStructure* bs = A.block_structure();
+    const double* values = A.values();
 
     // Add the diagonal to the schur complement.
     if (D != nullptr) {
@@ -568,14 +568,14 @@ class SchurEliminatorForOneFBlock : public SchurEliminatorBase {
   // before this. SchurComplementSolver always does this.
   //
   // y_i = e_t_e_inverse * sum_i e_i^T * (b_i - f_i * z);
-  void BackSubstitute(const BlockSparseMatrix* A,
+  void BackSubstitute(const BlockSparseMatrixData& A,
                       const double* b,
                       const double* D,
                       const double* z_ptr,
                       double* y) override {
     typename EigenTypes<kFBlockSize>::ConstVectorRef z(z_ptr, kFBlockSize);
-    const CompressedRowBlockStructure* bs = A->block_structure();
-    const double* values = A->values();
+    const CompressedRowBlockStructure* bs = A.block_structure();
+    const double* values = A.values();
     Eigen::Matrix<double, kEBlockSize, 1> tmp;
     for (int i = 0; i < chunks_.size(); ++i) {
       const Chunk& chunk = chunks_[i];
