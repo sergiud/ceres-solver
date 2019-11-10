@@ -81,6 +81,9 @@ set(CERES_INTERNAL_SRC
     dynamic_sparse_normal_cholesky_solver.cc
     evaluator.cc
     eigensparse.cc
+    expression.cc
+    expression_graph.cc
+    expression_ref.cc
     file.cc
     float_suitesparse.cc
     float_cxsparse.cc
@@ -309,6 +312,15 @@ target_link_libraries(ceres
   PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
   PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
 
+include(DetectSIMDHostileStackCheckMacOSXcodePairing)
+detect_simd_hostile_stack_check_macos_xcode_pairing(
+  MUST_DISABLE_STACK_CHECK)
+if (MUST_DISABLE_STACK_CHECK)
+  message("-- Explicitly disabling -fstack-check in Ceres target (both "
+    "for Ceres and for clients) to avoid breaking SIMD alignment.")
+  target_compile_options(ceres PUBLIC "-fno-stack-check")
+endif()
+
 install(TARGETS ceres
         EXPORT  CeresTargets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -396,6 +408,8 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(dynamic_sparsity)
   ceres_test(evaluation_callback)
   ceres_test(evaluator)
+  ceres_test(expression)
+  ceres_test(expression_graph)
   ceres_test(fixed_array)
   ceres_test(gradient_checker)
   ceres_test(gradient_checking_cost_function)
