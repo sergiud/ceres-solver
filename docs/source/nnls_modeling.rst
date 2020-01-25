@@ -1752,14 +1752,18 @@ Instances
 
    Allow the indicated parameter to vary during optimization.
 
+.. function:: bool Problem::IsParameterBlockConstant(const double* values) const
+
+   Returns true if a parameter block is set constant, and false otherwise.
+
 .. function:: void Problem::SetParameterization(double* values, LocalParameterization* local_parameterization)
 
    Set the local parameterization for one of the parameter blocks.
    The local_parameterization is owned by the Problem by default. It
    is acceptable to set the same parameterization for multiple
    parameters; the destructor is careful to delete local
-   parameterizations only once. The local parameterization can only be
-   set once per parameter, and cannot be changed once set.
+   parameterizations only once. Calling `SetParameterization` with
+   `nullptr` will clear any previously set parameterization.
 
 .. function:: LocalParameterization* Problem::GetParameterization(const double* values) const
 

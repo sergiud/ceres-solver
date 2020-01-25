@@ -28,8 +28,8 @@
 //
 // Author: darius.rueckert@fau.de (Darius Rueckert)
 
-#ifndef CERES_PUBLIC_EXPRESSION_TREE_H_
-#define CERES_PUBLIC_EXPRESSION_TREE_H_
+#ifndef CERES_PUBLIC_CODEGEN_INTERNAL_EXPRESSION_GRAPH_H_
+#define CERES_PUBLIC_CODEGEN_INTERNAL_EXPRESSION_GRAPH_H_
 
 #include <vector>
 
@@ -50,13 +50,14 @@ namespace internal {
 // A is parent of B    <=>  A has B as a parameter    <=> A.DirectlyDependsOn(B)
 class CERES_EXPORT ExpressionGraph {
  public:
-  // Creates an expression and adds it to expressions_.
-  // The returned reference will be invalid after this function is called again.
-  Expression& CreateExpression(ExpressionType type);
-
   // Checks if A depends on B.
   // -> B is a descendant of A
   bool DependsOn(ExpressionId A, ExpressionId B) const;
+
+  bool operator==(const ExpressionGraph& other) const;
+  bool operator!=(const ExpressionGraph& other) const {
+    return !(*this == other);
+  }
 
   Expression& ExpressionForId(ExpressionId id) { return expressions_[id]; }
   const Expression& ExpressionForId(ExpressionId id) const {
@@ -65,24 +66,64 @@ class CERES_EXPORT ExpressionGraph {
 
   int Size() const { return expressions_.size(); }
 
+  // Insert a new expression at "location" into the graph. All expression
+  // after "location" are moved by one element to the back. References to
+  // moved expressions are updated.
+  void Insert(ExpressionId location, const Expression& expression);
+
+  // Adds an Expression to the end of the expression list and creates a new
+  // variable for the result. The id of the result variable is returned so it
+  // can be used for further operations.
+  ExpressionId InsertBack(const Expression& expression);
+
+  // Finds the closing ENDIF expression for a given IF expression. Calling this
+  // method is only valid on IF expressions. If no suitable ENDIF is found,
+  // kInvalidExpressionId is returned. Example:
+  // <id> <expr>    FindMatchingEndif(id)
+  //  0  IF         7
+  //  1    IF       3
+  //  2    ELSE     -
+  //  3    ENDIF    -
+  //  4  ELSE       -
+  //  5    IF       6
+  //  6    ENDIF    -
+  //  7  ENDIF      -
+  ExpressionId FindMatchingEndif(ExpressionId id) const;
+
+  // Similar to FindMatchingEndif, but returns the matching ELSE expression. If
+  // no suitable ELSE is found, kInvalidExpressionId is returned.
+  // FindMatchingElse does not throw an error is this case, because IF without
+  // ELSE is allowed.
+  // <id> <expr>    FindMatchingEndif(id)
+  //  0  IF         4
+  //  1    IF       2
+  //  2    ELSE     -
+  //  3    ENDIF    -
+  //  4  ELSE       -
+  //  5    IF       kInvalidEpressionId
+  //  6    ENDIF    -
+  //  7  ENDIF      -
+  ExpressionId FindMatchingElse(ExpressionId id) const;
+
  private:
-  // All Expressions are referenced by an ExpressionId. The ExpressionId is the
-  // index into this array. Each expression has a list of ExpressionId as
+  // All Expressions are referenced by an ExpressionId. The ExpressionId is
+  // the index into this array. Each expression has a list of ExpressionId as
   // arguments. These references form the graph.
   std::vector<Expression> expressions_;
 };
 
-// After calling this method, all operations on 'ExpressionRef' objects will be
-// recorded into an ExpressionGraph. You can obtain this graph by calling
+// After calling this method, all operations on 'ExpressionRef' objects will
+// be recorded into an ExpressionGraph. You can obtain this graph by calling
 // StopRecordingExpressions.
 //
-// Performing expression operations before calling StartRecordingExpressions or
-// calling StartRecodring. twice is an error.
+// Performing expression operations before calling StartRecordingExpressions
+// or calling StartRecodring. twice is an error.
 CERES_EXPORT void StartRecordingExpressions();
 
-// Stops recording and returns all expressions that have been executed since the
-// call to StartRecordingExpressions. The internal ExpressionGraph will be
-// invalidated and a second consecutive call to this method results in an error.
+// Stops recording and returns all expressions that have been executed since
+// the call to StartRecordingExpressions. The internal ExpressionGraph will be
+// invalidated and a second consecutive call to this method results in an
+// error.
 CERES_EXPORT ExpressionGraph StopRecordingExpressions();
 
 // Returns a pointer to the active expression tree.
@@ -94,4 +135,4 @@ CERES_EXPORT ExpressionGraph* GetCurrentExpressionGraph();
 
 #include "ceres/internal/suffix.h"
 
-#endif
+#endif  // CERES_PUBLIC_CODEGEN_INTERNAL_EXPRESSION_GRAPH_H_

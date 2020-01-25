@@ -28,119 +28,154 @@
 //
 // Author: darius.rueckert@fau.de (Darius Rueckert)
 
-#include "ceres/internal/expression.h"
+#include "ceres/codegen/internal/expression.h"
 #include <algorithm>
-
-#include "ceres/internal/expression_graph.h"
 #include "glog/logging.h"
 
 namespace ceres {
 namespace internal {
 
-static Expression& MakeExpression(ExpressionType type) {
-  auto pool = GetCurrentExpressionGraph();
-  CHECK(pool)
-      << "The ExpressionGraph has to be created before using Expressions. This "
-         "is achieved by calling ceres::StartRecordingExpressions.";
-  return pool->CreateExpression(type);
-}
-
-ExpressionId Expression::CreateCompileTimeConstant(double v) {
-  auto& expr = MakeExpression(ExpressionType::COMPILE_TIME_CONSTANT);
-  expr.value_ = v;
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateRuntimeConstant(const std::string& name) {
-  auto& expr = MakeExpression(ExpressionType::RUNTIME_CONSTANT);
-  expr.name_ = name;
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateParameter(const std::string& name) {
-  auto& expr = MakeExpression(ExpressionType::PARAMETER);
-  expr.name_ = name;
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateAssignment(ExpressionId v) {
-  auto& expr = MakeExpression(ExpressionType::ASSIGNMENT);
-  expr.arguments_.push_back(v);
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateUnaryArithmetic(ExpressionType type,
-                                               ExpressionId v) {
-  auto& expr = MakeExpression(type);
-  expr.arguments_.push_back(v);
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateOutputAssignment(ExpressionId v,
-                                                const std::string& name) {
-  auto& expr = MakeExpression(ExpressionType::OUTPUT_ASSIGNMENT);
-  expr.arguments_.push_back(v);
-  expr.name_ = name;
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateFunctionCall(
-    const std::string& name, const std::vector<ExpressionId>& params) {
-  auto& expr = MakeExpression(ExpressionType::FUNCTION_CALL);
-  expr.arguments_ = params;
-  expr.name_ = name;
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateTernary(ExpressionId condition,
-                                       ExpressionId if_true,
-                                       ExpressionId if_false) {
-  auto& expr = MakeExpression(ExpressionType::TERNARY);
-  expr.arguments_.push_back(condition);
-  expr.arguments_.push_back(if_true);
-  expr.arguments_.push_back(if_false);
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateBinaryCompare(const std::string& name,
-                                             ExpressionId l,
-                                             ExpressionId r) {
-  auto& expr = MakeExpression(ExpressionType::BINARY_COMPARISON);
-  expr.arguments_.push_back(l);
-  expr.arguments_.push_back(r);
-  expr.name_ = name;
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateLogicalNegation(ExpressionId v) {
-  auto& expr = MakeExpression(ExpressionType::LOGICAL_NEGATION);
-  expr.arguments_.push_back(v);
-  return expr.id_;
-}
-
-ExpressionId Expression::CreateBinaryArithmetic(ExpressionType type,
-                                                ExpressionId l,
-                                                ExpressionId r) {
-  auto& expr = MakeExpression(type);
-  expr.arguments_.push_back(l);
-  expr.arguments_.push_back(r);
-  return expr.id_;
-}
-Expression::Expression(ExpressionType type, ExpressionId id)
-    : type_(type), id_(id) {}
-
-bool Expression::IsArithmetic() const {
-  switch (type_) {
-    case ExpressionType::PLUS:
-    case ExpressionType::MULTIPLICATION:
-    case ExpressionType::DIVISION:
-    case ExpressionType::MINUS:
-    case ExpressionType::UNARY_MINUS:
-    case ExpressionType::UNARY_PLUS:
-      return true;
+std::string ExpressionReturnTypeToString(ExpressionReturnType type) {
+  switch (type) {
+    case ExpressionReturnType::SCALAR:
+      return "double";
+    case ExpressionReturnType::BOOLEAN:
+      return "bool";
+    case ExpressionReturnType::VOID:
+      return "void";
     default:
-      return false;
+      CHECK(false) << "Unknown ExpressionReturnType.";
+      return "";
   }
+}
+
+Expression::Expression(ExpressionType type,
+                       ExpressionReturnType return_type,
+                       ExpressionId lhs_id,
+                       const std::vector<ExpressionId>& arguments,
+                       const std::string& name,
+                       double value)
+    : type_(type),
+      return_type_(return_type),
+      lhs_id_(lhs_id),
+      arguments_(arguments),
+      name_(name),
+      value_(value) {}
+
+Expression Expression::CreateCompileTimeConstant(double v) {
+  return Expression(ExpressionType::COMPILE_TIME_CONSTANT,
+                    ExpressionReturnType::SCALAR,
+                    kInvalidExpressionId,
+                    {},
+                    "",
+                    v);
+}
+
+Expression Expression::CreateInputAssignment(const std::string& name) {
+  return Expression(ExpressionType::INPUT_ASSIGNMENT,
+                    ExpressionReturnType::SCALAR,
+                    kInvalidExpressionId,
+                    {},
+                    name);
+}
+
+Expression Expression::CreateOutputAssignment(ExpressionId v,
+                                              const std::string& name) {
+  return Expression(ExpressionType::OUTPUT_ASSIGNMENT,
+                    ExpressionReturnType::SCALAR,
+                    kInvalidExpressionId,
+                    {v},
+                    name);
+}
+
+Expression Expression::CreateAssignment(ExpressionId dst, ExpressionId src) {
+  return Expression(
+      ExpressionType::ASSIGNMENT, ExpressionReturnType::SCALAR, dst, {src});
+}
+
+Expression Expression::CreateBinaryArithmetic(const std::string& op,
+                                              ExpressionId l,
+                                              ExpressionId r) {
+  return Expression(ExpressionType::BINARY_ARITHMETIC,
+                    ExpressionReturnType::SCALAR,
+                    kInvalidExpressionId,
+                    {l, r},
+                    op);
+}
+
+Expression Expression::CreateUnaryArithmetic(const std::string& op,
+                                             ExpressionId v) {
+  return Expression(ExpressionType::UNARY_ARITHMETIC,
+                    ExpressionReturnType::SCALAR,
+                    kInvalidExpressionId,
+                    {v},
+                    op);
+}
+
+Expression Expression::CreateBinaryCompare(const std::string& name,
+                                           ExpressionId l,
+                                           ExpressionId r) {
+  return Expression(ExpressionType::BINARY_COMPARISON,
+                    ExpressionReturnType::BOOLEAN,
+                    kInvalidExpressionId,
+                    {l, r},
+                    name);
+}
+
+Expression Expression::CreateLogicalNegation(ExpressionId v) {
+  return Expression(ExpressionType::LOGICAL_NEGATION,
+                    ExpressionReturnType::BOOLEAN,
+                    kInvalidExpressionId,
+                    {v});
+}
+
+Expression Expression::CreateScalarFunctionCall(
+    const std::string& name, const std::vector<ExpressionId>& params) {
+  return Expression(ExpressionType::FUNCTION_CALL,
+                    ExpressionReturnType::SCALAR,
+                    kInvalidExpressionId,
+                    params,
+                    name);
+}
+
+Expression Expression::CreateLogicalFunctionCall(
+    const std::string& name, const std::vector<ExpressionId>& params) {
+  return Expression(ExpressionType::FUNCTION_CALL,
+                    ExpressionReturnType::BOOLEAN,
+                    kInvalidExpressionId,
+                    params,
+                    name);
+}
+
+Expression Expression::CreateIf(ExpressionId condition) {
+  return Expression(ExpressionType::IF,
+                    ExpressionReturnType::VOID,
+                    kInvalidExpressionId,
+                    {condition});
+}
+
+Expression Expression::CreateElse() { return Expression(ExpressionType::ELSE); }
+
+Expression Expression::CreateEndIf() {
+  return Expression(ExpressionType::ENDIF);
+}
+
+Expression Expression::CreateComment(const std::string& comment) {
+  return Expression(ExpressionType::COMMENT,
+                    ExpressionReturnType::VOID,
+                    kInvalidExpressionId,
+                    {},
+                    comment);
+}
+
+bool Expression::IsArithmeticExpression() const {
+  return !IsControlExpression();
+}
+
+bool Expression::IsControlExpression() const {
+  return type_ == ExpressionType::IF || type_ == ExpressionType::ELSE ||
+         type_ == ExpressionType::ENDIF || type_ == ExpressionType::NOP ||
+         type_ == ExpressionType::COMMENT;
 }
 
 bool Expression::IsReplaceableBy(const Expression& other) const {
@@ -150,7 +185,7 @@ bool Expression::IsReplaceableBy(const Expression& other) const {
 }
 
 void Expression::Replace(const Expression& other) {
-  if (other.id_ == id_) {
+  if (other.lhs_id_ == lhs_id_) {
     return;
   }
 
@@ -170,8 +205,20 @@ bool Expression::IsCompileTimeConstantAndEqualTo(double constant) const {
 }
 
 void Expression::MakeNop() {
-  type_ = ExpressionType::NOP;
-  arguments_.clear();
+  // The default constructor creates a NOP expression!
+  *this = Expression();
+}
+
+bool Expression::operator==(const Expression& other) const {
+  return type() == other.type() && return_type() == other.return_type() &&
+         name() == other.name() && value() == other.value() &&
+         lhs_id() == other.lhs_id() && arguments() == other.arguments();
+}
+
+bool Expression::IsSemanticallyEquivalentTo(const Expression& other) const {
+  return type() == other.type() && name() == other.name() &&
+         value() == other.value() &&
+         arguments().size() == other.arguments().size();
 }
 
 }  // namespace internal

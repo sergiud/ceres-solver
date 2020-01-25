@@ -191,8 +191,11 @@ class CERES_EXPORT Problem {
   // invocation Problem(Problem::Options()).
   Problem();
   explicit Problem(const Options& options);
+  Problem(Problem&&);
+  Problem& operator=(Problem&&);
+
   Problem(const Problem&) = delete;
-  void operator=(const Problem&) = delete;
+  Problem& operator=(const Problem&) = delete;
 
   ~Problem();
 
@@ -241,7 +244,8 @@ class CERES_EXPORT Problem {
                                    double* x0,
                                    Ts*... xs) {
     const std::array<double*, sizeof...(Ts) + 1> parameter_blocks{{x0, xs...}};
-    return AddResidualBlock(cost_function, loss_function,
+    return AddResidualBlock(cost_function,
+                            loss_function,
                             parameter_blocks.data(),
                             static_cast<int>(parameter_blocks.size()));
   }
@@ -254,11 +258,10 @@ class CERES_EXPORT Problem {
 
   // Add a residual block by providing a pointer to the parameter block array
   // and the number of parameter blocks.
-  ResidualBlockId AddResidualBlock(
-      CostFunction* cost_function,
-      LossFunction* loss_function,
-      double* const* const parameter_blocks,
-      int num_parameter_blocks);
+  ResidualBlockId AddResidualBlock(CostFunction* cost_function,
+                                   LossFunction* loss_function,
+                                   double* const* const parameter_blocks,
+                                   int num_parameter_blocks);
 
   // Add a parameter block with appropriate size to the problem.
   // Repeated calls with the same arguments are ignored. Repeated
@@ -314,8 +317,8 @@ class CERES_EXPORT Problem {
   // The local_parameterization is owned by the Problem by default. It
   // is acceptable to set the same parameterization for multiple
   // parameters; the destructor is careful to delete local
-  // parameterizations only once. The local parameterization can only
-  // be set once per parameter, and cannot be changed once set.
+  // parameterizations only once. Calling SetParameterization with
+  // nullptr will clear any previously set parameterization.
   void SetParameterization(double* values,
                            LocalParameterization* local_parameterization);
 
@@ -453,8 +456,8 @@ class CERES_EXPORT Problem {
   // The cost is evaluated at x = 1. If you wish to evaluate the
   // problem at x = 2, then
   //
-  //    x = 2;
-  //    problem.Evaluate(Problem::EvaluateOptions(), &cost, nullptr, nullptr, nullptr);
+  //   x = 2;
+  //   problem.Evaluate(Problem::EvaluateOptions(), &cost, nullptr, nullptr, nullptr);
   //
   // is the way to do so.
   //
@@ -520,6 +523,7 @@ class CERES_EXPORT Problem {
                              double* cost,
                              double* residuals,
                              double** jacobians) const;
+
  private:
   friend class Solver;
   friend class Covariance;

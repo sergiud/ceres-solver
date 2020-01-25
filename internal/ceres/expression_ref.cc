@@ -28,12 +28,21 @@
 //
 // Author: darius.rueckert@fau.de (Darius Rueckert)
 
-#include "ceres/internal/expression_ref.h"
-#include "assert.h"
-#include "ceres/internal/expression.h"
+#include "ceres/codegen/internal/expression_ref.h"
+
+#include "ceres/codegen/internal/expression_graph.h"
+#include "glog/logging.h"
 
 namespace ceres {
 namespace internal {
+
+ExpressionRef AddExpressionToGraph(const Expression& expression) {
+  ExpressionGraph* graph = GetCurrentExpressionGraph();
+  CHECK(graph)
+      << "The ExpressionGraph has to be created before using Expressions. This "
+         "is achieved by calling ceres::StartRecordingExpressions.";
+  return ExpressionRef::Create(graph->InsertBack(expression));
+}
 
 ExpressionRef ExpressionRef::Create(ExpressionId id) {
   ExpressionRef ref;
@@ -41,87 +50,101 @@ ExpressionRef ExpressionRef::Create(ExpressionId id) {
   return ref;
 }
 
-std::string ExpressionRef::ToString() const { return std::to_string(id); }
-
 ExpressionRef::ExpressionRef(double compile_time_constant) {
-  (*this) = ExpressionRef::Create(
-      Expression::CreateCompileTimeConstant(compile_time_constant));
+  id = AddExpressionToGraph(
+           Expression::CreateCompileTimeConstant(compile_time_constant))
+           .id;
+}
+
+ExpressionRef::ExpressionRef(const ExpressionRef& other) { *this = other; }
+
+ExpressionRef& ExpressionRef::operator=(const ExpressionRef& other) {
+  // Assigning an uninitialized variable to another variable is an error.
+  CHECK(other.IsInitialized()) << "Uninitialized Assignment.";
+  if (IsInitialized()) {
+    // Create assignment from other -> this
+    AddExpressionToGraph(Expression::CreateAssignment(this->id, other.id));
+  } else {
+    // Create a new variable and
+    // Create assignment from other -> this
+    // Passing kInvalidExpressionId to CreateAssignment generates a new
+    // variable name which we store in the id.
+    id = AddExpressionToGraph(
+             Expression::CreateAssignment(kInvalidExpressionId, other.id))
+             .id;
+  }
+  return *this;
 }
 
 // Compound operators
-ExpressionRef& ExpressionRef::operator+=(ExpressionRef y) {
-  *this = *this + y;
+ExpressionRef& ExpressionRef::operator+=(const ExpressionRef& x) {
+  *this = *this + x;
   return *this;
 }
 
-ExpressionRef& ExpressionRef::operator-=(ExpressionRef y) {
-  *this = *this - y;
+ExpressionRef& ExpressionRef::operator-=(const ExpressionRef& x) {
+  *this = *this - x;
   return *this;
 }
 
-ExpressionRef& ExpressionRef::operator*=(ExpressionRef y) {
-  *this = *this * y;
+ExpressionRef& ExpressionRef::operator*=(const ExpressionRef& x) {
+  *this = *this * x;
   return *this;
 }
 
-ExpressionRef& ExpressionRef::operator/=(ExpressionRef y) {
-  *this = *this / y;
+ExpressionRef& ExpressionRef::operator/=(const ExpressionRef& x) {
+  *this = *this / x;
   return *this;
 }
 
 // Arith. Operators
-ExpressionRef operator-(ExpressionRef x) {
-  return ExpressionRef::Create(
-      Expression::CreateUnaryArithmetic(ExpressionType::UNARY_MINUS, x.id));
+ExpressionRef operator-(const ExpressionRef& x) {
+  return AddExpressionToGraph(Expression::CreateUnaryArithmetic("-", x.id));
 }
 
-ExpressionRef operator+(ExpressionRef x) {
-  return ExpressionRef::Create(
-      Expression::CreateUnaryArithmetic(ExpressionType::UNARY_PLUS, x.id));
+ExpressionRef operator+(const ExpressionRef& x) {
+  return AddExpressionToGraph(Expression::CreateUnaryArithmetic("+", x.id));
 }
 
-ExpressionRef operator+(ExpressionRef x, ExpressionRef y) {
-  return ExpressionRef::Create(
-      Expression::CreateBinaryArithmetic(ExpressionType::PLUS, x.id, y.id));
+ExpressionRef operator+(const ExpressionRef& x, const ExpressionRef& y) {
+  return AddExpressionToGraph(
+      Expression::CreateBinaryArithmetic("+", x.id, y.id));
 }
 
-ExpressionRef operator-(ExpressionRef x, ExpressionRef y) {
-  return ExpressionRef::Create(
-      Expression::CreateBinaryArithmetic(ExpressionType::MINUS, x.id, y.id));
+ExpressionRef operator-(const ExpressionRef& x, const ExpressionRef& y) {
+  return AddExpressionToGraph(
+      Expression::CreateBinaryArithmetic("-", x.id, y.id));
 }
 
-ExpressionRef operator/(ExpressionRef x, ExpressionRef y) {
-  return ExpressionRef::Create(
-      Expression::CreateBinaryArithmetic(ExpressionType::DIVISION, x.id, y.id));
+ExpressionRef operator/(const ExpressionRef& x, const ExpressionRef& y) {
+  return AddExpressionToGraph(
+      Expression::CreateBinaryArithmetic("/", x.id, y.id));
 }
 
-ExpressionRef operator*(ExpressionRef x, ExpressionRef y) {
-  return ExpressionRef::Create(Expression::CreateBinaryArithmetic(
-      ExpressionType::MULTIPLICATION, x.id, y.id));
+ExpressionRef operator*(const ExpressionRef& x, const ExpressionRef& y) {
+  return AddExpressionToGraph(
+      Expression::CreateBinaryArithmetic("*", x.id, y.id));
 }
 
-// Functions
-ExpressionRef sin(ExpressionRef x) {
-  return ExpressionRef::Create(Expression::CreateFunctionCall("sin", {x.id}));
+ExpressionRef Ternary(const ComparisonExpressionRef& c,
+                      const ExpressionRef& x,
+                      const ExpressionRef& y) {
+  return AddExpressionToGraph(
+      Expression::CreateScalarFunctionCall("Ternary", {c.id, x.id, y.id}));
 }
 
-ExpressionRef Ternary(ComparisonExpressionRef c,
-                      ExpressionRef a,
-                      ExpressionRef b) {
-  return ExpressionRef::Create(Expression::CreateTernary(c.id, a.id, b.id));
-}
-
-#define CERES_DEFINE_EXPRESSION_COMPARISON_OPERATOR(op)                   \
-  ComparisonExpressionRef operator op(ExpressionRef a, ExpressionRef b) { \
-    return ComparisonExpressionRef(ExpressionRef::Create(                 \
-        Expression::CreateBinaryCompare(#op, a.id, b.id)));               \
+#define CERES_DEFINE_EXPRESSION_COMPARISON_OPERATOR(op)         \
+  ComparisonExpressionRef operator op(const ExpressionRef& x,   \
+                                      const ExpressionRef& y) { \
+    return ComparisonExpressionRef(AddExpressionToGraph(        \
+        Expression::CreateBinaryCompare(#op, x.id, y.id)));     \
   }
 
-#define CERES_DEFINE_EXPRESSION_LOGICAL_OPERATOR(op)               \
-  ComparisonExpressionRef operator op(ComparisonExpressionRef a,   \
-                                      ComparisonExpressionRef b) { \
-    return ComparisonExpressionRef(ExpressionRef::Create(          \
-        Expression::CreateBinaryCompare(#op, a.id, b.id)));        \
+#define CERES_DEFINE_EXPRESSION_LOGICAL_OPERATOR(op)                      \
+  ComparisonExpressionRef operator op(const ComparisonExpressionRef& x,   \
+                                      const ComparisonExpressionRef& y) { \
+    return ComparisonExpressionRef(AddExpressionToGraph(                  \
+        Expression::CreateBinaryCompare(#op, x.id, y.id)));               \
   }
 
 CERES_DEFINE_EXPRESSION_COMPARISON_OPERATOR(<)
@@ -132,12 +155,14 @@ CERES_DEFINE_EXPRESSION_COMPARISON_OPERATOR(==)
 CERES_DEFINE_EXPRESSION_COMPARISON_OPERATOR(!=)
 CERES_DEFINE_EXPRESSION_LOGICAL_OPERATOR(&&)
 CERES_DEFINE_EXPRESSION_LOGICAL_OPERATOR(||)
+CERES_DEFINE_EXPRESSION_LOGICAL_OPERATOR(&)
+CERES_DEFINE_EXPRESSION_LOGICAL_OPERATOR(|)
 #undef CERES_DEFINE_EXPRESSION_COMPARISON_OPERATOR
 #undef CERES_DEFINE_EXPRESSION_LOGICAL_OPERATOR
 
-ComparisonExpressionRef operator!(ComparisonExpressionRef a) {
+ComparisonExpressionRef operator!(const ComparisonExpressionRef& x) {
   return ComparisonExpressionRef(
-      ExpressionRef::Create(Expression::CreateLogicalNegation(a.id)));
+      AddExpressionToGraph(Expression::CreateLogicalNegation(x.id)));
 }
 
 }  // namespace internal

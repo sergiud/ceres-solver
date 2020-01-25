@@ -28,50 +28,40 @@
 //
 // Author: darius.rueckert@fau.de (Darius Rueckert)
 //
-// Test expression creation and logic.
+#ifndef CERES_PUBLIC_CODEGEN_INTERNAL_TYPES_H_
+#define CERES_PUBLIC_CODEGEN_INTERNAL_TYPES_H_
 
-#include "ceres/internal/expression_graph.h"
-#include "ceres/internal/expression_ref.h"
-
-#include "gtest/gtest.h"
+#include "ceres/codegen/macros.h"
 
 namespace ceres {
+// The return type of a comparison, for example from <, &&, ==.
+//
+// In the context of traditional Ceres Jet operations, this would
+// always be a bool. However, in the autodiff code generation context,
+// the return is always an expression, and so a different type must be
+// used as a return from comparisons.
+//
+// In the autodiff codegen context, this function is overloaded so that 'type'
+// is one of the autodiff code generation expression types.
+template <typename T>
+struct ComparisonReturnType {
+  using type = bool;
+};
+
 namespace internal {
-
-TEST(ExpressionGraph, Creation) {
-  using T = ExpressionRef;
-  ExpressionGraph graph;
-
-  StartRecordingExpressions();
-  graph = StopRecordingExpressions();
-  EXPECT_EQ(graph.Size(), 0);
-
-  StartRecordingExpressions();
-  T a(1);
-  T b(2);
-  T c = a + b;
-  graph = StopRecordingExpressions();
-  EXPECT_EQ(graph.Size(), 3);
-}
-
-TEST(ExpressionGraph, Dependencies) {
-  using T = ExpressionRef;
-
-  StartRecordingExpressions();
-
-  T unused(6);
-  T a(2), b(3);
-  T c = a + b;
-  T d = c + a;
-
-  auto tree = StopRecordingExpressions();
-
-  // Recursive dependency check
-  ASSERT_TRUE(tree.DependsOn(d.id, c.id));
-  ASSERT_TRUE(tree.DependsOn(d.id, a.id));
-  ASSERT_TRUE(tree.DependsOn(d.id, b.id));
-  ASSERT_FALSE(tree.DependsOn(d.id, unused.id));
-}
+// The InputAssignment struct is used to implement the CERES_LOCAL_VARIABLE
+// macro defined in macros.h. The input is a double variable and the
+// corresponding name as a string. During execution mode (T==double or
+// T==Jet<double>) the variable name is unused and this function only returns
+// the value. During code generation (T==ExpressionRef) the value is unused and
+// an assignment expression is created. For example:
+//   v_0 = observed_x;
+template <typename T>
+struct InputAssignment {
+  static inline T Get(double v, const char* /* unused */) { return v; }
+};
 
 }  // namespace internal
 }  // namespace ceres
+
+#endif  // CERES_PUBLIC_CODEGEN_INTERNAL_TYPES_H_

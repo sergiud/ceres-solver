@@ -72,6 +72,11 @@ target_link_libraries(robust_curve_fitting ceres)
 add_executable(simple_bundle_adjuster simple_bundle_adjuster.cc)
 target_link_libraries(simple_bundle_adjuster ceres)
 
+if(CODE_GENERATION)
+  add_executable(autodiff_codegen autodiff_codegen.cc)
+  target_link_libraries(autodiff_codegen ceres)
+endif(CODE_GENERATION)
+
 if (WITH_GFLAGS AND gflags_FOUND)
   add_executable(powell powell.cc)
   TARGET_LINK_LIBRARIES(powell ceres ${gflags_LIBRARIES})

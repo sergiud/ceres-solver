@@ -150,6 +150,11 @@ option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
+option(PROVIDE_UNINSTALL_TARGET "Add a custom target to ease removal of installed targets" ON)
+option(CODE_GENERATION "Build the code generation module." OFF)
+if(CODE_GENERATION)
+    message(WARNING "The code generation module is still under development. The functionality and API of the current implementation might change in the future.")
+endif(CODE_GENERATION)
 set(SANITIZERS "" CACHE STRING "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
 include(EnableSanitizer)
 enable_sanitizer(${SANITIZERS})
@@ -449,25 +454,30 @@ if (MSVC)
   # [1] https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx
   add_definitions("-D_USE_MATH_DEFINES")
   # Disable signed/unsigned int conversion warnings.
-  add_definitions("/wd4018")
+  add_compile_options("/wd4018" "/wd4267")
   # Disable warning about using struct/class for the same symobl.
-  add_definitions("/wd4099")
+  add_compile_options("/wd4099")
   # Disable warning about the insecurity of using "std::copy".
-  add_definitions("/wd4996")
+  add_compile_options("/wd4996")
   # Disable performance warning about int-to-bool conversion.
-  add_definitions("/wd4800")
+  add_compile_options("/wd4800")
   # Disable performance warning about fopen insecurity.
-  add_definitions("/wd4996")
+  add_compile_options("/wd4996")
   # Disable warning about int64 to int32 conversion. Disabling
   # this warning may not be correct; needs investigation.
   # TODO(keir): Investigate these warnings in more detail.
-  add_definitions("/wd4244")
+  add_compile_options("/wd4244")
   # It's not possible to use STL types in DLL interfaces in a portable and
   # reliable way. However, that's what happens with Google Log and Google Flags
   # on Windows. MSVC gets upset about this and throws warnings that we can't do
   # much about. The real solution is to link static versions of Google Log and
   # Google Test, but that seems tricky on Windows. So, disable the warning.
-  add_definitions("/wd4251")
+  add_compile_options("/wd4251")
+
+  # Add bigobj flag otherwise the build would fail due to large object files
+  # probably resulting from generated headers (like the fixed-size schur
+  # specializations).
+  add_compile_options("/bigobj")
 
   # Google Flags doesn't have their DLL import/export stuff set up correctly,
   # which results in linker warnings. This is irrelevant for Ceres, so ignore
@@ -558,6 +568,13 @@ install(FILES ${CERES_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres)
 file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/internal/*.h)
 install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
   ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
+
+# Ceres codegen headers
+file(GLOB CERES_PUBLIC_CODEGEN_HDRS ${Ceres_SOURCE_DIR}/include/ceres/codegen/*.h)
+install(FILES ${CERES_PUBLIC_CODEGEN_HDRS} DESTINATION include/ceres/codegen)
+
+file(GLOB CERES_PUBLIC_CODEGEN_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/codegen/internal/*.h)
+install(FILES ${CERES_PUBLIC_CODEGEN_INTERNAL_HDRS} DESTINATION include/ceres/codegen/internal)
 
 # Also setup installation of Ceres config.h configured with the current
 # build options into the installed headers directory.

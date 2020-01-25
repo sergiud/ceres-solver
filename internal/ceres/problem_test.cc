@@ -122,6 +122,24 @@ class TernaryCostFunction: public CostFunction {
   }
 };
 
+
+TEST(Problem, MoveConstructor) {
+  Problem src;
+  double x;
+  src.AddParameterBlock(&x, 1);
+  Problem dst(std::move(src));
+  EXPECT_TRUE(dst.HasParameterBlock(&x));
+}
+
+TEST(Problem, MoveAssignment) {
+  Problem src;
+  double x;
+  src.AddParameterBlock(&x, 1);
+  Problem dst;
+  dst = std::move(src);
+  EXPECT_TRUE(dst.HasParameterBlock(&x));
+}
+
 TEST(Problem, AddResidualWithNullCostFunctionDies) {
   double x[3], y[4], z[5];
 
@@ -2076,6 +2094,33 @@ TEST(Problem, SetAndGetParameterUpperBound) {
             std::numeric_limits<double>::max());
   EXPECT_EQ(problem.GetParameterUpperBound(x, 1),
             std::numeric_limits<double>::max());
+}
+
+TEST(Problem, SetParameterizationTwice) {
+  Problem problem;
+  double x[] = {1.0, 2.0, 3.0};
+  problem.AddParameterBlock(x, 3);
+  problem.SetParameterization(x, new SubsetParameterization(3, {1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 2);
+
+  problem.SetParameterization(x, new SubsetParameterization(3, {0, 1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 1);
+}
+
+TEST(Problem, SetParameterizationAndThenClearItWithNull) {
+  Problem problem;
+  double x[] = {1.0, 2.0, 3.0};
+  problem.AddParameterBlock(x, 3);
+  problem.SetParameterization(x, new SubsetParameterization(3, {1}));
+  EXPECT_EQ(problem.GetParameterization(x)->GlobalSize(), 3);
+  EXPECT_EQ(problem.GetParameterization(x)->LocalSize(), 2);
+
+  problem.SetParameterization(x, nullptr);
+  EXPECT_EQ(problem.GetParameterization(x), nullptr);
+  EXPECT_EQ(problem.ParameterBlockLocalSize(x), 3);
+  EXPECT_EQ(problem.ParameterBlockSize(x), 3);
 }
 
 }  // namespace internal

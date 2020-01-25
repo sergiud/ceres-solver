@@ -81,9 +81,6 @@ set(CERES_INTERNAL_SRC
     dynamic_sparse_normal_cholesky_solver.cc
     evaluator.cc
     eigensparse.cc
-    expression.cc
-    expression_graph.cc
-    expression_ref.cc
     file.cc
     float_suitesparse.cc
     float_cxsparse.cc
@@ -149,6 +146,16 @@ set(CERES_INTERNAL_SRC
     visibility_based_preconditioner.cc
     wall_time.cc
 )
+
+if(CODE_GENERATION)
+  set(CERES_CODEGEN_SRC
+      code_generator.cc
+      expression.cc
+      expression_graph.cc
+      expression_ref.cc
+  )
+  list(APPEND CERES_INTERNAL_SRC ${CERES_CODEGEN_SRC})
+endif(CODE_GENERATION)
 
 # Also depend on the header files so that they appear in IDEs.
 file(GLOB CERES_INTERNAL_HDRS *.h)
@@ -312,15 +319,6 @@ target_link_libraries(ceres
   PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
   PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
 
-include(DetectSIMDHostileStackCheckMacOSXcodePairing)
-detect_simd_hostile_stack_check_macos_xcode_pairing(
-  MUST_DISABLE_STACK_CHECK)
-if (MUST_DISABLE_STACK_CHECK)
-  message("-- Explicitly disabling -fstack-check in Ceres target (both "
-    "for Ceres and for clients) to avoid breaking SIMD alignment.")
-  target_compile_options(ceres PUBLIC "-fno-stack-check")
-endif()
-
 install(TARGETS ceres
         EXPORT  CeresTargets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -363,7 +361,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
              ${Ceres_SOURCE_DIR}/internal/ceres
              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
 
-    target_link_libraries(${NAME}_test test_util ceres gtest)
+    target_link_libraries(${NAME}_test PUBLIC test_util ceres gtest)
     if (BUILD_SHARED_LIBS)
       # Define gtest-specific shared library flags for linking.
       append_target_property(${NAME}_test COMPILE_DEFINITIONS
@@ -408,8 +406,6 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(dynamic_sparsity)
   ceres_test(evaluation_callback)
   ceres_test(evaluator)
-  ceres_test(expression)
-  ceres_test(expression_graph)
   ceres_test(fixed_array)
   ceres_test(gradient_checker)
   ceres_test(gradient_checking_cost_function)
@@ -470,10 +466,14 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
   add_subdirectory(generated_bundle_adjustment_tests)
 
+  if(CODE_GENERATION)
+    add_subdirectory(codegen)
+  endif()
+
 endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
-  target_link_libraries(${BENCHMARK_TARGET} ceres benchmark::benchmark)
+  target_link_libraries(${BENCHMARK_TARGET} PUBLIC ceres benchmark::benchmark)
   target_include_directories(${BENCHMARK_TARGET} PUBLIC
                              ${Ceres_SOURCE_DIR}/internal
                              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
