@@ -633,6 +633,12 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfigVersion.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 
+# Install codegen cmake scripts
+install(FILES "${Ceres_SOURCE_DIR}/cmake/codegen_include.inc.in"
+              "${Ceres_SOURCE_DIR}/cmake/generate_code_for_functor.cc.in"
+              "${Ceres_SOURCE_DIR}/cmake/CeresCodeGeneration.cmake"
+        DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ceres/internal/export.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 

@@ -149,10 +149,12 @@ set(CERES_INTERNAL_SRC
 
 if(CODE_GENERATION)
   set(CERES_CODEGEN_SRC
-      code_generator.cc
-      expression.cc
-      expression_graph.cc
-      expression_ref.cc
+      codegen/code_generator.cc
+      codegen/expression.cc
+      codegen/expression_graph.cc
+      codegen/expression_ref.cc
+      codegen/optimize_expression_graph.cc
+      codegen/eliminate_nops.cc
   )
   list(APPEND CERES_INTERNAL_SRC ${CERES_CODEGEN_SRC})
 endif(CODE_GENERATION)
@@ -337,7 +339,8 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   add_library(test_util
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
-              test_util.cc)
+              test_util.cc
+              codegen/test_utils.cc)
   set_target_properties (test_util PROPERTIES CXX_VISIBILITY_PRESET default)
 
   if (WITH_MINILOG)
@@ -469,20 +472,17 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   if(CODE_GENERATION)
     add_subdirectory(codegen)
   endif()
-
 endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
   target_link_libraries(${BENCHMARK_TARGET} PUBLIC ceres benchmark::benchmark)
   target_include_directories(${BENCHMARK_TARGET} PUBLIC
                              ${Ceres_SOURCE_DIR}/internal
+                             ${Ceres_SOURCE_DIR}/internal/ceres
                              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
 endmacro()
 
 if (BUILD_BENCHMARKS)
-  add_executable(autodiff_cost_function_benchmark autodiff_cost_function_benchmark.cc)
-  add_dependencies_to_benchmark(autodiff_cost_function_benchmark)
-
   add_executable(small_blas_gemv_benchmark small_blas_gemv_benchmark.cc)
   add_dependencies_to_benchmark(small_blas_gemv_benchmark)
 
@@ -494,4 +494,10 @@ if (BUILD_BENCHMARKS)
 
   add_executable(schur_eliminator_benchmark schur_eliminator_benchmark.cc)
   add_dependencies_to_benchmark(schur_eliminator_benchmark)
+
+  add_subdirectory(autodiff_benchmarks)
 endif (BUILD_BENCHMARKS)
+
+if(CODE_GENERATION)
+  add_subdirectory(codegen)
+endif()

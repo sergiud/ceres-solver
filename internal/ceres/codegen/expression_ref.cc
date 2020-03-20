@@ -37,23 +37,19 @@ namespace ceres {
 namespace internal {
 
 ExpressionRef AddExpressionToGraph(const Expression& expression) {
+  return ExpressionRef(expression);
+}
+
+ExpressionRef::ExpressionRef(double compile_time_constant)
+    : ExpressionRef(
+          Expression::CreateCompileTimeConstant(compile_time_constant)) {}
+
+ExpressionRef::ExpressionRef(const Expression& expression) {
   ExpressionGraph* graph = GetCurrentExpressionGraph();
   CHECK(graph)
       << "The ExpressionGraph has to be created before using Expressions. This "
          "is achieved by calling ceres::StartRecordingExpressions.";
-  return ExpressionRef::Create(graph->InsertBack(expression));
-}
-
-ExpressionRef ExpressionRef::Create(ExpressionId id) {
-  ExpressionRef ref;
-  ref.id = id;
-  return ref;
-}
-
-ExpressionRef::ExpressionRef(double compile_time_constant) {
-  id = AddExpressionToGraph(
-           Expression::CreateCompileTimeConstant(compile_time_constant))
-           .id;
+  id = graph->InsertBack(expression);
 }
 
 ExpressionRef::ExpressionRef(const ExpressionRef& other) { *this = other; }
@@ -129,8 +125,8 @@ ExpressionRef operator*(const ExpressionRef& x, const ExpressionRef& y) {
 ExpressionRef Ternary(const ComparisonExpressionRef& c,
                       const ExpressionRef& x,
                       const ExpressionRef& y) {
-  return AddExpressionToGraph(
-      Expression::CreateScalarFunctionCall("Ternary", {c.id, x.id, y.id}));
+  return AddExpressionToGraph(Expression::CreateScalarFunctionCall(
+      "ceres::Ternary", {c.id, x.id, y.id}));
 }
 
 #define CERES_DEFINE_EXPRESSION_COMPARISON_OPERATOR(op)         \

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2020 Google Inc. All rights reserved.
 // http://code.google.com/p/ceres-solver/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,28 +28,24 @@
 //
 // Author: darius.rueckert@fau.de (Darius Rueckert)
 //
-// A simple example showing how to generate code for a cost functor
-//
-// We recommend to use the CMake integration instead of using
-// GenerateCodeForFunctor directly.
-//
-#include "ceres/codegen/autodiff.h"
+#ifndef CERES_PUBLIC_CODEGEN_INTERNAL_OPTIMIZATION_PASS_SUMMARY_H_
+#define CERES_PUBLIC_CODEGEN_INTERNAL_OPTIMIZATION_PASS_SUMMARY_H_
 
-struct SquareFunctor {
-  template <typename T>
-  bool operator()(const T* x, T* residual) const {
-    residual[0] = x[0] * x[0];
-    isfinite(x[0]);
-    return true;
-  }
+#include <string>
+
+namespace ceres {
+namespace internal {
+
+struct OptimizationPassSummary {
+  bool expression_graph_changed = false;
+  std::string optimization_pass_name;
+  int num_expressions_replaced_by_nop = 0;
+  int num_expressions_removed = 0;
+  int num_expressions_inserted = 0;
+  int num_expressions_modified = 0;
 };
 
-int main(int argc, char** argv) {
-  std::vector<std::string> code =
-      ceres::GenerateCodeForFunctor<SquareFunctor, 1, 1>(
-          ceres::AutoDiffCodeGenOptions());
-  for (auto str : code) {
-    std::cout << str << std::endl;
-  }
-  return 0;
-}
+}  // namespace internal
+}  // namespace ceres
+
+#endif  // CERES_PUBLIC_CODEGEN_INTERNAL_OPTIMIZATION_PASS_SUMMARY_H_
