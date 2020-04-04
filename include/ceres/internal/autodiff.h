@@ -144,6 +144,7 @@
 
 #include <array>
 
+#include "ceres/internal/array_selector.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/fixed_array.h"
 #include "ceres/internal/parameter_dims.h"
@@ -151,6 +152,17 @@
 #include "ceres/jet.h"
 #include "ceres/types.h"
 #include "glog/logging.h"
+
+// If the number of parameters exceeds this values, the corresponding jets are
+// placed on the heap. This will reduce performance by a factor of 2-5 on
+// current compilers.
+#ifndef CERES_AUTODIFF_MAX_PARAMETERS_ON_STACK
+#define CERES_AUTODIFF_MAX_PARAMETERS_ON_STACK 50
+#endif
+
+#ifndef CERES_AUTODIFF_MAX_RESIDUALS_ON_STACK
+#define CERES_AUTODIFF_MAX_RESIDUALS_ON_STACK 20
+#endif
 
 namespace ceres {
 namespace internal {
@@ -169,16 +181,24 @@ namespace internal {
 //
 // is what would get put in dst if N was 3, offset was 3, and the jet type JetT
 // was 8-dimensional.
-template <int Offset, int N, typename T, typename JetT>
-inline void Make1stOrderPerturbation(const T* src, JetT* dst) {
-  DCHECK(src);
-  DCHECK(dst);
-  for (int j = 0; j < N; ++j) {
-    dst[j].a = src[j];
-    dst[j].v.setZero();
-    dst[j].v[Offset + j] = T(1.0);
+template <int j, int N, int Offset, typename T, typename JetT>
+struct Make1stOrderPerturbation {
+ public:
+  static void Apply(const T* src, JetT* dst) {
+    if (j == 0) {
+      DCHECK(src);
+      DCHECK(dst);
+    }
+    dst[j] = JetT(src[j], j + Offset);
+    Make1stOrderPerturbation<j + 1, N, Offset, T, JetT>::Apply(src, dst);
   }
-}
+};
+
+template <int N, int Offset, typename T, typename JetT>
+struct Make1stOrderPerturbation<N, N, Offset, T, JetT> {
+ public:
+  static void Apply(const T* src, JetT* dst) {}
+};
 
 // Calls Make1stOrderPerturbation for every parameter block.
 //
@@ -186,9 +206,9 @@ inline void Make1stOrderPerturbation(const T* src, JetT* dst) {
 // If one having three parameter blocks with dimensions (3, 2, 4), the call
 // Make1stOrderPerturbations<integer_sequence<3, 2, 4>::Apply(params, x);
 // will result in the following calls to Make1stOrderPerturbation:
-// Make1stOrderPerturbation<0, 3>(params[0], x + 0);
-// Make1stOrderPerturbation<3, 2>(params[1], x + 3);
-// Make1stOrderPerturbation<5, 4>(params[2], x + 5);
+// Make1stOrderPerturbation<0, 3, 0>::Apply(params[0], x + 0);
+// Make1stOrderPerturbation<0, 2, 3>::Apply(params[1], x + 3);
+// Make1stOrderPerturbation<0, 4, 5>::Apply(params[2], x + 5);
 template <typename Seq, int ParameterIdx = 0, int Offset = 0>
 struct Make1stOrderPerturbations;
 
@@ -198,7 +218,8 @@ struct Make1stOrderPerturbations<integer_sequence<int, N, Ns...>,
                                  Offset> {
   template <typename T, typename JetT>
   static void Apply(T const* const* parameters, JetT* x) {
-    Make1stOrderPerturbation<Offset, N>(parameters[ParameterIdx], x + Offset);
+    Make1stOrderPerturbation<0, N, Offset, T, JetT>::Apply(
+        parameters[ParameterIdx], x + Offset);
     Make1stOrderPerturbations<integer_sequence<int, Ns...>,
                               ParameterIdx + 1,
                               Offset + N>::Apply(parameters, x);
@@ -284,38 +305,54 @@ template <int kNumResiduals,
           typename T>
 inline bool AutoDifferentiate(const Functor& functor,
                               T const* const* parameters,
-                              int num_outputs,
+                              int dynamic_num_outputs,
                               T* function_value,
                               T** jacobians) {
-  DCHECK_GT(num_outputs, 0);
-
   typedef Jet<T, ParameterDims::kNumParameters> JetT;
-  FixedArray<JetT, (256 * 7) / sizeof(JetT)> x(ParameterDims::kNumParameters +
-                                               num_outputs);
-
   using Parameters = typename ParameterDims::Parameters;
 
-  // These are the positions of the respective jets in the fixed array x.
+  if (kNumResiduals != DYNAMIC) {
+    DCHECK_EQ(kNumResiduals, dynamic_num_outputs);
+  }
+
+  ArraySelector<JetT,
+                ParameterDims::kNumParameters,
+                CERES_AUTODIFF_MAX_PARAMETERS_ON_STACK>
+      parameters_as_jets(ParameterDims::kNumParameters);
+
+  // Pointers to the beginning of each parameter block
   std::array<JetT*, ParameterDims::kNumParameterBlocks> unpacked_parameters =
-      ParameterDims::GetUnpackedParameters(x.data());
-  JetT* output = x.data() + ParameterDims::kNumParameters;
+      ParameterDims::GetUnpackedParameters(parameters_as_jets.data());
+
+  // If the number of residuals is fixed, we use the template argument as the
+  // number of outputs. Otherwise we use the num_outputs parameter. Note: The
+  // ?-operator here is compile-time evaluated, therefore num_outputs is also
+  // a compile-time constant for functors with fixed residuals.
+  const int num_outputs =
+      kNumResiduals == DYNAMIC ? dynamic_num_outputs : kNumResiduals;
+  DCHECK_GT(num_outputs, 0);
+
+  ArraySelector<JetT, kNumResiduals, CERES_AUTODIFF_MAX_RESIDUALS_ON_STACK>
+      residuals_as_jets(num_outputs);
 
   // Invalidate the output Jets, so that we can detect if the user
   // did not assign values to all of them.
   for (int i = 0; i < num_outputs; ++i) {
-    output[i].a = kImpossibleValue;
-    output[i].v.setConstant(kImpossibleValue);
+    residuals_as_jets[i].a = kImpossibleValue;
+    residuals_as_jets[i].v.setConstant(kImpossibleValue);
   }
 
-  Make1stOrderPerturbations<Parameters>::Apply(parameters, x.data());
+  Make1stOrderPerturbations<Parameters>::Apply(parameters,
+                                               parameters_as_jets.data());
 
   if (!VariadicEvaluate<ParameterDims>(
-          functor, unpacked_parameters.data(), output)) {
+          functor, unpacked_parameters.data(), residuals_as_jets.data())) {
     return false;
   }
 
-  Take0thOrderPart(num_outputs, output, function_value);
-  Take1stOrderParts<Parameters>::Apply(num_outputs, output, jacobians);
+  Take0thOrderPart(num_outputs, residuals_as_jets.data(), function_value);
+  Take1stOrderParts<Parameters>::Apply(
+      num_outputs, residuals_as_jets.data(), jacobians);
 
   return true;
 }

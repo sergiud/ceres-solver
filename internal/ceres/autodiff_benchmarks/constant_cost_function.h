@@ -1,6 +1,6 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
-// http://code.google.com/p/ceres-solver/
+// Copyright 2020 Google Inc. All rights reserved.
+// http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -28,38 +28,36 @@
 //
 // Author: darius.rueckert@fau.de (Darius Rueckert)
 //
-// A simple example showing how to generate code for a cost functor
+//
+#ifndef CERES_INTERNAL_AUTODIFF_BENCHMARKS_CONSTANT_COST_FUNCTIONS_H_
+#define CERES_INTERNAL_AUTODIFF_BENCHMARKS_CONSTANT_COST_FUNCTIONS_H_
 
-#include "ceres/ceres.h"
-#include "glog/logging.h"
-#include "helloworld_cost_function.h"
+#include "ceres/sized_cost_function.h"
 
-using ceres::CostFunction;
-using ceres::Problem;
-using ceres::Solve;
-using ceres::Solver;
+namespace ceres {
 
-int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+template <int kParameterBlockSize>
+struct ConstantCostFunction
+    : public ceres::SizedCostFunction<1, kParameterBlockSize> {
+  template <typename T>
+  bool operator()(const T* const x, T* residuals) const {
+    residuals[0] = T(5);
+    return true;
+  }
 
-  // The variable to solve for with its initial value. It will be
-  // mutated in place by the solver.
-  double x = 0.5;
-  const double initial_x = x;
+  virtual bool Evaluate(double const* const* parameters,
+                        double* residuals,
+                        double** jacobians) const {
+    residuals[0] = 5.0;
+    if (jacobians) {
+      if (jacobians[0]) {
+        memset(jacobians[0], 0, sizeof(double) * kParameterBlockSize);
+      }
+    }
+    return true;
+  }
+};
 
-  Problem problem;
+}  // namespace ceres
 
-  const double kTargetValue = 10.0;
-  CostFunction* cost_function =
-      new helloworld::HelloWorldCostFunction(kTargetValue);
-  problem.AddResidualBlock(cost_function, NULL, &x);
-
-  Solver::Options options;
-  options.minimizer_progress_to_stdout = true;
-  Solver::Summary summary;
-  Solve(options, &problem, &summary);
-
-  std::cout << summary.BriefReport() << "\n";
-  std::cout << "x : " << initial_x << " -> " << x << "\n";
-  return 0;
-}
+#endif  // CERES_INTERNAL_AUTODIFF_BENCHMARKS_CONSTANT_COST_FUNCTIONS_H_

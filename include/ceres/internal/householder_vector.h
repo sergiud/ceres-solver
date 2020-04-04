@@ -28,8 +28,8 @@
 //
 // Author: vitus@google.com (Michael Vitus)
 
-#ifndef CERES_PUBLIC_HOUSEHOLDER_VECTOR_H_
-#define CERES_PUBLIC_HOUSEHOLDER_VECTOR_H_
+#ifndef CERES_PUBLIC_INTERNAL_HOUSEHOLDER_VECTOR_H_
+#define CERES_PUBLIC_INTERNAL_HOUSEHOLDER_VECTOR_H_
 
 #include "Eigen/Core"
 #include "glog/logging.h"
@@ -42,9 +42,12 @@ namespace internal {
 // vector as pivot instead of first. This computes the vector v with v(n) = 1
 // and beta such that H = I - beta * v * v^T is orthogonal and
 // H * x = ||x||_2 * e_n.
-template <typename Scalar>
-void ComputeHouseholderVector(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& x,
-                              Eigen::Matrix<Scalar, Eigen::Dynamic, 1>* v,
+//
+// NOTE: Some versions of MSVC have trouble deducing the type of v if
+// you do not specify all the template arguments explicitly.
+template <typename XVectorType, typename Scalar, int N>
+void ComputeHouseholderVector(const XVectorType& x,
+                              Eigen::Matrix<Scalar, N, 1>* v,
                               Scalar* beta) {
   CHECK(beta != nullptr);
   CHECK(v != nullptr);
@@ -82,4 +85,4 @@ void ComputeHouseholderVector(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& x,
 }  // namespace internal
 }  // namespace ceres
 
-#endif  // CERES_PUBLIC_HOUSEHOLDER_VECTOR_H_
+#endif  // CERES_PUBLIC_INTERNAL_HOUSEHOLDER_VECTOR_H_

@@ -339,8 +339,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   add_library(test_util
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
-              test_util.cc
-              codegen/test_utils.cc)
+              test_util.cc)
   set_target_properties (test_util PROPERTIES CXX_VISIBILITY_PRESET default)
 
   if (WITH_MINILOG)
@@ -378,6 +377,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
   ceres_test(algorithm)
   ceres_test(array_utils)
+  ceres_test(array_selector)
   ceres_test(autodiff)
   ceres_test(autodiff_first_order_function)
   ceres_test(autodiff_cost_function)
@@ -498,6 +498,3 @@ if (BUILD_BENCHMARKS)
   add_subdirectory(autodiff_benchmarks)
 endif (BUILD_BENCHMARKS)
 
-if(CODE_GENERATION)
-  add_subdirectory(codegen)
-endif()

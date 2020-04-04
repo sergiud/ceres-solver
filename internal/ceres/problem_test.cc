@@ -2123,5 +2123,14 @@ TEST(Problem, SetParameterizationAndThenClearItWithNull) {
   EXPECT_EQ(problem.ParameterBlockSize(x), 3);
 }
 
+TEST(Solver, ZeroSizedLocalParameterizationMeansParameterBlockIsConstant) {
+  double x = 0.0;
+  double y = 1.0;
+  Problem problem;
+  problem.AddResidualBlock(new BinaryCostFunction(1, 1, 1), nullptr, &x, &y);
+  problem.SetParameterization(&y, new SubsetParameterization(1, {0}));
+  EXPECT_TRUE(problem.IsParameterBlockConstant(&y));
+}
+
 }  // namespace internal
 }  // namespace ceres
