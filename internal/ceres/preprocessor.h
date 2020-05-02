@@ -45,6 +45,7 @@
 #include "ceres/problem_impl.h"
 #include "ceres/program.h"
 #include "ceres/solver.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -67,7 +68,7 @@ struct PreprocessedProblem;
 //
 // The output of the Preprocessor is stored in a PreprocessedProblem
 // object.
-class Preprocessor {
+class CERES_EXPORT Preprocessor {
  public:
   // Factory.
   static Preprocessor* Create(MinimizerType minimizer_type);
