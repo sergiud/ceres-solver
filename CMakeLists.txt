@@ -151,10 +151,6 @@ option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
 option(PROVIDE_UNINSTALL_TARGET "Add a custom target to ease removal of installed targets" ON)
-option(CODE_GENERATION "Build the code generation module." OFF)
-if(CODE_GENERATION)
-    message(WARNING "The code generation module is still under development. The functionality and API of the current implementation might change in the future.")
-endif(CODE_GENERATION)
 set(SANITIZERS "" CACHE STRING "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
 include(EnableSanitizer)
 enable_sanitizer(${SANITIZERS})
@@ -573,13 +569,6 @@ file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/internal/
 install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
   ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
-# Ceres codegen headers
-file(GLOB CERES_PUBLIC_CODEGEN_HDRS ${Ceres_SOURCE_DIR}/include/ceres/codegen/*.h)
-install(FILES ${CERES_PUBLIC_CODEGEN_HDRS} DESTINATION include/ceres/codegen)
-
-file(GLOB CERES_PUBLIC_CODEGEN_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/codegen/internal/*.h)
-install(FILES ${CERES_PUBLIC_CODEGEN_INTERNAL_HDRS} DESTINATION include/ceres/codegen/internal)
-
 # Also setup installation of Ceres config.h configured with the current
 # build options into the installed headers directory.
 install(FILES ${Ceres_BINARY_DIR}/include/ceres/internal/config.h
@@ -631,12 +620,6 @@ generate_export_header (ceres EXPORT_FILE_NAME
 # in the public API of Ceres and should thus be present in CERES_INCLUDE_DIRS.
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/CeresConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/CeresConfigVersion.cmake"
-        DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-
-# Install codegen cmake scripts
-install(FILES "${Ceres_SOURCE_DIR}/cmake/codegen_include.inc.in"
-              "${Ceres_SOURCE_DIR}/cmake/generate_code_for_functor.cc.in"
-              "${Ceres_SOURCE_DIR}/cmake/CeresCodeGeneration.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/include/ceres/internal/export.h
