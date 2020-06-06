@@ -225,6 +225,7 @@ if (CHECK_CXX_FLAG_Wno_missing_declarations)
 endif()
 
 add_library(ceres ${CERES_LIBRARY_SOURCE})
+add_library(Ceres::Ceres ALIAS ceres)
 
 target_link_libraries(ceres PUBLIC Eigen3::Eigen)
 
@@ -351,7 +352,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
              ${Ceres_SOURCE_DIR}/internal/ceres
              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
 
-    target_link_libraries(${NAME}_test PUBLIC test_util ceres gtest)
+    target_link_libraries(${NAME}_test PUBLIC test_util Ceres::Ceres gtest)
     if (BUILD_SHARED_LIBS)
       # Define gtest-specific shared library flags for linking.
       append_target_property(${NAME}_test COMPILE_DEFINITIONS
@@ -363,7 +364,6 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
              ${Ceres_SOURCE_DIR}/data)
   endmacro (CERES_TEST)
 
-  ceres_test(algorithm)
   ceres_test(array_utils)
   ceres_test(array_selector)
   ceres_test(autodiff)
@@ -408,7 +408,6 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(implicit_schur_complement)
   ceres_test(inner_product_computer)
   ceres_test(invert_psd_matrix)
-  ceres_test(integer_sequence)
   ceres_test(integer_sequence_algorithm)
   ceres_test(is_close)
   ceres_test(iterative_refiner)
@@ -463,7 +462,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
-  target_link_libraries(${BENCHMARK_TARGET} PUBLIC ceres benchmark::benchmark)
+  target_link_libraries(${BENCHMARK_TARGET} PUBLIC Ceres::Ceres benchmark::benchmark)
   target_include_directories(${BENCHMARK_TARGET} PUBLIC
                              ${Ceres_SOURCE_DIR}/internal
                              ${Ceres_SOURCE_DIR}/internal/ceres
