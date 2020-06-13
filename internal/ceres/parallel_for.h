@@ -41,6 +41,7 @@ namespace internal {
 
 // Returns the maximum number of threads supported by the threading backend
 // Ceres was compiled with.
+CERES_EXPORT
 int MaxNumThreadsAvailable();
 
 // Execute the function for every element in the range [start, end) with at most

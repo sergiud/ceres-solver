@@ -30,7 +30,7 @@
 
 # Avoid 'xxx.cc has no symbols' warnings from source files which are 'empty'
 # when their enclosing #ifdefs are disabled.
-if (WITH_CXX11_THREADS)
+if (WITH_CXX_THREADS)
   set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
   list(APPEND APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES Threads::Threads)
   set (Threads_DEPENDENCY "find_dependency (Threads)")
@@ -55,9 +55,9 @@ set(CERES_INTERNAL_SRC
     block_sparse_matrix.cc
     block_structure.cc
     c_api.cc
+    callbacks.cc
     canonical_views_clustering.cc
     cgnr_solver.cc
-    callbacks.cc
     compressed_col_sparse_matrix_utils.cc
     compressed_row_jacobian_writer.cc
     compressed_row_sparse_matrix.cc
@@ -79,11 +79,11 @@ set(CERES_INTERNAL_SRC
     dynamic_compressed_row_jacobian_writer.cc
     dynamic_compressed_row_sparse_matrix.cc
     dynamic_sparse_normal_cholesky_solver.cc
-    evaluator.cc
     eigensparse.cc
+    evaluator.cc
     file.cc
-    float_suitesparse.cc
     float_cxsparse.cc
+    float_suitesparse.cc
     function_sample.cc
     gradient_checker.cc
     gradient_checking_cost_function.cc
@@ -94,8 +94,8 @@ set(CERES_INTERNAL_SRC
     is_close.cc
     iterative_refiner.cc
     iterative_schur_complement_solver.cc
-    levenberg_marquardt_strategy.cc
     lapack.cc
+    levenberg_marquardt_strategy.cc
     line_search.cc
     line_search_direction.cc
     line_search_minimizer.cc
@@ -128,17 +128,18 @@ set(CERES_INTERNAL_SRC
     single_linkage_clustering.cc
     solver.cc
     solver_utils.cc
-    sparse_matrix.cc
     sparse_cholesky.cc
+    sparse_matrix.cc
     sparse_normal_cholesky_solver.cc
-    subset_preconditioner.cc
     split.cc
     stringprintf.cc
+    subset_preconditioner.cc
     suitesparse.cc
+    thread_pool.cc
     thread_token_provider.cc
     triplet_sparse_matrix.cc
-    trust_region_preprocessor.cc
     trust_region_minimizer.cc
+    trust_region_preprocessor.cc
     trust_region_step_evaluator.cc
     trust_region_strategy.cc
     types.cc
@@ -228,10 +229,7 @@ add_library(ceres ${CERES_LIBRARY_SOURCE})
 add_library(Ceres::Ceres ALIAS ceres)
 
 target_link_libraries(ceres PUBLIC Eigen3::Eigen)
-
-if (WITH_TBB AND TBB_FOUND)
-  target_compile_features (ceres PUBLIC cxx_lambdas)
-endif (WITH_TBB AND TBB_FOUND)
+target_compile_features (ceres PUBLIC cxx_std_14)
 
 target_include_directories (ceres
   PUBLIC
