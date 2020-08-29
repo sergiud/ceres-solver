@@ -127,6 +127,7 @@ class CERES_EXPORT ProblemImpl {
 
   bool EvaluateResidualBlock(ResidualBlock* residual_block,
                              bool apply_loss_function,
+                             bool new_point,
                              double* cost,
                              double* residuals,
                              double** jacobians) const;
