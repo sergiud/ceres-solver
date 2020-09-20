@@ -52,7 +52,7 @@ namespace ceres {
 // delete on it upon completion.
 enum Ownership {
   DO_NOT_TAKE_OWNERSHIP,
-  TAKE_OWNERSHIP
+  TAKE_OWNERSHIP,
 };
 
 // TODO(keir): Considerably expand the explanations of each solver type.
@@ -187,19 +187,19 @@ enum SparseLinearAlgebraLibraryType {
 
 enum DenseLinearAlgebraLibraryType {
   EIGEN,
-  LAPACK
+  LAPACK,
 };
 
 // Logging options
 // The options get progressively noisier.
 enum LoggingType {
   SILENT,
-  PER_MINIMIZER_ITERATION
+  PER_MINIMIZER_ITERATION,
 };
 
 enum MinimizerType {
   LINE_SEARCH,
-  TRUST_REGION
+  TRUST_REGION,
 };
 
 enum LineSearchDirectionType {
@@ -414,7 +414,7 @@ enum DumpFormatType {
 // specified for the number of residuals. If specified, then the
 // number of residuas for that cost function can vary at runtime.
 enum DimensionType {
-  DYNAMIC = -1
+  DYNAMIC = -1,
 };
 
 // The differentiation method used to compute numerical derivatives in
@@ -435,7 +435,7 @@ enum NumericDiffMethodType {
 enum LineSearchInterpolationType {
   BISECTION,
   QUADRATIC,
-  CUBIC
+  CUBIC,
 };
 
 enum CovarianceAlgorithmType {
@@ -450,8 +450,7 @@ enum CovarianceAlgorithmType {
 // did not write to that memory location.
 const double kImpossibleValue = 1e302;
 
-CERES_EXPORT const char* LinearSolverTypeToString(
-    LinearSolverType type);
+CERES_EXPORT const char* LinearSolverTypeToString(LinearSolverType type);
 CERES_EXPORT bool StringToLinearSolverType(std::string value,
                                            LinearSolverType* type);
 
@@ -461,25 +460,23 @@ CERES_EXPORT bool StringToPreconditionerType(std::string value,
 
 CERES_EXPORT const char* VisibilityClusteringTypeToString(
     VisibilityClusteringType type);
-CERES_EXPORT bool StringToVisibilityClusteringType(std::string value,
-                                      VisibilityClusteringType* type);
+CERES_EXPORT bool StringToVisibilityClusteringType(
+    std::string value, VisibilityClusteringType* type);
 
 CERES_EXPORT const char* SparseLinearAlgebraLibraryTypeToString(
     SparseLinearAlgebraLibraryType type);
 CERES_EXPORT bool StringToSparseLinearAlgebraLibraryType(
-    std::string value,
-    SparseLinearAlgebraLibraryType* type);
+    std::string value, SparseLinearAlgebraLibraryType* type);
 
 CERES_EXPORT const char* DenseLinearAlgebraLibraryTypeToString(
     DenseLinearAlgebraLibraryType type);
 CERES_EXPORT bool StringToDenseLinearAlgebraLibraryType(
-    std::string value,
-    DenseLinearAlgebraLibraryType* type);
+    std::string value, DenseLinearAlgebraLibraryType* type);
 
 CERES_EXPORT const char* TrustRegionStrategyTypeToString(
     TrustRegionStrategyType type);
-CERES_EXPORT bool StringToTrustRegionStrategyType(std::string value,
-                                     TrustRegionStrategyType* type);
+CERES_EXPORT bool StringToTrustRegionStrategyType(
+    std::string value, TrustRegionStrategyType* type);
 
 CERES_EXPORT const char* DoglegTypeToString(DoglegType type);
 CERES_EXPORT bool StringToDoglegType(std::string value, DoglegType* type);
@@ -489,41 +486,39 @@ CERES_EXPORT bool StringToMinimizerType(std::string value, MinimizerType* type);
 
 CERES_EXPORT const char* LineSearchDirectionTypeToString(
     LineSearchDirectionType type);
-CERES_EXPORT bool StringToLineSearchDirectionType(std::string value,
-                                     LineSearchDirectionType* type);
+CERES_EXPORT bool StringToLineSearchDirectionType(
+    std::string value, LineSearchDirectionType* type);
 
 CERES_EXPORT const char* LineSearchTypeToString(LineSearchType type);
-CERES_EXPORT bool StringToLineSearchType(std::string value, LineSearchType* type);
+CERES_EXPORT bool StringToLineSearchType(std::string value,
+                                         LineSearchType* type);
 
 CERES_EXPORT const char* NonlinearConjugateGradientTypeToString(
     NonlinearConjugateGradientType type);
 CERES_EXPORT bool StringToNonlinearConjugateGradientType(
-    std::string value,
-    NonlinearConjugateGradientType* type);
+    std::string value, NonlinearConjugateGradientType* type);
 
 CERES_EXPORT const char* LineSearchInterpolationTypeToString(
     LineSearchInterpolationType type);
 CERES_EXPORT bool StringToLineSearchInterpolationType(
-    std::string value,
-    LineSearchInterpolationType* type);
+    std::string value, LineSearchInterpolationType* type);
 
 CERES_EXPORT const char* CovarianceAlgorithmTypeToString(
     CovarianceAlgorithmType type);
 CERES_EXPORT bool StringToCovarianceAlgorithmType(
-    std::string value,
-    CovarianceAlgorithmType* type);
+    std::string value, CovarianceAlgorithmType* type);
 
 CERES_EXPORT const char* NumericDiffMethodTypeToString(
     NumericDiffMethodType type);
-CERES_EXPORT bool StringToNumericDiffMethodType(
-    std::string value,
-    NumericDiffMethodType* type);
+CERES_EXPORT bool StringToNumericDiffMethodType(std::string value,
+                                                NumericDiffMethodType* type);
 
 CERES_EXPORT const char* LoggingTypeToString(LoggingType type);
 CERES_EXPORT bool StringtoLoggingType(std::string value, LoggingType* type);
 
 CERES_EXPORT const char* DumpFormatTypeToString(DumpFormatType type);
-CERES_EXPORT bool StringtoDumpFormatType(std::string value, DumpFormatType* type);
+CERES_EXPORT bool StringtoDumpFormatType(std::string value,
+                                         DumpFormatType* type);
 CERES_EXPORT bool StringtoDumpFormatType(std::string value, LoggingType* type);
 
 CERES_EXPORT const char* TerminationTypeToString(TerminationType type);
