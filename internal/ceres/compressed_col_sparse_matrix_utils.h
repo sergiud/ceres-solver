@@ -32,6 +32,7 @@
 #define CERES_INTERNAL_COMPRESSED_COL_SPARSE_MATRIX_UTILS_H_
 
 #include <vector>
+
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
@@ -63,10 +64,9 @@ void CompressedColumnScalarMatrixToBlockMatrix(
 // the corresponding "scalar" ordering, where the scalar ordering of
 // size sum(blocks).
 CERES_EXPORT
-void BlockOrderingToScalarOrdering(
-    const std::vector<int>& blocks,
-    const std::vector<int>& block_ordering,
-    std::vector<int>* scalar_ordering);
+void BlockOrderingToScalarOrdering(const std::vector<int>& blocks,
+                                   const std::vector<int>& block_ordering,
+                                   std::vector<int>* scalar_ordering);
 
 // Solve the linear system
 //
@@ -106,7 +106,7 @@ void SolveUpperTriangularTransposeInPlace(IntegerType num_cols,
       const double v = values[idx];
       rhs_and_solution[c] -= v * rhs_and_solution[r];
     }
-    rhs_and_solution[c] =  rhs_and_solution[c] / values[cols[c + 1] - 1];
+    rhs_and_solution[c] = rhs_and_solution[c] / values[cols[c + 1] - 1];
   }
 }
 
@@ -137,7 +137,7 @@ void SolveRTRWithSparseRHS(IntegerType num_cols,
       const double v = values[idx];
       solution[c] -= v * solution[r];
     }
-    solution[c] =  solution[c] / values[cols[c + 1] - 1];
+    solution[c] = solution[c] / values[cols[c + 1] - 1];
   }
 
   SolveUpperTriangularInPlace(num_cols, rows, cols, values, solution);

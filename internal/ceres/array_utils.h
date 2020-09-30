@@ -44,6 +44,7 @@
 #define CERES_INTERNAL_ARRAY_UTILS_H_
 
 #include <string>
+
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 

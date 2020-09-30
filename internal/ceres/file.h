@@ -34,6 +34,7 @@
 #define CERES_INTERNAL_FILE_H_
 
 #include <string>
+
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
@@ -42,9 +43,9 @@
 namespace ceres {
 namespace internal {
 
-void WriteStringToFileOrDie(const std::string &data,
-                            const std::string &filename);
-void ReadFileToStringOrDie(const std::string &filename, std::string *data);
+void WriteStringToFileOrDie(const std::string& data,
+                            const std::string& filename);
+void ReadFileToStringOrDie(const std::string& filename, std::string* data);
 
 // Join two path components, adding a slash if necessary.  If basename is an
 // absolute path then JoinPath ignores dirname and simply returns basename.

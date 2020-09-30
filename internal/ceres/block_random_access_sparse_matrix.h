@@ -39,12 +39,12 @@
 #include <vector>
 
 #include "ceres/block_random_access_matrix.h"
-#include "ceres/triplet_sparse_matrix.h"
 #include "ceres/internal/port.h"
-#include "ceres/types.h"
 #include "ceres/small_blas.h"
-#include "ceres/internal/export.h"
+#include "ceres/triplet_sparse_matrix.h"
+#include "ceres/types.h"
 
+#include "ceres/internal/export.h"
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
@@ -113,7 +113,7 @@ class CERES_EXPORT BlockRandomAccessSparseMatrix : public BlockRandomAccessMatri
 
   // A mapping from <row_block_id, col_block_id> to the position in
   // the values array of tsm_ where the block is stored.
-  typedef std::unordered_map<long int, CellInfo* > LayoutType;
+  typedef std::unordered_map<long int, CellInfo*> LayoutType;
   LayoutType layout_;
 
   // In order traversal of contents of the matrix. This allows us to

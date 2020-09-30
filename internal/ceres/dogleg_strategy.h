@@ -62,9 +62,9 @@ class CERES_EXPORT DoglegStrategy : public TrustRegionStrategy {
 
   // TrustRegionStrategy interface
   Summary ComputeStep(const PerSolveOptions& per_solve_options,
-                              SparseMatrix* jacobian,
-                              const double* residuals,
-                              double* step) final;
+                      SparseMatrix* jacobian,
+                      const double* residuals,
+                      double* step) final;
   void StepAccepted(double step_quality) final;
   void StepRejected(double step_quality) final;
   void StepIsInvalid();

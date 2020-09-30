@@ -37,8 +37,8 @@
 #include <memory>
 
 #include "ceres/block_structure.h"
-#include "ceres/sparse_matrix.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/sparse_matrix.h"
 #include "ceres/internal/export.h"
 #include "ceres/internal/prefix.h"
 
@@ -80,11 +80,13 @@ class CERES_EXPORT BlockSparseMatrix : public SparseMatrix {
   void ToDenseMatrix(Matrix* dense_matrix) const final;
   void ToTextFile(FILE* file) const final;
 
+  // clang-format off
   int num_rows()         const final { return num_rows_;     }
   int num_cols()         const final { return num_cols_;     }
   int num_nonzeros()     const final { return num_nonzeros_; }
   const double* values() const final { return values_.get(); }
   double* mutable_values()     final { return values_.get(); }
+  // clang-format on
 
   void ToTripletSparseMatrix(TripletSparseMatrix* matrix) const;
   const CompressedRowBlockStructure* block_structure() const;
@@ -97,8 +99,7 @@ class CERES_EXPORT BlockSparseMatrix : public SparseMatrix {
   void DeleteRowBlocks(int delta_row_blocks);
 
   static BlockSparseMatrix* CreateDiagonalMatrix(
-      const double* diagonal,
-      const std::vector<Block>& column_blocks);
+      const double* diagonal, const std::vector<Block>& column_blocks);
 
   struct RandomMatrixOptions {
     int num_row_blocks = 0;

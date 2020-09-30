@@ -35,8 +35,8 @@
 #include <string>
 #include <vector>
 
-#include "ceres/sparse_matrix.h"
 #include "ceres/internal/port.h"
+#include "ceres/sparse_matrix.h"
 #include "ceres/internal/export.h"
 #include "ceres/internal/prefix.h"
 
@@ -46,9 +46,7 @@ namespace internal {
 // Structure defining a linear least squares problem and if possible
 // ground truth solutions. To be used by various LinearSolver tests.
 struct LinearLeastSquaresProblem {
-  LinearLeastSquaresProblem()
-      : num_eliminate_blocks(0) {
-  }
+  LinearLeastSquaresProblem() : num_eliminate_blocks(0) {}
 
   std::unique_ptr<SparseMatrix> A;
   std::unique_ptr<double[]> b;

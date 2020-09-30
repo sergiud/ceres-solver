@@ -36,6 +36,7 @@
 #include "ceres/internal/export.h"
 
 #include <memory>
+
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
 
@@ -91,8 +92,8 @@ class CERES_EXPORT SparseCholesky {
   // Subsequent calls to Factorize will use that symbolic
   // factorization assuming that the sparsity of the matrix has
   // remained constant.
-  virtual LinearSolverTerminationType Factorize(
-      CompressedRowSparseMatrix* lhs, std::string* message) = 0;
+  virtual LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
+                                                std::string* message) = 0;
 
   // Computes the solution to the equation
   //
@@ -109,7 +110,6 @@ class CERES_EXPORT SparseCholesky {
       const double* rhs,
       double* solution,
       std::string* message);
-
 };
 
 class IterativeRefiner;
@@ -123,8 +123,8 @@ class CERES_EXPORT RefinedSparseCholesky : public SparseCholesky {
   virtual ~RefinedSparseCholesky();
 
   virtual CompressedRowSparseMatrix::StorageType StorageType() const;
-  virtual LinearSolverTerminationType Factorize(
-      CompressedRowSparseMatrix* lhs, std::string* message);
+  virtual LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
+                                                std::string* message);
   virtual LinearSolverTerminationType Solve(const double* rhs,
                                             double* solution,
                                             std::string* message);

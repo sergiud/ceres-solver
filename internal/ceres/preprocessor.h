@@ -81,9 +81,7 @@ class CERES_EXPORT Preprocessor {
 // A PreprocessedProblem is the result of running the Preprocessor on
 // a Problem and Solver::Options object.
 struct PreprocessedProblem {
-  PreprocessedProblem()
-      : fixed_cost(0.0) {
-  }
+  PreprocessedProblem() : fixed_cost(0.0) {}
 
   std::string error;
   Solver::Options options;

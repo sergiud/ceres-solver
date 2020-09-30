@@ -95,7 +95,7 @@ class CERES_EXPORT DenseSparseMatrix : public SparseMatrix {
   // Calling RemoveDiagonal removes the block. It is a fatal error to append a
   // diagonal to a matrix that already has an appended diagonal, and it is also
   // a fatal error to remove a diagonal from a matrix that has none.
-  void AppendDiagonal(double *d);
+  void AppendDiagonal(double* d);
   void RemoveDiagonal();
 
  private:

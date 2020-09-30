@@ -175,7 +175,7 @@ class CXSparseCholesky : public SparseCholesky {
 
 #include "ceres/internal/suffix.h"
 
-#else   // CERES_NO_CXSPARSE
+#else
 
 typedef void cs_dis;
 

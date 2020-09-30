@@ -39,7 +39,6 @@ void ContextImpl::EnsureMinimumThreads(int num_threads) {
 #ifdef CERES_USE_CXX_THREADS
   thread_pool.Resize(num_threads);
 #endif  // CERES_USE_CXX_THREADS
-
 }
 }  // namespace internal
 }  // namespace ceres

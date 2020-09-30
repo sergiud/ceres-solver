@@ -39,6 +39,7 @@
 
 #include <set>
 #include <vector>
+
 #include "ceres/graph.h"
 
 #include "ceres/internal/prefix.h"

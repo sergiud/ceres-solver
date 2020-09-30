@@ -34,6 +34,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 #include "ceres/iteration_callback.h"
@@ -57,13 +58,9 @@ class CERES_EXPORT Minimizer {
   // see solver.h for detailed information about the meaning and
   // default values of each of these parameters.
   struct Options {
-    Options() {
-      Init(Solver::Options());
-    }
+    Options() { Init(Solver::Options()); }
 
-    explicit Options(const Solver::Options& options) {
-      Init(options);
-    }
+    explicit Options(const Solver::Options& options) { Init(options); }
 
     void Init(const Solver::Options& options) {
       num_threads = options.num_threads;
@@ -95,8 +92,7 @@ class CERES_EXPORT Minimizer {
       max_lbfgs_rank = options.max_lbfgs_rank;
       use_approximate_eigenvalue_bfgs_scaling =
           options.use_approximate_eigenvalue_bfgs_scaling;
-      line_search_interpolation_type =
-          options.line_search_interpolation_type;
+      line_search_interpolation_type = options.line_search_interpolation_type;
       min_line_search_step_size = options.min_line_search_step_size;
       line_search_sufficient_function_decrease =
           options.line_search_sufficient_function_decrease;
@@ -110,8 +106,7 @@ class CERES_EXPORT Minimizer {
           options.max_num_line_search_direction_restarts;
       line_search_sufficient_curvature_decrease =
           options.line_search_sufficient_curvature_decrease;
-      max_line_search_step_expansion =
-          options.max_line_search_step_expansion;
+      max_line_search_step_expansion = options.max_line_search_step_expansion;
       inner_iteration_tolerance = options.inner_iteration_tolerance;
       is_silent = (options.logging_type == SILENT);
       is_constrained = false;
