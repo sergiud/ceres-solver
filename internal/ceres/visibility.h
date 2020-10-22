@@ -35,13 +35,11 @@
 #ifndef CERES_INTERNAL_VISIBILITY_H_
 #define CERES_INTERNAL_VISIBILITY_H_
 
-#include "ceres/internal/export.h"
-
 #include <set>
 #include <vector>
 
 #include "ceres/graph.h"
-
+#include "ceres/internal/export.h"
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
@@ -57,10 +55,10 @@ struct CompressedRowBlockStructure;
 //
 // In a structure from motion problem, e_blocks correspond to 3D
 // points and f_blocks correspond to cameras.
-CERES_EXPORT
-void ComputeVisibility(const CompressedRowBlockStructure& block_structure,
-                       int num_eliminate_blocks,
-                       std::vector<std::set<int>>* visibility);
+CERES_EXPORT void ComputeVisibility(
+    const CompressedRowBlockStructure& block_structure,
+    int num_eliminate_blocks,
+    std::vector<std::set<int>>* visibility);
 
 // Given f_block visibility as computed by the ComputeVisibility
 // function above, construct and return a graph whose vertices are
@@ -75,8 +73,7 @@ void ComputeVisibility(const CompressedRowBlockStructure& block_structure,
 //
 // Caller acquires ownership of the returned WeightedGraph pointer
 // (heap-allocated).
-CERES_EXPORT
-WeightedGraph<int>* CreateSchurComplementGraph(
+CERES_EXPORT WeightedGraph<int>* CreateSchurComplementGraph(
     const std::vector<std::set<int>>& visibility);
 
 }  // namespace internal

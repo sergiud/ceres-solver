@@ -66,29 +66,28 @@ namespace internal {
 #endif
 
 // Return a C++ string.
-CERES_EXPORT
-extern std::string StringPrintf(const char* format, ...)
+CERES_EXPORT extern std::string StringPrintf(const char* format, ...)
     // Tell the compiler to do printf format string checking.
     CERES_PRINTF_ATTRIBUTE(1, 2);
 
 // Store result into a supplied string and return it.
-CERES_EXPORT
-extern const std::string& SStringPrintf(std::string* dst,
-                                        const char* format,
-                                        ...)
+CERES_EXPORT extern const std::string& SStringPrintf(
+    std::string* dst, const char* format, ...)
     // Tell the compiler to do printf format string checking.
     CERES_PRINTF_ATTRIBUTE(2, 3);
 
 // Append result to a supplied string.
-CERES_EXPORT
-extern void StringAppendF(std::string* dst, const char* format, ...)
+CERES_EXPORT extern void StringAppendF(std::string* dst,
+                                                const char* format,
+                                                ...)
     // Tell the compiler to do printf format string checking.
     CERES_PRINTF_ATTRIBUTE(2, 3);
 
 // Lower-level routine that takes a va_list and appends to a specified string.
 // All other routines are just convenience wrappers around it.
-CERES_EXPORT
-extern void StringAppendV(std::string* dst, const char* format, va_list ap);
+CERES_EXPORT extern void StringAppendV(std::string* dst,
+                                                const char* format,
+                                                va_list ap);
 
 #undef CERES_PRINTF_ATTRIBUTE
 

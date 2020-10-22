@@ -34,6 +34,7 @@
 #ifndef CERES_INTERNAL_CONJUGATE_GRADIENTS_SOLVER_H_
 #define CERES_INTERNAL_CONJUGATE_GRADIENTS_SOLVER_H_
 
+#include "ceres/internal/port.h"
 #include "ceres/linear_solver.h"
 #include "ceres/internal/export.h"
 #include "ceres/internal/prefix.h"

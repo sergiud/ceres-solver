@@ -35,6 +35,7 @@
 #include <vector>
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
 #include "ceres/internal/export.h"

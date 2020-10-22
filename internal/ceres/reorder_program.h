@@ -47,19 +47,17 @@ namespace internal {
 class Program;
 
 // Reorder the parameter blocks in program using the ordering
-CERES_EXPORT
-bool ApplyOrdering(const ProblemImpl::ParameterMap& parameter_map,
-                   const ParameterBlockOrdering& ordering,
-                   Program* program,
-                   std::string* error);
+CERES_EXPORT bool ApplyOrdering(
+    const ProblemImpl::ParameterMap& parameter_map,
+    const ParameterBlockOrdering& ordering,
+    Program* program,
+    std::string* error);
 
 // Reorder the residuals for program, if necessary, so that the residuals
 // involving each E block occur together. This is a necessary condition for the
 // Schur eliminator, which works on these "row blocks" in the jacobian.
-CERES_EXPORT
-bool LexicographicallyOrderResidualBlocks(int size_of_first_elimination_group,
-                                          Program* program,
-                                          std::string* error);
+CERES_EXPORT bool LexicographicallyOrderResidualBlocks(
+    int size_of_first_elimination_group, Program* program, std::string* error);
 
 // Schur type solvers require that all parameter blocks eliminated
 // by the Schur eliminator occur before others and the residuals be
@@ -77,8 +75,7 @@ bool LexicographicallyOrderResidualBlocks(int size_of_first_elimination_group,
 //
 // Upon return, ordering contains the parameter block ordering that
 // was used to order the program.
-CERES_EXPORT
-bool ReorderProgramForSchurTypeLinearSolver(
+CERES_EXPORT bool ReorderProgramForSchurTypeLinearSolver(
     LinearSolverType linear_solver_type,
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
     const ProblemImpl::ParameterMap& parameter_map,
@@ -96,8 +93,7 @@ bool ReorderProgramForSchurTypeLinearSolver(
 // fill-reducing ordering is available in the sparse linear algebra
 // library (SuiteSparse version >= 4.2.0) then the fill reducing
 // ordering will take it into account, otherwise it will be ignored.
-CERES_EXPORT
-bool ReorderProgramForSparseCholesky(
+CERES_EXPORT bool ReorderProgramForSparseCholesky(
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
     const ParameterBlockOrdering& parameter_block_ordering,
     int start_row_block,
@@ -114,8 +110,7 @@ bool ReorderProgramForSparseCholesky(
 // bottom_residual_blocks.size() because we allow
 // bottom_residual_blocks to contain residual blocks not present in
 // the Program.
-CERES_EXPORT
-int ReorderResidualBlocksByPartition(
+CERES_EXPORT int ReorderResidualBlocksByPartition(
     const std::unordered_set<ResidualBlockId>& bottom_residual_blocks,
     Program* program);
 

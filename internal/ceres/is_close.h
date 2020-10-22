@@ -44,12 +44,11 @@ namespace internal {
 // difference in relative/absolute_error if non-NULL. If one of the two values
 // is exactly zero, the absolute difference will be compared, and relative_error
 // will be set to the absolute difference.
-CERES_EXPORT
-bool IsClose(double x,
-             double y,
-             double relative_precision,
-             double* relative_error,
-             double* absolute_error);
+CERES_EXPORT bool IsClose(double x,
+                                   double y,
+                                   double relative_precision,
+                                   double* relative_error,
+                                   double* absolute_error);
 }  // namespace internal
 }  // namespace ceres
 

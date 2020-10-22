@@ -36,6 +36,7 @@
 #include <cstdio>
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/linear_operator.h"
 #include "ceres/types.h"
 #include "ceres/internal/export.h"

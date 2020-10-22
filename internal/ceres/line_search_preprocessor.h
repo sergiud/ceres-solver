@@ -31,6 +31,7 @@
 #ifndef CERES_INTERNAL_LINE_SEARCH_PREPROCESSOR_H_
 #define CERES_INTERNAL_LINE_SEARCH_PREPROCESSOR_H_
 
+#include "ceres/internal/port.h"
 #include "ceres/preprocessor.h"
 #include "ceres/internal/export.h"
 

@@ -45,6 +45,7 @@
 #include "ceres/context_impl.h"
 #include "ceres/dense_sparse_matrix.h"
 #include "ceres/execution_summary.h"
+#include "ceres/internal/port.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "ceres/types.h"
 #include "ceres/internal/export.h"

@@ -35,6 +35,8 @@
 
 #include <mutex>
 
+#include "ceres/internal/export.h"
+
 namespace ceres {
 namespace internal {
 
@@ -91,7 +93,7 @@ struct CellInfo {
   std::mutex m;
 };
 
-class BlockRandomAccessMatrix {
+class CERES_EXPORT BlockRandomAccessMatrix {
  public:
   virtual ~BlockRandomAccessMatrix();
 

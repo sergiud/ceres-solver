@@ -33,6 +33,7 @@
 #define CERES_INTERNAL_DENSE_QR_SOLVER_H_
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/linear_solver.h"
 #include "ceres/internal/export.h"
 #include "ceres/internal/prefix.h"

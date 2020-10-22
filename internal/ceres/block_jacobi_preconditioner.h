@@ -34,6 +34,7 @@
 #include <memory>
 
 #include "ceres/block_random_access_diagonal_matrix.h"
+#include "ceres/internal/port.h"
 #include "ceres/preconditioner.h"
 #include "ceres/internal/export.h"
 

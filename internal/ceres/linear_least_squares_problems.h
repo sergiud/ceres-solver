@@ -45,7 +45,7 @@ namespace internal {
 
 // Structure defining a linear least squares problem and if possible
 // ground truth solutions. To be used by various LinearSolver tests.
-struct LinearLeastSquaresProblem {
+struct CERES_EXPORT LinearLeastSquaresProblem {
   LinearLeastSquaresProblem() : num_eliminate_blocks(0) {}
 
   std::unique_ptr<SparseMatrix> A;
@@ -62,8 +62,8 @@ struct LinearLeastSquaresProblem {
 };
 
 // Factories for linear least squares problem.
-CERES_EXPORT
-LinearLeastSquaresProblem* CreateLinearLeastSquaresProblemFromId(int id);
+CERES_EXPORT LinearLeastSquaresProblem*
+CreateLinearLeastSquaresProblemFromId(int id);
 
 LinearLeastSquaresProblem* LinearLeastSquaresProblem0();
 LinearLeastSquaresProblem* LinearLeastSquaresProblem1();

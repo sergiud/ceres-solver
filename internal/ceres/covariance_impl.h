@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "ceres/covariance.h"
+#include "ceres/internal/port.h"
 #include "ceres/problem_impl.h"
 #include "ceres/suitesparse.h"
 #include "ceres/internal/export.h"

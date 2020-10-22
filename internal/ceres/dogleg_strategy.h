@@ -31,6 +31,7 @@
 #ifndef CERES_INTERNAL_DOGLEG_STRATEGY_H_
 #define CERES_INTERNAL_DOGLEG_STRATEGY_H_
 
+#include "ceres/internal/port.h"
 #include "ceres/linear_solver.h"
 #include "ceres/trust_region_strategy.h"
 #include "ceres/internal/export.h"

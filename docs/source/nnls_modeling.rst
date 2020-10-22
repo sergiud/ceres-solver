@@ -372,15 +372,12 @@ the corresponding accessors. This information will be verified by the
     NumericDiffOptions. Update DynamicNumericDiffOptions in a similar
     manner.
 
-    TODO(sameeragarwal): Check that Problem documentation for
-    AddResidualBlock can deal with the variadic impl.
-
   .. code-block:: c++
 
       template <typename CostFunctor,
                 NumericDiffMethodType method = CENTRAL,
                 int kNumResiduals,  // Number of residuals, or ceres::DYNAMIC.
-		int.. Ns>           // Size of each parameter block.
+                int... Ns>          // Size of each parameter block.
       class NumericDiffCostFunction : public
       SizedCostFunction<kNumResiduals, Ns> {
       };
@@ -1547,7 +1544,7 @@ quaternion, a local parameterization can be constructed as
    :class:`Problem` holds the robustified bounds constrained
    non-linear least squares problem :eq:`ceresproblem_modeling`. To
    create a least squares problem, use the
-   :func:`Problem::AddResiualBlock` and
+   :func:`Problem::AddResidalBlock` and
    :func:`Problem::AddParameterBlock` methods.
 
    For example a problem containing 3 parameter blocks of sizes 3, 4
@@ -1734,9 +1731,7 @@ quaternion, a local parameterization can be constructed as
 
 .. function:: ResidualBlockId Problem::AddResidualBlock(CostFunction* cost_function, LossFunction* loss_function, const vector<double*> parameter_blocks)
 
-.. function:: template <typename Ts..> ResidualBlockId
-	      Problem::AddResidualBlock(CostFunction* cost_function,
-	      LossFunction* loss_function, double* x0, Ts... xs)
+.. function:: template <typename Ts...> ResidualBlockId Problem::AddResidualBlock(CostFunction* cost_function, LossFunction* loss_function, double* x0, Ts... xs)
 
    Add a residual block to the overall cost function. The cost
    function carries with it information about the sizes of the
@@ -2348,7 +2343,7 @@ numbers.
 
 .. code::
 
-  const double data[] = {1.0, 2.0, 5.0, 6.0};
+  const double x[] = {1.0, 2.0, 5.0, 6.0};
   Grid1D<double, 1> array(x, 0, 4);
   CubicInterpolator interpolator(array);
   double f, dfdx;

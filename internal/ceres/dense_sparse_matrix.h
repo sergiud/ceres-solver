@@ -34,6 +34,7 @@
 #define CERES_INTERNAL_DENSE_SPARSE_MATRIX_H_
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
 #include "ceres/internal/export.h"

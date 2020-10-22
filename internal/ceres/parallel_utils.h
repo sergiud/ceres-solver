@@ -31,6 +31,7 @@
 #ifndef CERES_INTERNAL_PARALLEL_UTILS_H_
 #define CERES_INTERNAL_PARALLEL_UTILS_H_
 
+#include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
 
 namespace ceres {
@@ -61,7 +62,10 @@ namespace internal {
 //    });
 // which in each iteration will produce i and j satisfying
 // 0 <= i <= j < n
-void CERES_EXPORT LinearIndexToUpperTriangularIndex(int k, int n, int* i, int* j);
+CERES_EXPORT void LinearIndexToUpperTriangularIndex(int k,
+                                                             int n,
+                                                             int* i,
+                                                             int* j);
 
 }  // namespace internal
 }  // namespace ceres

@@ -42,6 +42,7 @@
 
 #include "ceres/block_structure.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/linear_solver.h"
 #include "ceres/small_blas.h"
 #include "ceres/internal/export.h"

@@ -34,6 +34,7 @@
 #include <memory>
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/minimizer.h"
 #include "ceres/solver.h"
 #include "ceres/sparse_matrix.h"

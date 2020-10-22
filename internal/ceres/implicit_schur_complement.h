@@ -37,6 +37,7 @@
 #include <memory>
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/port.h"
 #include "ceres/linear_operator.h"
 #include "ceres/linear_solver.h"
 #include "ceres/partitioned_matrix_view.h"
