@@ -339,7 +339,7 @@ class SuiteSparse {
     return false;
   }
 
-  void Free(void* arg) {}
+  void Free(void* /*arg*/) {}
 };
 
 }  // namespace internal
