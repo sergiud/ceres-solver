@@ -203,43 +203,50 @@ struct Jet {
 
   // Compound operators
   Jet<T, N>& operator+=(const Jet<T, N>& y) {
-    *this = *this + y;
+    this->a += y.a;
+    this->v = this->v + y.v;  // Better than +=
     return *this;
   }
 
   Jet<T, N>& operator-=(const Jet<T, N>& y) {
-    *this = *this - y;
+    this->a -= y.a;
+    this->v = this->v - y.v;  // Better than -=
     return *this;
   }
 
   Jet<T, N>& operator*=(const Jet<T, N>& y) {
-    *this = *this * y;
+    this->v = this->a * y.v + this->v * y.a;
+    this->a *= y.a;
     return *this;
   }
 
   Jet<T, N>& operator/=(const Jet<T, N>& y) {
-    *this = *this / y;
+    const T y_a_inverse = T(1.0) / y.a;
+    this->a *= y_a_inverse;
+    this->v = (this->v - this->a * y.v) * y_a_inverse;
     return *this;
   }
 
   // Compound with scalar operators.
   Jet<T, N>& operator+=(const T& s) {
-    *this = *this + s;
+    this->a += s;
     return *this;
   }
 
   Jet<T, N>& operator-=(const T& s) {
-    *this = *this - s;
+    this->a -= s;
     return *this;
   }
 
   Jet<T, N>& operator*=(const T& s) {
-    *this = *this * s;
+    this->a *= s;
+    this->v = this->v * s;  // Better than *=
     return *this;
   }
 
   Jet<T, N>& operator/=(const T& s) {
-    *this = *this / s;
+    const T s_inverse = T(1.0) / s;
+    *this *= s_inverse;
     return *this;
   }
 
@@ -259,6 +266,10 @@ template <typename T, int N>
 inline Jet<T, N> const& operator+(const Jet<T, N>& f) {
   return f;
 }
+template <typename T, int N>
+inline Jet<T, N>&& operator+(Jet<T, N>&& f) {
+  return std::move(f);
+}
 
 // TODO(keir): Try adding __attribute__((always_inline)) to these functions to
 // see if it causes a performance increase.
@@ -268,11 +279,31 @@ template <typename T, int N>
 inline Jet<T, N> operator-(const Jet<T, N>& f) {
   return Jet<T, N>(-f.a, -f.v);
 }
+template <typename T, int N>
+inline Jet<T, N>&& operator-(Jet<T, N>&& f) {
+  f.a = -f.a;
+  f.v = -f.v;
+  return std::move(f);
+}
 
 // Binary +
 template <typename T, int N>
 inline Jet<T, N> operator+(const Jet<T, N>& f, const Jet<T, N>& g) {
   return Jet<T, N>(f.a + g.a, f.v + g.v);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator+(Jet<T, N>&& f, const Jet<T, N>& g) {
+  f += g;
+  return std::move(f);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator+(const Jet<T, N>& f, Jet<T, N>&& g) {
+  g += f;
+  return std::move(g);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator+(Jet<T, N>&& f, Jet<T, N>&& g) {
+  return std::move(f) + g;
 }
 
 // Binary + with a scalar: x + s
@@ -280,11 +311,21 @@ template <typename T, int N>
 inline Jet<T, N> operator+(const Jet<T, N>& f, T s) {
   return Jet<T, N>(f.a + s, f.v);
 }
+template <typename T, int N>
+inline Jet<T, N>&& operator+(Jet<T, N>&& f, T s) {
+  f.a += s;
+  return std::move(f);
+}
 
 // Binary + with a scalar: s + x
 template <typename T, int N>
 inline Jet<T, N> operator+(T s, const Jet<T, N>& f) {
   return Jet<T, N>(f.a + s, f.v);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator+(T s, Jet<T, N>&& f) {
+  f.a += s;
+  return std::move(f);
 }
 
 // Binary -
@@ -292,11 +333,30 @@ template <typename T, int N>
 inline Jet<T, N> operator-(const Jet<T, N>& f, const Jet<T, N>& g) {
   return Jet<T, N>(f.a - g.a, f.v - g.v);
 }
+template <typename T, int N>
+inline Jet<T, N>&& operator-(Jet<T, N>&& f, const Jet<T, N>& g) {
+  f -= g;
+  return std::move(f);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator-(const Jet<T, N>& f, Jet<T, N>&& g) {
+  g -= f;
+  return -std::move(g);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator-(Jet<T, N>&& f, Jet<T, N>&& g) {
+  return std::move(f) - g;
+}
 
 // Binary - with a scalar: x - s
 template <typename T, int N>
 inline Jet<T, N> operator-(const Jet<T, N>& f, T s) {
   return Jet<T, N>(f.a - s, f.v);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator-(Jet<T, N>&& f, T s) {
+  f.a -= s;
+  return std::move(f);
 }
 
 // Binary - with a scalar: s - x
@@ -304,11 +364,30 @@ template <typename T, int N>
 inline Jet<T, N> operator-(T s, const Jet<T, N>& f) {
   return Jet<T, N>(s - f.a, -f.v);
 }
+template <typename T, int N>
+inline Jet<T, N>&& operator-(T s, Jet<T, N>&& f) {
+  f.a -= s;
+  return -std::move(f);
+}
 
 // Binary *
 template <typename T, int N>
 inline Jet<T, N> operator*(const Jet<T, N>& f, const Jet<T, N>& g) {
   return Jet<T, N>(f.a * g.a, f.a * g.v + f.v * g.a);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator*(Jet<T, N>&& f, const Jet<T, N>& g) {
+  f *= g;
+  return std::move(f);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator*(const Jet<T, N>& f, Jet<T, N>&& g) {
+  g *= f;
+  return std::move(g);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator*(Jet<T, N>&& f, Jet<T, N>&& g) {
+  return std::move(f) * g;
 }
 
 // Binary * with a scalar: x * s
@@ -316,11 +395,22 @@ template <typename T, int N>
 inline Jet<T, N> operator*(const Jet<T, N>& f, T s) {
   return Jet<T, N>(f.a * s, f.v * s);
 }
+// Binary * with a scalar: x * s
+template <typename T, int N>
+inline Jet<T, N>&& operator*(Jet<T, N>&& f, T s) {
+  f *= s;
+  return std::move(f);
+}
 
 // Binary * with a scalar: s * x
 template <typename T, int N>
 inline Jet<T, N> operator*(T s, const Jet<T, N>& f) {
   return Jet<T, N>(f.a * s, f.v * s);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator*(T s, Jet<T, N>&& f) {
+  f *= s;
+  return std::move(f);
 }
 
 // Binary /
@@ -337,6 +427,22 @@ inline Jet<T, N> operator/(const Jet<T, N>& f, const Jet<T, N>& g) {
   const T f_a_by_g_a = f.a * g_a_inverse;
   return Jet<T, N>(f_a_by_g_a, (f.v - f_a_by_g_a * g.v) * g_a_inverse);
 }
+template <typename T, int N>
+inline Jet<T, N>&& operator/(Jet<T, N>&& f, const Jet<T, N>& g) {
+  f /= g;
+  return std::move(f);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator/(const Jet<T, N>& f, Jet<T, N>&& g) {
+  const T g_a_inverse = T(1.0) / g.a;
+  g.a = f.a * g_a_inverse;
+  g.v = (f.v - g.a * g.v) * g_a_inverse;
+  return std::move(g);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator/(Jet<T, N>&& f, Jet<T, N>&& g) {
+  return std::move(f) / g;
+}
 
 // Binary / with a scalar: s / x
 template <typename T, int N>
@@ -344,12 +450,24 @@ inline Jet<T, N> operator/(T s, const Jet<T, N>& g) {
   const T minus_s_g_a_inverse2 = -s / (g.a * g.a);
   return Jet<T, N>(s / g.a, g.v * minus_s_g_a_inverse2);
 }
+template <typename T, int N>
+inline Jet<T, N>&& operator/(T s, Jet<T, N>&& g) {
+  const T minus_s_g_a_inverse2 = -s / (g.a * g.a);
+  g.a = s / g.a;
+  g.v = g.v * minus_s_g_a_inverse2;  // Better than *=
+  return std::move(g);
+}
 
 // Binary / with a scalar: x / s
 template <typename T, int N>
 inline Jet<T, N> operator/(const Jet<T, N>& f, T s) {
   const T s_inverse = T(1.0) / s;
   return Jet<T, N>(f.a * s_inverse, f.v * s_inverse);
+}
+template <typename T, int N>
+inline Jet<T, N>&& operator/(Jet<T, N>&& f, T s) {
+  f /= s;
+  return std::move(f);
 }
 
 // Binary comparison operators for both scalars and jets.
@@ -575,19 +693,28 @@ inline Jet<T, N> fmin(const Jet<T, N>& x, const Jet<T, N>& y) {
   return y < x ? y : x;
 }
 
-// erf is defined as an integral that cannot be expressed analyticaly
+// erf is defined as an integral that cannot be expressed analytically
 // however, the derivative is trivial to compute
 // erf(x + h) = erf(x) + h * 2*exp(-x^2)/sqrt(pi)
 template <typename T, int N>
 inline Jet<T, N> erf(const Jet<T, N>& x) {
-  return Jet<T, N>(erf(x.a), x.v * M_2_SQRTPI * exp(-x.a * x.a));
+  // We evaluate the constant as follows:
+  //   2 / sqrt(pi) = 1 / sqrt(atan(1.))
+  // On POSIX sytems it is defined as M_2_SQRTPI, but this is not
+  // portable and the type may not be T.  The above expression
+  // evaluates to full precision with IEEE arithmetic and, since it's
+  // constant, the compiler can generate exactly the same code.  gcc
+  // does so even at -O0.
+  return Jet<T, N>(erf(x.a), x.v * exp(-x.a * x.a) * (T(1) / sqrt(atan(T(1)))));
 }
 
 // erfc(x) = 1-erf(x)
 // erfc(x + h) = erfc(x) + h * (-2*exp(-x^2)/sqrt(pi))
 template <typename T, int N>
 inline Jet<T, N> erfc(const Jet<T, N>& x) {
-  return Jet<T, N>(erfc(x.a), -x.v * M_2_SQRTPI * exp(-x.a * x.a));
+  // See in erf() above for the evaluation of the constant in the derivative.
+  return Jet<T, N>(erfc(x.a),
+                   -x.v * exp(-x.a * x.a) * (T(1) / sqrt(atan(T(1)))));
 }
 
 // Bessel functions of the first kind with integer order equal to 0, 1, n.
