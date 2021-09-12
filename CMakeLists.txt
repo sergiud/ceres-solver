@@ -543,7 +543,7 @@ if (BUILD_DOCUMENTATION)
   set(CERES_DOCS_INSTALL_DIR "share/doc/ceres" CACHE STRING
       "Ceres docs install path relative to CMAKE_INSTALL_PREFIX")
 
-  find_package(Sphinx QUIET)
+  find_package(Sphinx)
 
   if (NOT SPHINX_FOUND)
     update_cache_variable(BUILD_DOCUMENTATION OFF)
