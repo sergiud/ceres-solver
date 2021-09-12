@@ -182,9 +182,6 @@ if (IOS)
   message(STATUS "Building for iOS: Will not build examples.")
 endif (IOS)
 
-add_feature_info (C++${CMAKE_CXX_STANDARD} ON
-  "Building in C++${CMAKE_CXX_STANDARD} mode")
-
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
 if (Eigen3_VERSION VERSION_LESS 3.1.0)
