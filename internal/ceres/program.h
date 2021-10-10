@@ -36,11 +36,10 @@
 #include <string>
 #include <vector>
 
-#include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
-#include "ceres/internal/port.h"
 #include "ceres/evaluation_callback.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -60,7 +59,7 @@ class TripletSparseMatrix;
 // another; for example, the first stage of solving involves stripping all
 // constant parameters and residuals. This is in contrast with Problem, which is
 // not built for transformation.
-class CERES_EXPORT Program {
+class CERES_NO_EXPORT Program {
  public:
   Program();
   explicit Program(const Program& program);

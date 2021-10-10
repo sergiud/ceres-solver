@@ -35,12 +35,11 @@
 #include <string>
 #include <vector>
 
-#include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/solver.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -52,7 +51,7 @@ class CoordinateDescentMinimizer;
 class LinearSolver;
 
 // Interface for non-linear least squares solvers.
-class CERES_EXPORT Minimizer {
+class CERES_NO_EXPORT Minimizer {
  public:
   // Options struct to control the behaviour of the Minimizer. Please
   // see solver.h for detailed information about the meaning and

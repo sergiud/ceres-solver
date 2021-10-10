@@ -33,13 +33,14 @@
 
 #include <string>
 
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
 #include "ceres/linear_solver.h"
 
 namespace ceres {
 namespace internal {
 
-class LAPACK {
+class CERES_NO_EXPORT LAPACK {
  public:
   // Solve
   //

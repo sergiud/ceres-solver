@@ -31,15 +31,14 @@
 #ifndef CERES_INTERNAL_TRUST_REGION_PREPROCESSOR_H_
 #define CERES_INTERNAL_TRUST_REGION_PREPROCESSOR_H_
 
-#include "ceres/preprocessor.h"
 #include "ceres/internal/export.h"
-
 #include "ceres/internal/prefix.h"
+#include "ceres/preprocessor.h"
 
 namespace ceres {
 namespace internal {
 
-class CERES_EXPORT TrustRegionPreprocessor : public Preprocessor {
+class CERES_NO_EXPORT TrustRegionPreprocessor : public Preprocessor {
  public:
   virtual ~TrustRegionPreprocessor();
   bool Preprocess(const Solver::Options& options,

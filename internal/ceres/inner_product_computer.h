@@ -62,7 +62,7 @@ namespace internal {
 // This is not a problem as sparse linear algebra libraries can ignore
 // these entries with ease and the space used is minimal/linear in the
 // size of the matrices.
-class CERES_EXPORT InnerProductComputer {
+class CERES_NO_EXPORT InnerProductComputer {
  public:
   // Factory
   //

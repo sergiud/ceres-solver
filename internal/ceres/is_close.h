@@ -34,7 +34,6 @@
 #define CERES_INTERNAL_IS_CLOSE_H_
 
 #include "ceres/internal/export.h"
-
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
@@ -44,11 +43,11 @@ namespace internal {
 // difference in relative/absolute_error if non-NULL. If one of the two values
 // is exactly zero, the absolute difference will be compared, and relative_error
 // will be set to the absolute difference.
-CERES_EXPORT bool IsClose(double x,
-                                   double y,
-                                   double relative_precision,
-                                   double* relative_error,
-                                   double* absolute_error);
+CERES_NO_EXPORT bool IsClose(double x,
+                             double y,
+                             double relative_precision,
+                             double* relative_error,
+                             double* absolute_error);
 }  // namespace internal
 }  // namespace ceres
 

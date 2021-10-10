@@ -32,15 +32,13 @@
 #define CERES_INTERNAL_SPARSE_CHOLESKY_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
-#include "ceres/internal/export.h"
-
 #include <memory>
 
+#include "ceres/internal/export.h"
+#include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -68,7 +66,7 @@ namespace internal {
 //  CHECK_EQ(sparse_cholesky->Solve(rhs.data(), solution.data(), &message),
 //           LINEAR_SOLVER_SUCCESS);
 
-class CERES_EXPORT SparseCholesky {
+class CERES_NO_EXPORT SparseCholesky {
  public:
   static std::unique_ptr<SparseCholesky> Create(
       const LinearSolver::Options& options);
@@ -116,7 +114,7 @@ class IterativeRefiner;
 
 // Computes an initial solution using the given instance of
 // SparseCholesky, and then refines it using the IterativeRefiner.
-class CERES_EXPORT RefinedSparseCholesky : public SparseCholesky {
+class CERES_NO_EXPORT RefinedSparseCholesky : public SparseCholesky {
  public:
   RefinedSparseCholesky(std::unique_ptr<SparseCholesky> sparse_cholesky,
                         std::unique_ptr<IterativeRefiner> iterative_refiner);

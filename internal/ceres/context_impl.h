@@ -32,11 +32,10 @@
 #define CERES_INTERNAL_CONTEXT_IMPL_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
-#include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
-
 #include "ceres/context.h"
+#include "ceres/internal/export.h"
+#include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 
 #ifdef CERES_USE_CXX_THREADS
 #include "ceres/thread_pool.h"
@@ -45,7 +44,7 @@
 namespace ceres {
 namespace internal {
 
-class CERES_EXPORT ContextImpl : public Context {
+class CERES_NO_EXPORT ContextImpl : public Context {
  public:
   ContextImpl() {}
   ContextImpl(const ContextImpl&) = delete;

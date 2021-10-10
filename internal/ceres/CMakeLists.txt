@@ -31,7 +31,7 @@
 # Avoid 'xxx.cc has no symbols' warnings from source files which are 'empty'
 # when their enclosing #ifdefs are disabled.
 if (WITH_CXX_THREADS)
-  set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
+  set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc)
   list(APPEND APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES Threads::Threads)
   set (Threads_DEPENDENCY "find_dependency (Threads)")
 elseif (WITH_OPENMP)
@@ -40,112 +40,18 @@ else()
   set(CERES_PARALLEL_FOR_SRC parallel_for_nothreads.cc)
 endif()
 
+set (CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(CERES_INTERNAL_SRC
-    ${CERES_PARALLEL_FOR_SRC}
-    accelerate_sparse.cc
-    array_utils.cc
-    blas.cc
-    block_evaluate_preparer.cc
-    block_jacobi_preconditioner.cc
-    block_jacobian_writer.cc
-    block_random_access_dense_matrix.cc
-    block_random_access_diagonal_matrix.cc
-    block_random_access_matrix.cc
-    block_random_access_sparse_matrix.cc
-    block_sparse_matrix.cc
-    block_structure.cc
     c_api.cc
-    callbacks.cc
-    canonical_views_clustering.cc
-    cgnr_solver.cc
-    compressed_col_sparse_matrix_utils.cc
-    compressed_row_jacobian_writer.cc
-    compressed_row_sparse_matrix.cc
-    conditioned_cost_function.cc
-    conjugate_gradients_solver.cc
-    context.cc
-    context_impl.cc
-    coordinate_descent_minimizer.cc
-    corrector.cc
-    cost_function.cc
-    covariance.cc
-    covariance_impl.cc
-    cxsparse.cc
-    dense_normal_cholesky_solver.cc
-    dense_qr_solver.cc
-    dense_sparse_matrix.cc
-    detect_structure.cc
-    dogleg_strategy.cc
-    dynamic_compressed_row_jacobian_writer.cc
-    dynamic_compressed_row_sparse_matrix.cc
-    dynamic_sparse_normal_cholesky_solver.cc
-    eigensparse.cc
-    evaluator.cc
-    file.cc
-    float_cxsparse.cc
-    float_suitesparse.cc
-    function_sample.cc
     gradient_checker.cc
-    gradient_checking_cost_function.cc
     gradient_problem.cc
-    gradient_problem_solver.cc
-    implicit_schur_complement.cc
-    inner_product_computer.cc
-    is_close.cc
-    iterative_refiner.cc
-    iterative_schur_complement_solver.cc
-    lapack.cc
-    levenberg_marquardt_strategy.cc
-    line_search.cc
-    line_search_direction.cc
-    line_search_minimizer.cc
-    line_search_preprocessor.cc
-    linear_least_squares_problems.cc
-    linear_operator.cc
-    linear_solver.cc
     local_parameterization.cc
     loss_function.cc
-    low_rank_inverse_hessian.cc
-    minimizer.cc
     normal_prior.cc
-    parallel_utils.cc
-    parameter_block_ordering.cc
-    partitioned_matrix_view.cc
-    polynomial.cc
-    preconditioner.cc
-    preprocessor.cc
     problem.cc
-    problem_impl.cc
-    program.cc
-    reorder_program.cc
-    residual_block.cc
-    residual_block_utils.cc
-    schur_complement_solver.cc
-    schur_eliminator.cc
-    schur_jacobi_preconditioner.cc
-    schur_templates.cc
-    scratch_evaluate_preparer.cc
-    single_linkage_clustering.cc
     solver.cc
-    solver_utils.cc
-    sparse_cholesky.cc
-    sparse_matrix.cc
-    sparse_normal_cholesky_solver.cc
-    split.cc
-    stringprintf.cc
-    subset_preconditioner.cc
-    suitesparse.cc
-    thread_pool.cc
-    thread_token_provider.cc
-    triplet_sparse_matrix.cc
-    trust_region_minimizer.cc
-    trust_region_preprocessor.cc
-    trust_region_step_evaluator.cc
-    trust_region_strategy.cc
     types.cc
-    visibility.cc
-    visibility_based_preconditioner.cc
-    wall_time.cc
 )
 
 # Also depend on the header files so that they appear in IDEs.
@@ -217,12 +123,116 @@ if (WITH_TBB AND TBB_FOUND)
   endif (NOT MSVC)
 endif (WITH_TBB AND TBB_FOUND)
 
+add_library (ceresbase OBJECT
+    ${CERES_INTERNAL_SCHUR_FILES}
+    ${CERES_PARALLEL_FOR_SRC}
+    accelerate_sparse.cc
+    array_utils.cc
+    blas.cc
+    block_evaluate_preparer.cc
+    block_jacobi_preconditioner.cc
+    block_jacobian_writer.cc
+    block_random_access_dense_matrix.cc
+    block_random_access_diagonal_matrix.cc
+    block_random_access_matrix.cc
+    block_random_access_sparse_matrix.cc
+    block_sparse_matrix.cc
+    block_structure.cc
+    callbacks.cc
+    canonical_views_clustering.cc
+    cgnr_solver.cc
+    compressed_col_sparse_matrix_utils.cc
+    compressed_row_jacobian_writer.cc
+    compressed_row_sparse_matrix.cc
+    conditioned_cost_function.cc
+    conjugate_gradients_solver.cc
+    context.cc
+    context_impl.cc
+    coordinate_descent_minimizer.cc
+    corrector.cc
+    cost_function.cc
+    covariance.cc
+    covariance_impl.cc
+    cxsparse.cc
+    dense_normal_cholesky_solver.cc
+    dense_qr_solver.cc
+    dense_sparse_matrix.cc
+    detect_structure.cc
+    dogleg_strategy.cc
+    dynamic_compressed_row_jacobian_writer.cc
+    dynamic_compressed_row_sparse_matrix.cc
+    dynamic_sparse_normal_cholesky_solver.cc
+    eigensparse.cc
+    evaluator.cc
+    file.cc
+    float_cxsparse.cc
+    float_suitesparse.cc
+    function_sample.cc
+    gradient_checking_cost_function.cc
+    gradient_problem_solver.cc
+    implicit_schur_complement.cc
+    inner_product_computer.cc
+    is_close.cc
+    iterative_refiner.cc
+    iterative_schur_complement_solver.cc
+    lapack.cc
+    levenberg_marquardt_strategy.cc
+    line_search.cc
+    line_search_direction.cc
+    line_search_minimizer.cc
+    line_search_preprocessor.cc
+    linear_least_squares_problems.cc
+    linear_operator.cc
+    linear_solver.cc
+    low_rank_inverse_hessian.cc
+    minimizer.cc
+    parallel_utils.cc
+    parameter_block_ordering.cc
+    partitioned_matrix_view.cc
+    polynomial.cc
+    preconditioner.cc
+    preprocessor.cc
+    problem_impl.cc
+    program.cc
+    reorder_program.cc
+    residual_block.cc
+    residual_block_utils.cc
+    schur_complement_solver.cc
+    schur_eliminator.cc
+    schur_jacobi_preconditioner.cc
+    schur_templates.cc
+    scratch_evaluate_preparer.cc
+    single_linkage_clustering.cc
+    solver_utils.cc
+    sparse_cholesky.cc
+    sparse_matrix.cc
+    sparse_normal_cholesky_solver.cc
+    split.cc
+    stringprintf.cc
+    subset_preconditioner.cc
+    suitesparse.cc
+    thread_pool.cc
+    thread_token_provider.cc
+    triplet_sparse_matrix.cc
+    trust_region_minimizer.cc
+    trust_region_preprocessor.cc
+    trust_region_step_evaluator.cc
+    trust_region_strategy.cc
+    visibility.cc
+    visibility_based_preconditioner.cc
+    wall_time.cc
+)
+
+target_include_directories (ceresbase PUBLIC
+  $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
+target_compile_definitions (ceresbase PUBLIC
+  $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
+
 set(CERES_LIBRARY_SOURCE
     ${CERES_INTERNAL_SRC}
     ${CERES_INTERNAL_HDRS}
     ${CERES_PUBLIC_HDRS}
-    ${CERES_PUBLIC_INTERNAL_HDRS}
-    ${CERES_INTERNAL_SCHUR_FILES})
+    ${CERES_PUBLIC_INTERNAL_HDRS})
 
 # Primarily for Android, but optionally for others, compile the minimal
 # glog implementation into Ceres.
@@ -240,7 +250,7 @@ if (CHECK_CXX_FLAG_Wno_missing_declarations)
                APPEND_STRING PROPERTY COMPILE_FLAGS "-Wno-missing-declarations")
 endif()
 
-add_library(ceres ${CERES_LIBRARY_SOURCE})
+add_library(ceres $<TARGET_OBJECTS:ceresbase> ${CERES_LIBRARY_SOURCE})
 add_library(Ceres::Ceres ALIAS ceres)
 
 target_link_libraries(ceres PUBLIC Eigen3::Eigen)
@@ -326,15 +336,6 @@ endif()
 target_compile_features(ceres PUBLIC ${REQUIRED_PUBLIC_CXX_FEATURES})
 
 include(AppendTargetProperty)
-# Always build position-independent code (PIC), even when building Ceres as a
-# static library so that shared libraries can link against it, not just
-# executables (PIC does not apply on Windows).
-if (NOT WIN32 AND NOT BUILD_SHARED_LIBS)
-  # Use set_target_properties() not append_target_property() here as
-  # POSITION_INDEPENDENT_CODE is a binary ON/OFF switch.
-  set_target_properties(ceres PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
-
 
 target_link_libraries(ceres
   PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
@@ -359,16 +360,22 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
               test_util.cc)
-  set_target_properties (test_util PROPERTIES CXX_VISIBILITY_PRESET default)
+
+  target_include_directories (test_util PUBLIC
+    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
+  target_compile_definitions (test_util PUBLIC
+    $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
+  target_link_libraries (test_util
+    $<TARGET_PROPERTY:ceres,INTERFACE_LINK_LIBRARIES>)
 
   if (WITH_MINILOG)
     # When using miniglog, it is compiled into Ceres, thus Ceres becomes
     # the library against which other libraries should link for logging.
     target_link_libraries(gtest ${gflags_LIBRARIES} ceres)
-    target_link_libraries(test_util ceres gtest)
+    target_link_libraries(test_util $<TARGET_OBJECTS:ceresbase> gtest)
   else (WITH_MINILOG)
     target_link_libraries(gtest ${gflags_LIBRARIES} glog::glog)
-    target_link_libraries(test_util ceres gtest glog::glog)
+    target_link_libraries(test_util $<TARGET_OBJECTS:ceresbase> gtest glog::glog)
   endif (WITH_MINILOG)
 
   macro (CERES_TEST NAME)

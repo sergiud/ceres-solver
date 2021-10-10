@@ -33,13 +33,12 @@
 
 #include <vector>
 
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
-#include "ceres/internal/export.h"
 #include "glog/logging.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 
@@ -49,7 +48,7 @@ namespace internal {
 
 class TripletSparseMatrix;
 
-class CERES_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
+class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
  public:
   enum StorageType {
     UNSYMMETRIC,

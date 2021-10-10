@@ -45,13 +45,13 @@
 
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/internal/export.h"
-
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
 
-class CERES_EXPORT DynamicCompressedRowSparseMatrix : public CompressedRowSparseMatrix {
+class CERES_NO_EXPORT DynamicCompressedRowSparseMatrix
+    : public CompressedRowSparseMatrix {
  public:
   // Set the number of rows and columns for the underlyig
   // `CompressedRowSparseMatrix` and set the initial number of maximum non-zero

@@ -37,19 +37,19 @@
 #include <vector>
 
 #include "ceres/block_random_access_matrix.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "ceres/types.h"
-#include "ceres/internal/export.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
 
 // A thread safe block diagonal matrix implementation of
 // BlockRandomAccessMatrix.
-class CERES_EXPORT BlockRandomAccessDiagonalMatrix : public BlockRandomAccessMatrix {
+class CERES_NO_EXPORT BlockRandomAccessDiagonalMatrix
+    : public BlockRandomAccessMatrix {
  public:
   // blocks is an array of block sizes.
   explicit BlockRandomAccessDiagonalMatrix(const std::vector<int>& blocks);

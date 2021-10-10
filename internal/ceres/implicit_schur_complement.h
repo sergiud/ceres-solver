@@ -37,14 +37,13 @@
 #include <memory>
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/linear_operator.h"
 #include "ceres/linear_solver.h"
 #include "ceres/partitioned_matrix_view.h"
 #include "ceres/types.h"
-#include "ceres/internal/export.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -91,7 +90,7 @@ class BlockSparseMatrix;
 // RightMultiply (and the LeftMultiply) methods are not thread safe as
 // they depend on mutable arrays used for the temporaries needed to
 // compute the product y += Sx;
-class CERES_EXPORT ImplicitSchurComplement : public LinearOperator {
+class CERES_NO_EXPORT ImplicitSchurComplement : public LinearOperator {
  public:
   // num_eliminate_blocks is the number of E blocks in the matrix
   // A.

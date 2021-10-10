@@ -35,8 +35,8 @@
 #include <vector>
 
 #include "ceres/block_random_access_matrix.h"
-#include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/port.h"
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
@@ -52,7 +52,8 @@ namespace internal {
 // pair.
 //
 // ReturnCell is a nop.
-class CERES_EXPORT BlockRandomAccessDenseMatrix : public BlockRandomAccessMatrix {
+class CERES_NO_EXPORT BlockRandomAccessDenseMatrix
+    : public BlockRandomAccessMatrix {
  public:
   // blocks is a vector of block sizes. The resulting matrix has
   // blocks.size() * blocks.size() cells.

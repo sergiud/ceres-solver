@@ -46,7 +46,6 @@
 
 #include "ceres/graph.h"
 #include "ceres/internal/export.h"
-
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
@@ -97,13 +96,13 @@ struct CanonicalViewsClusteringOptions;
 // It is possible depending on the configuration of the clustering
 // algorithm that some of the vertices may not be assigned to any
 // cluster. In this case they are assigned to a cluster with id = -1;
-CERES_EXPORT void ComputeCanonicalViewsClustering(
+CERES_NO_EXPORT void ComputeCanonicalViewsClustering(
     const CanonicalViewsClusteringOptions& options,
     const WeightedGraph<int>& graph,
     std::vector<int>* centers,
     std::unordered_map<int, int>* membership);
 
-struct CanonicalViewsClusteringOptions {
+struct CERES_NO_EXPORT CanonicalViewsClusteringOptions {
   // The minimum number of canonical views to compute.
   int min_views = 3;
 

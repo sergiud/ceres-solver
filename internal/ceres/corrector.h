@@ -36,7 +36,6 @@
 #define CERES_INTERNAL_CORRECTOR_H_
 
 #include "ceres/internal/export.h"
-
 #include "ceres/internal/prefix.h"
 
 namespace ceres {
@@ -50,7 +49,7 @@ namespace internal {
 // gauss newton approximation and then take its square root to get the
 // corresponding corrections to the residual and jacobian.  For the
 // full expressions see Eq. 10 and 11 in BANS by Triggs et al.
-class CERES_EXPORT Corrector {
+class CERES_NO_EXPORT Corrector {
  public:
   // The constructor takes the squared norm, the value, the first and
   // second derivatives of the LossFunction. It precalculates some of

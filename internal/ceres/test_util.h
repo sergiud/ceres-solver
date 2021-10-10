@@ -33,14 +33,13 @@
 
 #include <string>
 
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/problem.h"
 #include "ceres/solver.h"
 #include "ceres/stringprintf.h"
-#include "ceres/internal/export.h"
 #include "gtest/gtest.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -51,16 +50,16 @@ namespace internal {
 // If x and y have the same non-finite value (inf or nan) we treat them as being
 // close. In such a case no error is thrown and true is returned.
 CERES_EXPORT bool ExpectClose(double x,
-                                       double y,
-                                       double max_abs_relative_difference);
+                              double y,
+                              double max_abs_relative_difference);
 
 // Expects that for all i = 1,.., n - 1
 //
 //   |p[i] - q[i]| / max(|p[i]|, |q[i]|) < tolerance
 CERES_EXPORT void ExpectArraysClose(int n,
-                                             const double* p,
-                                             const double* q,
-                                             double tolerance);
+                                    const double* p,
+                                    const double* q,
+                                    double tolerance);
 
 // Expects that for all i = 1,.., n - 1
 //
@@ -69,14 +68,13 @@ CERES_EXPORT void ExpectArraysClose(int n,
 // where max_norm_p and max_norm_q are the max norms of the arrays p
 // and q respectively.
 CERES_EXPORT void ExpectArraysCloseUptoScale(int n,
-                                                      const double* p,
-                                                      const double* q,
-                                                      double tolerance);
+                                             const double* p,
+                                             const double* q,
+                                             double tolerance);
 
 // Construct a fully qualified path for the test file depending on the
 // local build/testing environment.
-CERES_EXPORT std::string TestFileAbsolutePath(
-    const std::string& filename);
+CERES_EXPORT std::string TestFileAbsolutePath(const std::string& filename);
 
 CERES_EXPORT std::string ToString(const Solver::Options& options);
 

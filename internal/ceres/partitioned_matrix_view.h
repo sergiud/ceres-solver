@@ -42,13 +42,12 @@
 
 #include "ceres/block_structure.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/linear_solver.h"
 #include "ceres/small_blas.h"
-#include "ceres/internal/export.h"
 #include "glog/logging.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -63,7 +62,7 @@ namespace internal {
 // block structure of the matrix does not satisfy the requirements of
 // the Schur complement solver it will result in unpredictable and
 // wrong output.
-class CERES_EXPORT PartitionedMatrixViewBase {
+class CERES_NO_EXPORT PartitionedMatrixViewBase {
  public:
   virtual ~PartitionedMatrixViewBase() {}
 

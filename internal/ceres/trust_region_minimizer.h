@@ -34,16 +34,15 @@
 #include <memory>
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/minimizer.h"
 #include "ceres/solver.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/trust_region_step_evaluator.h"
 #include "ceres/trust_region_strategy.h"
 #include "ceres/types.h"
-#include "ceres/internal/export.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -51,7 +50,7 @@ namespace internal {
 // Generic trust region minimization algorithm.
 //
 // For example usage, see SolverImpl::Minimize.
-class CERES_EXPORT TrustRegionMinimizer : public Minimizer {
+class CERES_NO_EXPORT TrustRegionMinimizer : public Minimizer {
  public:
   ~TrustRegionMinimizer();
 

@@ -33,11 +33,10 @@
 
 #include <string>
 
-#include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
-#include "ceres/linear_solver.h"
-
+#include "ceres/internal/port.h"
 #include "ceres/internal/prefix.h"
+#include "ceres/linear_solver.h"
 
 namespace ceres {
 namespace internal {
@@ -57,7 +56,7 @@ class SparseMatrix;
 // the LevenbergMarquardtStrategy uses the inverse of the trust region
 // radius to scale the damping term, which controls the step size, but
 // does not set a hard limit on its size.
-class CERES_EXPORT TrustRegionStrategy {
+class CERES_NO_EXPORT TrustRegionStrategy {
  public:
   struct Options {
     TrustRegionStrategyType trust_region_strategy_type = LEVENBERG_MARQUARDT;

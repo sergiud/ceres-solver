@@ -33,10 +33,10 @@
 #define CERES_INTERNAL_DENSE_QR_SOLVER_H_
 
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
-#include "ceres/linear_solver.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/port.h"
 #include "ceres/internal/prefix.h"
+#include "ceres/linear_solver.h"
 
 namespace ceres {
 namespace internal {
@@ -81,7 +81,7 @@ class DenseSparseMatrix;
 // library. This solver always returns a solution, it is the user's
 // responsibility to judge if the solution is good enough for their
 // purposes.
-class CERES_EXPORT DenseQRSolver: public DenseSparseMatrixSolver {
+class CERES_NO_EXPORT DenseQRSolver : public DenseSparseMatrixSolver {
  public:
   explicit DenseQRSolver(const LinearSolver::Options& options);
 

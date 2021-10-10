@@ -38,6 +38,7 @@
 #include "ceres/coordinate_descent_minimizer.h"
 #include "ceres/evaluator.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/linear_solver.h"
@@ -45,7 +46,6 @@
 #include "ceres/problem_impl.h"
 #include "ceres/program.h"
 #include "ceres/solver.h"
-#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {
@@ -68,7 +68,7 @@ struct PreprocessedProblem;
 //
 // The output of the Preprocessor is stored in a PreprocessedProblem
 // object.
-class CERES_EXPORT Preprocessor {
+class CERES_NO_EXPORT Preprocessor {
  public:
   // Factory.
   static Preprocessor* Create(MinimizerType minimizer_type);

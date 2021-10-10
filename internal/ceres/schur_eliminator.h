@@ -41,10 +41,10 @@
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/block_structure.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
-#include "ceres/linear_solver.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/port.h"
 #include "ceres/internal/prefix.h"
+#include "ceres/linear_solver.h"
 
 namespace ceres {
 namespace internal {
@@ -165,7 +165,7 @@ namespace internal {
 // 2008 for an example of such use].
 //
 // Example usage: Please see schur_complement_solver.cc
-class CERES_EXPORT SchurEliminatorBase {
+class CERES_NO_EXPORT SchurEliminatorBase {
  public:
   virtual ~SchurEliminatorBase();
 
@@ -379,7 +379,7 @@ class SchurEliminator : public SchurEliminatorBase {
 template <int kRowBlockSize = Eigen::Dynamic,
           int kEBlockSize = Eigen::Dynamic,
           int kFBlockSize = Eigen::Dynamic>
-class SchurEliminatorForOneFBlock : public SchurEliminatorBase {
+class CERES_NO_EXPORT SchurEliminatorForOneFBlock : public SchurEliminatorBase {
  public:
   virtual ~SchurEliminatorForOneFBlock() {}
   void Init(int num_eliminate_blocks,

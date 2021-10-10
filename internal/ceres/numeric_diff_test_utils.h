@@ -129,8 +129,7 @@ class CERES_EXPORT RandomizedFunctor {
   unsigned int random_seed_;
 };
 
-class CERES_EXPORT RandomizedCostFunction
-    : public SizedCostFunction<1, 1> {
+class CERES_EXPORT RandomizedCostFunction : public SizedCostFunction<1, 1> {
  public:
   RandomizedCostFunction(double noise_factor, unsigned int random_seed)
       : functor_(noise_factor, random_seed) {}

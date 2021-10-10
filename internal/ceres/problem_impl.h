@@ -46,12 +46,11 @@
 #include <vector>
 
 #include "ceres/context_impl.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/problem.h"
 #include "ceres/types.h"
-#include "ceres/internal/export.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 
@@ -66,7 +65,7 @@ namespace internal {
 class Program;
 class ResidualBlock;
 
-class CERES_EXPORT ProblemImpl {
+class CERES_NO_EXPORT ProblemImpl {
  public:
   typedef std::map<double*, ParameterBlock*> ParameterMap;
   typedef std::unordered_set<ResidualBlock*> ResidualBlockSet;

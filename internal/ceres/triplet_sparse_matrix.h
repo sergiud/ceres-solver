@@ -35,12 +35,11 @@
 #include <vector>
 
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
+#include "ceres/internal/prefix.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
-#include "ceres/internal/export.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -49,7 +48,7 @@ namespace internal {
 // manipulate sparse matrices in triplet (i,j,s) form.  This object is
 // inspired by the design of the cholmod_triplet struct used in the
 // SuiteSparse package and is memory layout compatible with it.
-class CERES_EXPORT TripletSparseMatrix : public SparseMatrix {
+class CERES_NO_EXPORT TripletSparseMatrix : public SparseMatrix {
  public:
   TripletSparseMatrix();
   TripletSparseMatrix(int num_rows, int num_cols, int max_num_nonzeros);

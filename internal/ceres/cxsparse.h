@@ -32,8 +32,8 @@
 #define CERES_INTERNAL_CXSPARSE_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
 #include "ceres/internal/export.h"
+#include "ceres/internal/port.h"
 
 #ifndef CERES_NO_CXSPARSE
 
@@ -61,7 +61,7 @@ class TripletSparseMatrix;
 // factorization with a known symbolic factorization. This features does not
 // explicitly exist in CXSparse. The methods in the class are nonstatic because
 // the class manages internal scratch space.
-class CERES_EXPORT CXSparse {
+class CERES_NO_EXPORT CXSparse {
  public:
   CXSparse();
   ~CXSparse();
