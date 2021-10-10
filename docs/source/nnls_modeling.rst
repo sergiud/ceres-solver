@@ -1154,7 +1154,6 @@ the case, then its possible to re-weight the residual and the Jacobian
 matrix such that the robustified Gauss-Newton step corresponds to an
 ordinary linear least squares problem.
 
-
 Let :math:`\alpha` be a root of
 
 .. math:: \frac{1}{2}\alpha^2 - \alpha - \frac{\rho''}{\rho'}\|f(x)\|^2 = 0.
@@ -1177,6 +1176,11 @@ With this simple rescaling, one can apply any Jacobian based non-linear
 least squares algorithm to robustified non-linear least squares
 problems.
 
+
+While the theory described above is elegant, in practice we observe
+that using the Triggs correction when :math:`\rho'' > 0` leads to poor
+performance, so we upper bound it by zero. For more details see
+`corrector.cc <https://github.com/ceres-solver/ceres-solver/blob/master/internal/ceres/corrector.cc#L51>`_
 
 :class:`LocalParameterization`
 ==============================
@@ -1798,13 +1802,20 @@ quaternion, a local parameterization can be constructed as
 
 .. function:: void Problem::RemoveResidualBlock(ResidualBlockId residual_block)
 
-   Remove a residual block from the problem. Any parameters that the residual
-   block depends on are not removed. The cost and loss functions for the
-   residual block will not get deleted immediately; won't happen until the
-   problem itself is deleted.  If Problem::Options::enable_fast_removal is
-   true, then the removal is fast (almost constant time). Otherwise, removing a
-   residual block will incur a scan of the entire Problem object to verify that
-   the residual_block represents a valid residual in the problem.
+   Remove a residual block from the problem.
+
+   Since residual blocks are allowed to share cost function and loss
+   function objects, Ceres Solver uses a reference counting
+   mechanism. So when a residual block is deleted, the reference count
+   for the corresponding cost function and loss function objects are
+   decreased and when this count reaches zero, they are deleted.
+
+   If Problem::Options::enable_fast_removal is true, then the removal
+   is fast (almost constant time). Otherwise it is linear, requiring a
+   scan of the entire problem.
+
+   Removing a residual block has no effect on the parameter blocks
+   that the problem depends on.
 
    **WARNING:** Removing a residual or parameter block will destroy
    the implicit ordering, rendering the jacobian or residuals returned
@@ -1814,14 +1825,16 @@ quaternion, a local parameterization can be constructed as
 
 .. function:: void Problem::RemoveParameterBlock(const double* values)
 
-   Remove a parameter block from the problem. The parameterization of
-   the parameter block, if it exists, will persist until the deletion
-   of the problem (similar to cost/loss functions in residual block
-   removal). Any residual blocks that depend on the parameter are also
-   removed, as described above in RemoveResidualBlock().  If
-   Problem::Options::enable_fast_removal is true, then
-   the removal is fast (almost constant time). Otherwise, removing a
-   parameter block will incur a scan of the entire Problem object.
+   Remove a parameter block from the problem. Any residual blocks that
+   depend on the parameter are also removed, as described above in
+   RemoveResidualBlock().
+
+   The parameterization of the parameter block, if it exists, will
+   persist until the deletion of the problem.
+
+   If Problem::Options::enable_fast_removal is true, then the removal
+   is fast (almost constant time). Otherwise, removing a parameter
+   block will scan the entire Problem.
 
    **WARNING:** Removing a residual or parameter block will destroy
    the implicit ordering, rendering the jacobian or residuals returned
@@ -1944,8 +1957,7 @@ quaternion, a local parameterization can be constructed as
    If `Problem::Options::enable_fast_removal` is
    `true`, then getting the residual blocks is fast and depends only
    on the number of residual blocks. Otherwise, getting the residual
-   blocks for a parameter block will incur a scan of the entire
-   :class:`Problem` object.
+   blocks for a parameter block will scan the entire problem.
 
 .. function:: const CostFunction* Problem::GetCostFunctionForResidualBlock(const ResidualBlockId residual_block) const
 

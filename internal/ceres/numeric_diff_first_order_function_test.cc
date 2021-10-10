@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2021 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,29 +26,54 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: keir@google.com (Keir Mierle)
+// Author: sameeragarwal@google.com (Sameer Agarwal)
 
-#ifndef CERES_INTERNAL_SPLIT_H_
-#define CERES_INTERNAL_SPLIT_H_
+#include "ceres/numeric_diff_first_order_function.h"
 
-#include <string>
-#include <vector>
+#include <memory>
 
-#include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
+#include "ceres/array_utils.h"
+#include "ceres/first_order_function.h"
+#include "gtest/gtest.h"
 
 namespace ceres {
 namespace internal {
 
-// Split a string using one or more character delimiters, presented as a
-// nul-terminated c string. Append the components to 'result'. If there are
-// consecutive delimiters, this function skips over all of them.
-CERES_NO_EXPORT
-void SplitStringUsing(const std::string& full,
-                      const char* delim,
-                      std::vector<std::string>* res);
+class QuadraticCostFunctor {
+ public:
+  explicit QuadraticCostFunctor(double a) : a_(a) {}
+  bool operator()(const double* const x, double* cost) const {
+    cost[0] = x[0] * x[1] + x[2] * x[3] - a_;
+    return true;
+  }
+
+ private:
+  double a_;
+};
+
+TEST(NumericDiffFirstOrderFunction, BilinearDifferentiationTest) {
+  std::unique_ptr<FirstOrderFunction> function(
+      new NumericDiffFirstOrderFunction<QuadraticCostFunctor, CENTRAL, 4>(
+          new QuadraticCostFunctor(1.0)));
+
+  double parameters[4] = {1.0, 2.0, 3.0, 4.0};
+  double gradient[4];
+  double cost;
+
+  function->Evaluate(parameters, &cost, nullptr);
+  EXPECT_EQ(cost, 13.0);
+
+  cost = -1.0;
+  function->Evaluate(parameters, &cost, gradient);
+
+  EXPECT_EQ(cost, 13.0);
+
+  const double kTolerance = 1e-9;
+  EXPECT_NEAR(gradient[0], parameters[1], kTolerance);
+  EXPECT_NEAR(gradient[1], parameters[0], kTolerance);
+  EXPECT_NEAR(gradient[2], parameters[3], kTolerance);
+  EXPECT_NEAR(gradient[3], parameters[2], kTolerance);
+}
 
 }  // namespace internal
 }  // namespace ceres
-
-#endif  // CERES_INTERNAL_SPLIT_H_

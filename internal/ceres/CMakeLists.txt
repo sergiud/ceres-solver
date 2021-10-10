@@ -207,7 +207,6 @@ add_library (ceresbase OBJECT
     sparse_cholesky.cc
     sparse_matrix.cc
     sparse_normal_cholesky_solver.cc
-    split.cc
     stringprintf.cc
     subset_preconditioner.cc
     suitesparse.cc
@@ -458,6 +457,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   ceres_test(minimizer)
   ceres_test(normal_prior)
   ceres_test(numeric_diff_cost_function)
+  ceres_test(numeric_diff_first_order_function)
   ceres_test(ordered_groups)
   ceres_test(parallel_for)
   ceres_test(parallel_utils)
@@ -524,4 +524,3 @@ if (BUILD_BENCHMARKS)
 
   add_subdirectory(autodiff_benchmarks)
 endif (BUILD_BENCHMARKS)
-
