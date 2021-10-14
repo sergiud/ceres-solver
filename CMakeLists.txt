@@ -320,19 +320,21 @@ if (NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
 endif(NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
 
 # GFlags.
-if (WITH_GFLAGS)
-  # Don't search with REQUIRED as we can continue without gflags.
-  find_package(gflags 2.2.1)
+if (NOT WITH_GFLAGS)
+  set (CMAKE_DISABLE_FIND_PACKAGE_gflags ON)
+endif (NOT WITH_GFLAGS)
 
-  if (gflags_FOUND)
-    include (DetermineGflagsNamespace)
+# Don't search with REQUIRED as we can continue without gflags.
+find_package(gflags 2.2.1)
 
-    set (CMAKE_REQUIRED_INCLUDES ${gflags_INCLUDE_DIR})
-    determine_gflags_namespace (gflags_NAMESPACE)
+if (gflags_FOUND)
+  include (DetermineGflagsNamespace)
 
-    add_definitions (-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
-  endif (gflags_FOUND)
-endif (WITH_GFLAGS)
+  set (CMAKE_REQUIRED_INCLUDES ${gflags_INCLUDE_DIR})
+  determine_gflags_namespace (gflags_NAMESPACE)
+
+  add_definitions (-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
+endif (gflags_FOUND)
 
 # MiniGLog.
 if (WITH_MINILOG)

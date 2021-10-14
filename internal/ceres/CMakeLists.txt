@@ -296,10 +296,13 @@ if (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
   target_link_libraries (ceres PUBLIC CXSparse::CXSparse)
 endif (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
 
-if (WITH_GFLAGS AND gflags_FOUND)
-  target_include_directories (ceres PRIVATE ${gflags_INCLUDE_DIRS})
-  target_link_libraries (ceres PRIVATE ${gflags_LIBRARIES})
-endif (WITH_GFLAGS AND gflags_FOUND)
+if (gflags_FOUND)
+  if (TARGET gflags::gflags)
+    target_link_libraries (ceres PUBLIC gflags::gflags)
+  else (TARGET gflags::gflags)
+    target_link_libraries (ceres PUBLIC gflags)
+  endif (TARGET gflags::gflags)
+endif (gflags_FOUND)
 
 set_target_properties(ceres PROPERTIES
   VERSION ${CERES_VERSION}
