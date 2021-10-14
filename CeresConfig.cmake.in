@@ -7,6 +7,7 @@ endif (CMAKE_VERSION VERSION_LESS 3.9)
 include (CMakeFindDependencyMacro)
 
 find_dependency (Eigen3 @Eigen3_VERSION@ NO_MODULE)
+find_dependency (LAPACK @LAPACK_VERSION@)
 @GLOG_DEPENDENCY@
 @CXSPARSE_DEPENDENCY@
 @SUITESPARSE_DEPENDENCY@

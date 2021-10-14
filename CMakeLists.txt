@@ -29,7 +29,7 @@
 # Authors: keir@google.com (Keir Mierle)
 #          alexs.mac@gmail.com (Alex Stewart)
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.18)
 
 cmake_policy(SET CMP0003 NEW)
 if (POLICY CMP0042)
@@ -174,7 +174,6 @@ if (IOS)
   update_cache_variable(WITH_GFLAGS OFF)
   # Apple claims that the BLAS call dsyrk_ is a private API, and will not allow
   # you to submit to the Apple Store if the symbol is present.
-  update_cache_variable(WITH_LAPACK OFF)
   message(STATUS "Building for iOS: SuiteSparse, CXSparse, LAPACK, gflags, "
     "and OpenMP are not available.")
 
@@ -256,26 +255,15 @@ else (WITH_SUITESPARSE)
 endif (WITH_SUITESPARSE)
 
 # LAPACK (& BLAS).
-if (WITH_LAPACK)
-  if (DEFINED ENV{BLA_VENDOR} OR DEFINED BLA_VENDOR)
-    find_package (LAPACK)
-  else (DEFINED ENV{BLA_VENDOR} OR DEFINED BLA_VENDOR)
-    find_package (LAPACK 3.6.0 NO_MODULE)
+if (NOT WITH_LAPACK)
+  set (CMAKE_DISABLE_FIND_PACKAGE_LAPACK ON)
+endif (NOT WITH_LAPACK)
 
-    if (NOT (TARGET blas AND TARGET lapack))
-      find_package (LAPACK)
-    else (NOT (TARGET blas AND TARGET lapack))
-      set (BLAS_LIBRARIES blas)
-      set (LAPACK_LIBRARIES lapack)
-    endif (NOT (TARGET blas AND TARGET lapack))
+find_package (LAPACK)
 
-    if (NOT (LAPACK_FOUND))
-      list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
-    endif (NOT (LAPACK_FOUND))
-  endif (DEFINED ENV{BLA_VENDOR} OR DEFINED BLA_VENDOR)
-else (WITH_LAPACK)
+if (NOT LAPACK_FOUND)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
-endif (WITH_LAPACK)
+endif (NOT LAPACK_FOUND)
 
 # CXSparse.
 if (WITH_CXSPARSE)
