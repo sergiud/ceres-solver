@@ -337,6 +337,9 @@ if (BUILD_TESTING AND gflags_FOUND)
   endif()
   set_target_properties (gtest PROPERTIES CXX_VISIBILITY_PRESET default)
 
+  target_include_directories (gtest PRIVATE
+    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
+
   add_library(test_util STATIC
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
