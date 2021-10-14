@@ -92,10 +92,10 @@ elseif(CMAKE_UNITY_BUILD)
 endif()
 
 # Build the list of dependencies for Ceres based on the current configuration.
-if (NOT WITH_MINILOG AND glog_FOUND)
+if (glog_FOUND)
   # Public export to allow the user to call InitGoogleLogging.
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
-endif (NOT WITH_MINILOG AND glog_FOUND)
+endif (glog_FOUND)
 
 if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
@@ -236,9 +236,9 @@ set(CERES_LIBRARY_SOURCE
 
 # Primarily for Android, but optionally for others, compile the minimal
 # glog implementation into Ceres.
-if (WITH_MINILOG)
+if (NOT glog_FOUND)
   list(APPEND CERES_LIBRARY_SOURCE miniglog/glog/logging.cc)
-endif (WITH_MINILOG)
+endif (NOT glog_FOUND)
 
 # Ceres C++ compiler flags can be too strict for an external library code
 # which we do not maintain.
@@ -328,7 +328,7 @@ install(TARGETS ceres
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
+if (BUILD_TESTING AND gflags_FOUND)
   add_library(gtest gmock_gtest_all.cc gmock_main.cc)
   if (BUILD_SHARED_LIBS)
     # Define gtest-specific shared library flags for compilation.
@@ -471,7 +471,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   if(CODE_GENERATION)
     add_subdirectory(codegen)
   endif()
-endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
+endif (BUILD_TESTING AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
   target_link_libraries(${BENCHMARK_TARGET} PRIVATE test_util benchmark::benchmark)

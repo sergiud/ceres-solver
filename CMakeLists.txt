@@ -102,8 +102,8 @@ if (BUILD_TESTING)
   enable_testing()
 endif (BUILD_TESTING)
 
-option(WITH_MINILOG "Use a stripped down version of glog." OFF)
 option(WITH_GFLAGS "Enable Google Flags." ON)
+option(WITH_GLOG "Enable Google Log." ON)
 option(WITH_SUITESPARSE "Enable SuiteSparse." ON)
 option(WITH_CXSPARSE "Enable CXSparse." ON)
 option(WITH_LAPACK "Enable use of LAPACK." ON)
@@ -166,7 +166,6 @@ if (IOS)
       "requires at least iOS version 7.0")
   endif()
 
-  update_cache_variable(WITH_MINILOG ON)
   message(STATUS "Building for iOS: Forcing use of miniglog instead of glog.")
 
   update_cache_variable(WITH_SUITESPARSE OFF)
@@ -324,35 +323,26 @@ if (gflags_FOUND)
   add_definitions (-DCERES_GFLAGS_NAMESPACE=${gflags_NAMESPACE})
 endif (gflags_FOUND)
 
+if (NOT WITH_GLOG)
+  set (CMAKE_DISABLE_FIND_PACKAGE_glog ON)
+endif (NOT WITH_GLOG)
+
+find_package(glog 0.3.5)
+
 # MiniGLog.
-if (WITH_MINILOG)
+if (NOT glog_FOUND)
   message("-- Compiling minimal glog substitute into Ceres.")
   set(glog_INCLUDE_DIRS internal/ceres/miniglog)
   set(MINIGLOG_MAX_LOG_LEVEL 2 CACHE STRING "The maximum message severity level to be logged")
   add_definitions("-DMAX_LOG_LEVEL=${MINIGLOG_MAX_LOG_LEVEL}")
   message("-- Using minimal glog substitute (include): ${glog_INCLUDE_DIRS}")
   message("-- Max log level for minimal glog substitute: ${MINIGLOG_MAX_LOG_LEVEL}")
-
-  # Mark as advanced (remove from default GUI view) the glog search
-  # variables in case user disables WITH_MINILOG, FindGlog did not find it, so
-  # made search variables visible in GUI for user to set, but then user enables
-  # WITH_MINILOG instead of setting them.
-  mark_as_advanced(FORCE glog_INCLUDE_DIR
-                         glog_LIBRARY)
-else (WITH_MINILOG)
+else (NOT glog_FOUND)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
-  # Don't search with REQUIRED so that configuration continues if not found and
-  # we can output an error messages explaining WITH_MINILOG option.
-  find_package(glog 0.3.5)
 
-  if (glog_FOUND)
-    set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION} NO_MODULE)")
-  else (glog_FOUND)
-    message(FATAL_ERROR "Can't find Google Log. Please set glog_INCLUDE_DIR & "
-      "glog_LIBRARY or enable WITH_MINILOG option to use minimal glog "
-      "implementation.")
-  endif (glog_FOUND)
-endif (WITH_MINILOG)
+
+  set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION} NO_MODULE)")
+endif (NOT glog_FOUND)
 
 if (NOT WITH_SCHUR_SPECIALIZATIONS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_RESTRICT_SCHUR_SPECIALIZATION)
@@ -555,12 +545,12 @@ install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
 install(FILES ${Ceres_BINARY_DIR}/include/ceres/internal/config.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
-if (WITH_MINILOG)
+if (NOT glog_FOUND)
   # Install miniglog header if being used as logging #includes appear in
   # installed public Ceres headers.
   install(FILES ${Ceres_SOURCE_DIR}/internal/ceres/miniglog/glog/logging.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/miniglog/glog)
-endif (WITH_MINILOG)
+endif (NOT glog_FOUND)
 
 # Add an uninstall target to remove all installed files.
 add_custom_target(uninstall
