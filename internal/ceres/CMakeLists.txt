@@ -93,13 +93,14 @@ endif()
 
 # Build the list of dependencies for Ceres based on the current configuration.
 if (NOT WITH_MINILOG AND glog_FOUND)
+  # Public export to allow the user to call InitGoogleLogging.
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
 endif (NOT WITH_MINILOG AND glog_FOUND)
 
 if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
-  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES SuiteSparse::CHOLMOD SuiteSparse::SPQR)
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::CHOLMOD SuiteSparse::SPQR)
 endif (WITH_SUITESPARSE AND SuiteSparse_FOUND)
 
 if (WITH_LAPACK AND BLAS_FOUND AND LAPACK_FOUND)
@@ -293,14 +294,14 @@ if (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
   # Define version information for use in Solver::FullReport.
   target_compile_definitions (ceres PRIVATE
     CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
-  list (APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES CXSparse::CXSparse)
+  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES CXSparse::CXSparse)
 endif (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
 
 if (gflags_FOUND)
   if (TARGET gflags::gflags)
-    target_link_libraries (ceres PUBLIC gflags::gflags)
+    list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES gflags::gflags)
   else (TARGET gflags::gflags)
-    target_link_libraries (ceres PUBLIC gflags)
+    list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES gflags)
   endif (TARGET gflags::gflags)
 endif (gflags_FOUND)
 
@@ -314,28 +315,6 @@ if (BUILD_SHARED_LIBS)
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden)
 endif()
-
-# When building as a shared libarary with testing enabled, we need to export
-# internal symbols needed by the unit tests
-if (BUILD_TESTING)
-  target_compile_definitions(ceres
-    PUBLIC
-      CERES_EXPORT_INTERNAL_SYMBOLS
-    )
-endif()
-
-
-# The ability to specify a minimum language version via cxx_std_[11,14,17]
-# requires CMake >= 3.8.  Prior to that we have to specify the compiler features
-# we require.
-if (CMAKE_VERSION VERSION_LESS 3.8)
-  set(REQUIRED_PUBLIC_CXX_FEATURES cxx_alignas cxx_alignof cxx_constexpr)
-else()
-  # Forward whatever C++ version Ceres was compiled with as our requirement
-  # for downstream clients.
-  set(REQUIRED_PUBLIC_CXX_FEATURES cxx_std_${CMAKE_CXX_STANDARD})
-endif()
-target_compile_features(ceres PUBLIC ${REQUIRED_PUBLIC_CXX_FEATURES})
 
 include(AppendTargetProperty)
 
@@ -373,16 +352,6 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
     PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
     PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
 
-  if (WITH_MINILOG)
-    # When using miniglog, it is compiled into Ceres, thus Ceres becomes
-    # the library against which other libraries should link for logging.
-    target_link_libraries(gtest ${gflags_LIBRARIES} ceres)
-    target_link_libraries(test_util PRIVATE gtest)
-  else (WITH_MINILOG)
-    target_link_libraries(gtest ${gflags_LIBRARIES} glog::glog)
-    target_link_libraries(test_util PRIVATE gtest glog::glog)
-  endif (WITH_MINILOG)
-
   macro (CERES_TEST NAME)
     add_executable(${NAME}_test ${NAME}_test.cc)
     # Pull in local headers from the generated test directories when ceres_test()
@@ -394,7 +363,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
              ${Ceres_SOURCE_DIR}/internal/ceres
              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
 
-    target_link_libraries(${NAME}_test PUBLIC test_util gtest)
+    target_link_libraries(${NAME}_test PRIVATE test_util gtest)
     if (BUILD_SHARED_LIBS)
       # Define gtest-specific shared library flags for linking.
       append_target_property(${NAME}_test COMPILE_DEFINITIONS
