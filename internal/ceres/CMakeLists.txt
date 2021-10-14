@@ -293,7 +293,7 @@ if (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
   # Define version information for use in Solver::FullReport.
   target_compile_definitions (ceres PRIVATE
     CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
-  target_link_libraries (ceres PUBLIC CXSparse::CXSparse)
+  list (APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES CXSparse::CXSparse)
 endif (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
 
 if (gflags_FOUND)
@@ -358,26 +358,29 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
   endif()
   set_target_properties (gtest PROPERTIES CXX_VISIBILITY_PRESET default)
 
-  add_library(test_util
+  add_library(test_util STATIC
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
-              test_util.cc)
+              test_util.cc
+              $<TARGET_OBJECTS:ceresbase>
+              ${CERES_LIBRARY_SOURCE})
 
   target_include_directories (test_util PUBLIC
     $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
   target_compile_definitions (test_util PUBLIC
     $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
   target_link_libraries (test_util
-    $<TARGET_PROPERTY:ceres,INTERFACE_LINK_LIBRARIES>)
+    PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
+    PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
 
   if (WITH_MINILOG)
     # When using miniglog, it is compiled into Ceres, thus Ceres becomes
     # the library against which other libraries should link for logging.
     target_link_libraries(gtest ${gflags_LIBRARIES} ceres)
-    target_link_libraries(test_util $<TARGET_OBJECTS:ceresbase> gtest)
+    target_link_libraries(test_util PRIVATE gtest)
   else (WITH_MINILOG)
     target_link_libraries(gtest ${gflags_LIBRARIES} glog::glog)
-    target_link_libraries(test_util $<TARGET_OBJECTS:ceresbase> gtest glog::glog)
+    target_link_libraries(test_util PRIVATE gtest glog::glog)
   endif (WITH_MINILOG)
 
   macro (CERES_TEST NAME)
@@ -391,7 +394,7 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
              ${Ceres_SOURCE_DIR}/internal/ceres
              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
 
-    target_link_libraries(${NAME}_test PUBLIC test_util Ceres::Ceres gtest)
+    target_link_libraries(${NAME}_test PUBLIC test_util gtest)
     if (BUILD_SHARED_LIBS)
       # Define gtest-specific shared library flags for linking.
       append_target_property(${NAME}_test COMPILE_DEFINITIONS
@@ -502,8 +505,8 @@ if (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 endif (BUILD_TESTING AND WITH_GFLAGS AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
-  target_link_libraries(${BENCHMARK_TARGET} PUBLIC Ceres::Ceres benchmark::benchmark)
-  target_include_directories(${BENCHMARK_TARGET} PUBLIC
+  target_link_libraries(${BENCHMARK_TARGET} PRIVATE test_util benchmark::benchmark)
+  target_include_directories(${BENCHMARK_TARGET} PRIVATE
                              ${Ceres_SOURCE_DIR}/internal
                              ${Ceres_SOURCE_DIR}/internal/ceres
                              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
