@@ -148,7 +148,7 @@ OPTION(WITH_EIGENSPARSE
 
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
-option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)
+option(WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
 option(PROVIDE_UNINSTALL_TARGET "Add a custom target to ease removal of installed targets" ON)
 set(SANITIZERS "" CACHE STRING "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
@@ -182,6 +182,11 @@ if (IOS)
   message(STATUS "Building for iOS: Will not build examples.")
 endif (IOS)
 
+if (NOT WITH_BENCHMARK)
+  set (CMAKE_DISABLE_FIND_PACKAGE_benchmark ON)
+endif (NOT WITH_BENCHMARK)
+
+find_package (benchmark)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
 if (Eigen3_VERSION VERSION_LESS 3.1.0)
@@ -400,18 +405,7 @@ if (NOT WITH_OPENMP AND NOT WITH_CXX_THREADS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
 endif (NOT WITH_OPENMP AND NOT WITH_CXX_THREADS)
 
-
-if (BUILD_BENCHMARKS)
-  find_package(benchmark QUIET)
-
-  if (benchmark_FOUND)
-  else()
-     update_cache_variable(BUILD_BENCHMARKS OFF)
-  endif()
-  mark_as_advanced(benchmark_DIR)
-endif()
-
-add_feature_info (Benchmarks BUILD_BENCHMARKS
+add_feature_info (Benchmarks WITH_BENCHMARK
   "Build Ceres benchmarks")
 
 include_directories(

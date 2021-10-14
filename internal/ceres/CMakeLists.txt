@@ -506,7 +506,7 @@ macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
                              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
 endmacro()
 
-if (BUILD_BENCHMARKS)
+if (benchmark_FOUND)
   add_executable(small_blas_gemv_benchmark small_blas_gemv_benchmark.cc)
   add_dependencies_to_benchmark(small_blas_gemv_benchmark)
 
@@ -523,4 +523,4 @@ if (BUILD_BENCHMARKS)
   add_dependencies_to_benchmark(jet_operator_benchmark)
 
   add_subdirectory(autodiff_benchmarks)
-endif (BUILD_BENCHMARKS)
+endif (benchmark_FOUND)
