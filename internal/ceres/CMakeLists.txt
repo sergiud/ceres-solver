@@ -32,10 +32,11 @@
 # when their enclosing #ifdefs are disabled.
 if (WITH_CXX_THREADS)
   set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc)
-  list(APPEND APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES Threads::Threads)
+  list(APPEND APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
   set (Threads_DEPENDENCY "find_dependency (Threads)")
 elseif (WITH_OPENMP)
   set(CERES_PARALLEL_FOR_SRC parallel_for_openmp.cc)
+  list(APPEND APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES OpenMP::OpenMP_CXX)
 else()
   set(CERES_PARALLEL_FOR_SRC parallel_for_nothreads.cc)
 endif()

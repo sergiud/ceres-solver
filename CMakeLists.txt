@@ -121,12 +121,14 @@ set (WITH_THREADING_BACKEND "Threads" CACHE STRING
 set_property (CACHE WITH_THREADING_BACKEND PROPERTY STRINGS
   Threads;OpenMP;None)
 
+find_package (OpenMP COMPONENTS CXX)
+
 if (WITH_THREADING_BACKEND STREQUAL "")
-  if (OPENMP_FOUND)
+  if (OpenMP_CXX_FOUND)
     set (WITH_THREADING_BACKEND OpenMP CACHE STRING "" FORCE)
-  else (OPENMP_FOUND)
+  else (OpenMP_CXX_FOUND)
     set (WITH_THREADING_BACKEND Threads CACHE STRING "" FORCE)
-  endif (OPENMP_FOUND)
+  endif (OpenMP_CXX_FOUND)
 endif (WITH_THREADING_BACKEND STREQUAL "")
 
 if (WITH_THREADING_BACKEND STREQUAL "")
@@ -140,6 +142,10 @@ elseif (WITH_THREADING_BACKEND STREQUAL Threads)
 elseif (WITH_THREADING_BACKEND STREQUAL None)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
 endif (WITH_THREADING_BACKEND STREQUAL "")
+
+if (WITH_OPENMP)
+  set (OpenMP_DEPENDENCY "find_dependency (OpenMP ${OpenMP_CXX_VERSION} COMPONENTS CXX)")
+endif (WITH_OPENMP)
 
 # Enable the use of Eigen as a sparse linear algebra library for
 # solving the nonlinear least squares problems.
@@ -354,22 +360,6 @@ if (NOT WITH_CUSTOM_BLAS)
   message("-- Disabling custom blas")
 endif (NOT WITH_CUSTOM_BLAS)
 
-if (WITH_OPENMP)
-  # Find quietly, as we can continue without OpenMP if it is not found.
-  find_package(OpenMP)
-
-  if (OPENMP_FOUND)
-    list(APPEND CERES_COMPILE_OPTIONS CERES_USE_OPENMP)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-
-    if (UNIX)
-      # At least on Linux, we need pthreads to be enabled for mutex to
-      # compile.  This may not work on Windows or Android.
-      find_package(Threads REQUIRED)
-    endif (UNIX)
-  endif (OPENMP_FOUND)
-endif (WITH_OPENMP)
 # Initialise CMAKE_REQUIRED_FLAGS used by CheckCXXSourceCompiles with the
 # contents of CMAKE_CXX_FLAGS such that if the user has passed extra flags
 # they are used when checking for compiler features.
@@ -379,12 +369,6 @@ check_function_exists (_j0 HAVE__J0)
 check_function_exists (_j1 HAVE__J1)
 check_function_exists (_jn HAVE__JN)
 
-if (NOT WITH_OPENMP AND NOT WITH_CXX_THREADS)
-  message("-- Neither OpenMP, or C++11 threads is enabled, "
-    "disabling multithreading.")
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
-endif (NOT WITH_OPENMP AND NOT WITH_CXX_THREADS)
-
 add_feature_info (Benchmarks WITH_BENCHMARK
   "Build Ceres benchmarks")
 
@@ -393,16 +377,6 @@ include_directories(
   internal
   internal/ceres
   ${glog_INCLUDE_DIRS})
-# Eigen SparseQR generates various compiler warnings related to unused and
-# uninitialised local variables.  To avoid having to individually suppress these
-# warnings around the #include statments for Eigen headers across all GCC/Clang
-# versions, we tell CMake to treat Eigen headers as system headers.  This
-# results in all compiler warnings from them being suppressed.
-#
-# Note that this is *not* propagated to clients, ie CERES_INCLUDE_DIRS
-# used by clients after find_package(Ceres) does not identify Eigen as
-# as system headers.
-include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 
 if (MINGW)
   # MinGW produces code that segfaults when performing matrix multiplications
