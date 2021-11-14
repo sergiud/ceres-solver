@@ -51,7 +51,7 @@ const double kE = 2.71828182845904523536;
 typedef Jet<double, 2> J;
 
 // Convenient shorthand for making a jet.
-J MakeJet(double a, double v0, double v1) {
+constexpr J MakeJet(double a, double v0, double v1) {
   J z;
   z.a = a;
   z.v[0] = v0;

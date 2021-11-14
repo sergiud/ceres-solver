@@ -178,19 +178,18 @@ struct Jet {
   // (where T is a Jet<T, N>). This usually only happens in opt mode. Note that
   // the C++ standard mandates that e.g. default constructed doubles are
   // initialized to 0.0; see sections 8.5 of the C++03 standard.
-  Jet() : a() { v.setConstant(Scalar()); }
+  constexpr Jet() : a() { v.setConstant(Scalar()); }
 
   // Constructor from scalar: a + 0.
-  explicit Jet(const T& value) {
+  constexpr explicit Jet(const T& value) {
     a = value;
     v.setConstant(Scalar());
   }
 
   // Constructor from scalar plus variable: a + t_i.
-  Jet(const T& value, int k) {
+  constexpr Jet(const T& value, int k) {
     a = value;
-    v.setConstant(Scalar());
-    v[k] = T(1.0);
+    v.setUnit(k);
   }
 
   // Constructor from scalar and vector part
@@ -198,47 +197,48 @@ struct Jet {
   // to be passed in without being fully evaluated until
   // they are assigned to v
   template <typename Derived>
-  EIGEN_STRONG_INLINE Jet(const T& a, const Eigen::DenseBase<Derived>& v)
+  EIGEN_STRONG_INLINE constexpr Jet(const T& a,
+                                    const Eigen::DenseBase<Derived>& v)
       : a(a), v(v) {}
 
   // Compound operators
-  Jet<T, N>& operator+=(const Jet<T, N>& y) {
+  constexpr Jet<T, N>& operator+=(const Jet<T, N>& y) {
     *this = *this + y;
     return *this;
   }
 
-  Jet<T, N>& operator-=(const Jet<T, N>& y) {
+  constexpr Jet<T, N>& operator-=(const Jet<T, N>& y) {
     *this = *this - y;
     return *this;
   }
 
-  Jet<T, N>& operator*=(const Jet<T, N>& y) {
+  constexpr Jet<T, N>& operator*=(const Jet<T, N>& y) {
     *this = *this * y;
     return *this;
   }
 
-  Jet<T, N>& operator/=(const Jet<T, N>& y) {
+  constexpr Jet<T, N>& operator/=(const Jet<T, N>& y) {
     *this = *this / y;
     return *this;
   }
 
   // Compound with scalar operators.
-  Jet<T, N>& operator+=(const T& s) {
+  constexpr Jet<T, N>& operator+=(const T& s) {
     *this = *this + s;
     return *this;
   }
 
-  Jet<T, N>& operator-=(const T& s) {
+  constexpr Jet<T, N>& operator-=(const T& s) {
     *this = *this - s;
     return *this;
   }
 
-  Jet<T, N>& operator*=(const T& s) {
+  constexpr Jet<T, N>& operator*=(const T& s) {
     *this = *this * s;
     return *this;
   }
 
-  Jet<T, N>& operator/=(const T& s) {
+  constexpr Jet<T, N>& operator/=(const T& s) {
     *this = *this / s;
     return *this;
   }
@@ -256,7 +256,7 @@ struct Jet {
 
 // Unary +
 template <typename T, int N>
-inline Jet<T, N> const& operator+(const Jet<T, N>& f) {
+constexpr Jet<T, N> const& operator+(const Jet<T, N>& f) {
   return f;
 }
 
@@ -265,67 +265,67 @@ inline Jet<T, N> const& operator+(const Jet<T, N>& f) {
 
 // Unary -
 template <typename T, int N>
-inline Jet<T, N> operator-(const Jet<T, N>& f) {
+constexpr Jet<T, N> operator-(const Jet<T, N>& f) {
   return Jet<T, N>(-f.a, -f.v);
 }
 
 // Binary +
 template <typename T, int N>
-inline Jet<T, N> operator+(const Jet<T, N>& f, const Jet<T, N>& g) {
+constexpr Jet<T, N> operator+(const Jet<T, N>& f, const Jet<T, N>& g) {
   return Jet<T, N>(f.a + g.a, f.v + g.v);
 }
 
 // Binary + with a scalar: x + s
 template <typename T, int N>
-inline Jet<T, N> operator+(const Jet<T, N>& f, T s) {
+constexpr Jet<T, N> operator+(const Jet<T, N>& f, T s) {
   return Jet<T, N>(f.a + s, f.v);
 }
 
 // Binary + with a scalar: s + x
 template <typename T, int N>
-inline Jet<T, N> operator+(T s, const Jet<T, N>& f) {
+constexpr Jet<T, N> operator+(T s, const Jet<T, N>& f) {
   return Jet<T, N>(f.a + s, f.v);
 }
 
 // Binary -
 template <typename T, int N>
-inline Jet<T, N> operator-(const Jet<T, N>& f, const Jet<T, N>& g) {
+constexpr Jet<T, N> operator-(const Jet<T, N>& f, const Jet<T, N>& g) {
   return Jet<T, N>(f.a - g.a, f.v - g.v);
 }
 
 // Binary - with a scalar: x - s
 template <typename T, int N>
-inline Jet<T, N> operator-(const Jet<T, N>& f, T s) {
+constexpr Jet<T, N> operator-(const Jet<T, N>& f, T s) {
   return Jet<T, N>(f.a - s, f.v);
 }
 
 // Binary - with a scalar: s - x
 template <typename T, int N>
-inline Jet<T, N> operator-(T s, const Jet<T, N>& f) {
+constexpr Jet<T, N> operator-(T s, const Jet<T, N>& f) {
   return Jet<T, N>(s - f.a, -f.v);
 }
 
 // Binary *
 template <typename T, int N>
-inline Jet<T, N> operator*(const Jet<T, N>& f, const Jet<T, N>& g) {
+constexpr Jet<T, N> operator*(const Jet<T, N>& f, const Jet<T, N>& g) {
   return Jet<T, N>(f.a * g.a, f.a * g.v + f.v * g.a);
 }
 
 // Binary * with a scalar: x * s
 template <typename T, int N>
-inline Jet<T, N> operator*(const Jet<T, N>& f, T s) {
+constexpr Jet<T, N> operator*(const Jet<T, N>& f, T s) {
   return Jet<T, N>(f.a * s, f.v * s);
 }
 
 // Binary * with a scalar: s * x
 template <typename T, int N>
-inline Jet<T, N> operator*(T s, const Jet<T, N>& f) {
+constexpr Jet<T, N> operator*(T s, const Jet<T, N>& f) {
   return Jet<T, N>(f.a * s, f.v * s);
 }
 
 // Binary /
 template <typename T, int N>
-inline Jet<T, N> operator/(const Jet<T, N>& f, const Jet<T, N>& g) {
+constexpr Jet<T, N> operator/(const Jet<T, N>& f, const Jet<T, N>& g) {
   // This uses:
   //
   //   a + u   (a + u)(b - v)   (a + u)(b - v)
@@ -340,31 +340,32 @@ inline Jet<T, N> operator/(const Jet<T, N>& f, const Jet<T, N>& g) {
 
 // Binary / with a scalar: s / x
 template <typename T, int N>
-inline Jet<T, N> operator/(T s, const Jet<T, N>& g) {
+constexpr Jet<T, N> operator/(T s, const Jet<T, N>& g) {
   const T minus_s_g_a_inverse2 = -s / (g.a * g.a);
   return Jet<T, N>(s / g.a, g.v * minus_s_g_a_inverse2);
 }
 
 // Binary / with a scalar: x / s
 template <typename T, int N>
-inline Jet<T, N> operator/(const Jet<T, N>& f, T s) {
+constexpr Jet<T, N> operator/(const Jet<T, N>& f, T s) {
   const T s_inverse = T(1.0) / s;
   return Jet<T, N>(f.a * s_inverse, f.v * s_inverse);
 }
 
 // Binary comparison operators for both scalars and jets.
-#define CERES_DEFINE_JET_COMPARISON_OPERATOR(op)                    \
-  template <typename T, int N>                                      \
-  inline bool operator op(const Jet<T, N>& f, const Jet<T, N>& g) { \
-    return f.a op g.a;                                              \
-  }                                                                 \
-  template <typename T, int N>                                      \
-  inline bool operator op(const T& s, const Jet<T, N>& g) {         \
-    return s op g.a;                                                \
-  }                                                                 \
-  template <typename T, int N>                                      \
-  inline bool operator op(const Jet<T, N>& f, const T& s) {         \
-    return f.a op s;                                                \
+#define CERES_DEFINE_JET_COMPARISON_OPERATOR(op)                        \
+  template <typename T, int N>                                          \
+  constexpr bool operator op(const Jet<T, N>& f,                        \
+                             const Jet<T, N>& g) noexcept {             \
+    return f.a op g.a;                                                  \
+  }                                                                     \
+  template <typename T, int N>                                          \
+  constexpr bool operator op(const T& s, const Jet<T, N>& g) noexcept { \
+    return s op g.a;                                                    \
+  }                                                                     \
+  template <typename T, int N>                                          \
+  constexpr bool operator op(const Jet<T, N>& f, const T& s) noexcept { \
+    return f.a op s;                                                    \
   }
 CERES_DEFINE_JET_COMPARISON_OPERATOR(<)   // NOLINT
 CERES_DEFINE_JET_COMPARISON_OPERATOR(<=)  // NOLINT
@@ -411,37 +412,37 @@ using std::tanh;
 
 // Legacy names from pre-C++11 days.
 // clang-format off
-inline bool IsFinite(double x)   { return std::isfinite(x); }
-inline bool IsInfinite(double x) { return std::isinf(x);    }
-inline bool IsNaN(double x)      { return std::isnan(x);    }
-inline bool IsNormal(double x)   { return std::isnormal(x); }
+constexpr bool IsFinite(double x)   { return std::isfinite(x); }
+constexpr bool IsInfinite(double x) { return std::isinf(x);    }
+constexpr bool IsNaN(double x)      { return std::isnan(x);    }
+constexpr bool IsNormal(double x)   { return std::isnormal(x); }
 // clang-format on
 
 // In general, f(a + h) ~= f(a) + f'(a) h, via the chain rule.
 
 // abs(x + h) ~= x + h or -(x + h)
 template <typename T, int N>
-inline Jet<T, N> abs(const Jet<T, N>& f) {
+constexpr Jet<T, N> abs(const Jet<T, N>& f) {
   return (f.a < T(0.0) ? -f : f);
 }
 
 // log(a + h) ~= log(a) + h / a
 template <typename T, int N>
-inline Jet<T, N> log(const Jet<T, N>& f) {
+constexpr Jet<T, N> log(const Jet<T, N>& f) {
   const T a_inverse = T(1.0) / f.a;
   return Jet<T, N>(log(f.a), f.v * a_inverse);
 }
 
 // exp(a + h) ~= exp(a) + exp(a) h
 template <typename T, int N>
-inline Jet<T, N> exp(const Jet<T, N>& f) {
+constexpr Jet<T, N> exp(const Jet<T, N>& f) {
   const T tmp = exp(f.a);
   return Jet<T, N>(tmp, tmp * f.v);
 }
 
 // sqrt(a + h) ~= sqrt(a) + h / (2 sqrt(a))
 template <typename T, int N>
-inline Jet<T, N> sqrt(const Jet<T, N>& f) {
+constexpr Jet<T, N> sqrt(const Jet<T, N>& f) {
   const T tmp = sqrt(f.a);
   const T two_a_inverse = T(1.0) / (T(2.0) * tmp);
   return Jet<T, N>(tmp, f.v * two_a_inverse);
@@ -449,33 +450,33 @@ inline Jet<T, N> sqrt(const Jet<T, N>& f) {
 
 // cos(a + h) ~= cos(a) - sin(a) h
 template <typename T, int N>
-inline Jet<T, N> cos(const Jet<T, N>& f) {
+constexpr Jet<T, N> cos(const Jet<T, N>& f) {
   return Jet<T, N>(cos(f.a), -sin(f.a) * f.v);
 }
 
 // acos(a + h) ~= acos(a) - 1 / sqrt(1 - a^2) h
 template <typename T, int N>
-inline Jet<T, N> acos(const Jet<T, N>& f) {
+constexpr Jet<T, N> acos(const Jet<T, N>& f) {
   const T tmp = -T(1.0) / sqrt(T(1.0) - f.a * f.a);
   return Jet<T, N>(acos(f.a), tmp * f.v);
 }
 
 // sin(a + h) ~= sin(a) + cos(a) h
 template <typename T, int N>
-inline Jet<T, N> sin(const Jet<T, N>& f) {
+constexpr Jet<T, N> sin(const Jet<T, N>& f) {
   return Jet<T, N>(sin(f.a), cos(f.a) * f.v);
 }
 
 // asin(a + h) ~= asin(a) + 1 / sqrt(1 - a^2) h
 template <typename T, int N>
-inline Jet<T, N> asin(const Jet<T, N>& f) {
+constexpr Jet<T, N> asin(const Jet<T, N>& f) {
   const T tmp = T(1.0) / sqrt(T(1.0) - f.a * f.a);
   return Jet<T, N>(asin(f.a), tmp * f.v);
 }
 
 // tan(a + h) ~= tan(a) + (1 + tan(a)^2) h
 template <typename T, int N>
-inline Jet<T, N> tan(const Jet<T, N>& f) {
+constexpr Jet<T, N> tan(const Jet<T, N>& f) {
   const T tan_a = tan(f.a);
   const T tmp = T(1.0) + tan_a * tan_a;
   return Jet<T, N>(tan_a, tmp * f.v);
@@ -483,26 +484,26 @@ inline Jet<T, N> tan(const Jet<T, N>& f) {
 
 // atan(a + h) ~= atan(a) + 1 / (1 + a^2) h
 template <typename T, int N>
-inline Jet<T, N> atan(const Jet<T, N>& f) {
+constexpr Jet<T, N> atan(const Jet<T, N>& f) {
   const T tmp = T(1.0) / (T(1.0) + f.a * f.a);
   return Jet<T, N>(atan(f.a), tmp * f.v);
 }
 
 // sinh(a + h) ~= sinh(a) + cosh(a) h
 template <typename T, int N>
-inline Jet<T, N> sinh(const Jet<T, N>& f) {
+constexpr Jet<T, N> sinh(const Jet<T, N>& f) {
   return Jet<T, N>(sinh(f.a), cosh(f.a) * f.v);
 }
 
 // cosh(a + h) ~= cosh(a) + sinh(a) h
 template <typename T, int N>
-inline Jet<T, N> cosh(const Jet<T, N>& f) {
+constexpr Jet<T, N> cosh(const Jet<T, N>& f) {
   return Jet<T, N>(cosh(f.a), sinh(f.a) * f.v);
 }
 
 // tanh(a + h) ~= tanh(a) + (1 - tanh(a)^2) h
 template <typename T, int N>
-inline Jet<T, N> tanh(const Jet<T, N>& f) {
+constexpr Jet<T, N> tanh(const Jet<T, N>& f) {
   const T tanh_a = tanh(f.a);
   const T tmp = T(1.0) - tanh_a * tanh_a;
   return Jet<T, N>(tanh_a, tmp * f.v);
@@ -513,7 +514,7 @@ inline Jet<T, N> tanh(const Jet<T, N>& f) {
 //
 // floor(a + h) ~= floor(a) + 0
 template <typename T, int N>
-inline Jet<T, N> floor(const Jet<T, N>& f) {
+constexpr Jet<T, N> floor(const Jet<T, N>& f) {
   return Jet<T, N>(floor(f.a));
 }
 
@@ -522,7 +523,7 @@ inline Jet<T, N> floor(const Jet<T, N>& f) {
 //
 // ceil(a + h) ~= ceil(a) + 0
 template <typename T, int N>
-inline Jet<T, N> ceil(const Jet<T, N>& f) {
+constexpr Jet<T, N> ceil(const Jet<T, N>& f) {
   return Jet<T, N>(ceil(f.a));
 }
 
@@ -530,14 +531,14 @@ inline Jet<T, N> ceil(const Jet<T, N>& f) {
 
 // cbrt(a + h) ~= cbrt(a) + h / (3 a ^ (2/3))
 template <typename T, int N>
-inline Jet<T, N> cbrt(const Jet<T, N>& f) {
+constexpr Jet<T, N> cbrt(const Jet<T, N>& f) {
   const T derivative = T(1.0) / (T(3.0) * cbrt(f.a * f.a));
   return Jet<T, N>(cbrt(f.a), f.v * derivative);
 }
 
 // exp2(x + h) = 2^(x+h) ~= 2^x + h*2^x*log(2)
 template <typename T, int N>
-inline Jet<T, N> exp2(const Jet<T, N>& f) {
+constexpr Jet<T, N> exp2(const Jet<T, N>& f) {
   const T tmp = exp2(f.a);
   const T derivative = tmp * log(T(2));
   return Jet<T, N>(tmp, f.v * derivative);
@@ -545,7 +546,7 @@ inline Jet<T, N> exp2(const Jet<T, N>& f) {
 
 // log2(x + h) ~= log2(x) + h / (x * log(2))
 template <typename T, int N>
-inline Jet<T, N> log2(const Jet<T, N>& f) {
+constexpr Jet<T, N> log2(const Jet<T, N>& f) {
   const T derivative = T(1.0) / (f.a * log(T(2)));
   return Jet<T, N>(log2(f.a), f.v * derivative);
 }
@@ -555,7 +556,7 @@ inline Jet<T, N> log2(const Jet<T, N>& f) {
 // Note that the function is non-smooth at x=y=0,
 // so the derivative is undefined there.
 template <typename T, int N>
-inline Jet<T, N> hypot(const Jet<T, N>& x, const Jet<T, N>& y) {
+constexpr Jet<T, N> hypot(const Jet<T, N>& x, const Jet<T, N>& y) {
   // d/da sqrt(a) = 0.5 / sqrt(a)
   // d/dx x^2 + y^2 = 2x
   // So by the chain rule:
@@ -566,28 +567,28 @@ inline Jet<T, N> hypot(const Jet<T, N>& x, const Jet<T, N>& y) {
 }
 
 template <typename T, int N>
-inline Jet<T, N> fmax(const Jet<T, N>& x, const Jet<T, N>& y) {
+constexpr Jet<T, N> fmax(const Jet<T, N>& x, const Jet<T, N>& y) {
   return x < y ? y : x;
 }
 template <typename T, int N>
-inline Jet<T, N> fmax(const Jet<T, N>& x, const T& y) {
+constexpr Jet<T, N> fmax(const Jet<T, N>& x, const T& y) {
   return x < y ? Jet<T, N>{y} : x;
 }
 template <typename T, int N>
-inline Jet<T, N> fmax(const T& x, const Jet<T, N>& y) {
+constexpr Jet<T, N> fmax(const T& x, const Jet<T, N>& y) {
   return x < y ? y : Jet<T, N>{x};
 }
 
 template <typename T, int N>
-inline Jet<T, N> fmin(const Jet<T, N>& x, const Jet<T, N>& y) {
+constexpr Jet<T, N> fmin(const Jet<T, N>& x, const Jet<T, N>& y) {
   return y < x ? y : x;
 }
 template <typename T, int N>
-inline Jet<T, N> fmin(const Jet<T, N>& x, const T& y) {
+constexpr Jet<T, N> fmin(const Jet<T, N>& x, const T& y) {
   return y < x ? Jet<T, N>{y} : x;
 }
 template <typename T, int N>
-inline Jet<T, N> fmin(const T& x, const Jet<T, N>& y) {
+constexpr Jet<T, N> fmin(const T& x, const Jet<T, N>& y) {
   return y < x ? y : Jet<T, N>{x};
 }
 
@@ -595,7 +596,7 @@ inline Jet<T, N> fmin(const T& x, const Jet<T, N>& y) {
 // however, the derivative is trivial to compute
 // erf(x + h) = erf(x) + h * 2*exp(-x^2)/sqrt(pi)
 template <typename T, int N>
-inline Jet<T, N> erf(const Jet<T, N>& x) {
+constexpr Jet<T, N> erf(const Jet<T, N>& x) {
   // We evaluate the constant as follows:
   //   2 / sqrt(pi) = 1 / sqrt(atan(1.))
   // On POSIX sytems it is defined as M_2_SQRTPI, but this is not
@@ -609,7 +610,7 @@ inline Jet<T, N> erf(const Jet<T, N>& x) {
 // erfc(x) = 1-erf(x)
 // erfc(x + h) = erfc(x) + h * (-2*exp(-x^2)/sqrt(pi))
 template <typename T, int N>
-inline Jet<T, N> erfc(const Jet<T, N>& x) {
+constexpr Jet<T, N> erfc(const Jet<T, N>& x) {
   // See in erf() above for the evaluation of the constant in the derivative.
   return Jet<T, N>(erfc(x.a),
                    -x.v * exp(-x.a * x.a) * (T(1) / sqrt(atan(T(1)))));
@@ -621,21 +622,21 @@ inline Jet<T, N> erfc(const Jet<T, N>& x) {
 // _j[0,1,n]().  Where available on MSVC, use _j[0,1,n]() to avoid deprecated
 // function errors in client code (the specific warning is suppressed when
 // Ceres itself is built).
-inline double BesselJ0(double x) {
+constexpr double BesselJ0(double x) {
 #if defined(CERES_MSVC_USE_UNDERSCORE_PREFIXED_BESSEL_FUNCTIONS)
   return _j0(x);
 #else
   return j0(x);
 #endif
 }
-inline double BesselJ1(double x) {
+constexpr double BesselJ1(double x) {
 #if defined(CERES_MSVC_USE_UNDERSCORE_PREFIXED_BESSEL_FUNCTIONS)
   return _j1(x);
 #else
   return j1(x);
 #endif
 }
-inline double BesselJn(int n, double x) {
+constexpr double BesselJn(int n, double x) {
 #if defined(CERES_MSVC_USE_UNDERSCORE_PREFIXED_BESSEL_FUNCTIONS)
   return _jn(n, x);
 #else
@@ -652,14 +653,14 @@ inline double BesselJn(int n, double x) {
 // See formula http://dlmf.nist.gov/10.6#E3
 // j0(a + h) ~= j0(a) - j1(a) h
 template <typename T, int N>
-inline Jet<T, N> BesselJ0(const Jet<T, N>& f) {
+constexpr Jet<T, N> BesselJ0(const Jet<T, N>& f) {
   return Jet<T, N>(BesselJ0(f.a), -BesselJ1(f.a) * f.v);
 }
 
 // See formula http://dlmf.nist.gov/10.6#E1
 // j1(a + h) ~= j1(a) + 0.5 ( j0(a) - j2(a) ) h
 template <typename T, int N>
-inline Jet<T, N> BesselJ1(const Jet<T, N>& f) {
+constexpr Jet<T, N> BesselJ1(const Jet<T, N>& f) {
   return Jet<T, N>(BesselJ1(f.a),
                    T(0.5) * (BesselJ0(f.a) - BesselJn(2, f.a)) * f.v);
 }
@@ -667,7 +668,7 @@ inline Jet<T, N> BesselJ1(const Jet<T, N>& f) {
 // See formula http://dlmf.nist.gov/10.6#E1
 // j_n(a + h) ~= j_n(a) + 0.5 ( j_{n-1}(a) - j_{n+1}(a) ) h
 template <typename T, int N>
-inline Jet<T, N> BesselJn(int n, const Jet<T, N>& f) {
+constexpr Jet<T, N> BesselJn(int n, const Jet<T, N>& f) {
   return Jet<T, N>(
       BesselJn(n, f.a),
       T(0.5) * (BesselJn(n - 1, f.a) - BesselJn(n + 1, f.a)) * f.v);
@@ -685,7 +686,7 @@ inline Jet<T, N> BesselJn(int n, const Jet<T, N>& f) {
 
 // The jet is finite if all parts of the jet are finite.
 template <typename T, int N>
-inline bool isfinite(const Jet<T, N>& f) {
+constexpr bool isfinite(const Jet<T, N>& f) {
   // Branchless implementation. This is more efficient for the false-case and
   // works with the codegen system.
   auto result = isfinite(f.a);
@@ -697,7 +698,7 @@ inline bool isfinite(const Jet<T, N>& f) {
 
 // The jet is infinite if any part of the Jet is infinite.
 template <typename T, int N>
-inline bool isinf(const Jet<T, N>& f) {
+constexpr bool isinf(const Jet<T, N>& f) {
   auto result = isinf(f.a);
   for (int i = 0; i < N; ++i) {
     result = result | isinf(f.v[i]);
@@ -707,7 +708,7 @@ inline bool isinf(const Jet<T, N>& f) {
 
 // The jet is NaN if any part of the jet is NaN.
 template <typename T, int N>
-inline bool isnan(const Jet<T, N>& f) {
+constexpr bool isnan(const Jet<T, N>& f) {
   auto result = isnan(f.a);
   for (int i = 0; i < N; ++i) {
     result = result | isnan(f.v[i]);
@@ -717,7 +718,7 @@ inline bool isnan(const Jet<T, N>& f) {
 
 // The jet is normal if all parts of the jet are normal.
 template <typename T, int N>
-inline bool isnormal(const Jet<T, N>& f) {
+constexpr bool isnormal(const Jet<T, N>& f) {
   auto result = isnormal(f.a);
   for (int i = 0; i < N; ++i) {
     result = result & isnormal(f.v[i]);
@@ -727,23 +728,23 @@ inline bool isnormal(const Jet<T, N>& f) {
 
 // Legacy functions from the pre-C++11 days.
 template <typename T, int N>
-inline bool IsFinite(const Jet<T, N>& f) {
+constexpr bool IsFinite(const Jet<T, N>& f) {
   return isfinite(f);
 }
 
 template <typename T, int N>
-inline bool IsNaN(const Jet<T, N>& f) {
+constexpr bool IsNaN(const Jet<T, N>& f) {
   return isnan(f);
 }
 
 template <typename T, int N>
-inline bool IsNormal(const Jet<T, N>& f) {
+constexpr bool IsNormal(const Jet<T, N>& f) {
   return isnormal(f);
 }
 
 // The jet is infinite if any part of the jet is infinite.
 template <typename T, int N>
-inline bool IsInfinite(const Jet<T, N>& f) {
+constexpr bool IsInfinite(const Jet<T, N>& f) {
   return isinf(f);
 }
 
@@ -752,7 +753,7 @@ inline bool IsInfinite(const Jet<T, N>& f) {
 // In words: the rate of change of theta is 1/r times the rate of
 // change of (x, y) in the positive angular direction.
 template <typename T, int N>
-inline Jet<T, N> atan2(const Jet<T, N>& g, const Jet<T, N>& f) {
+constexpr Jet<T, N> atan2(const Jet<T, N>& g, const Jet<T, N>& f) {
   // Note order of arguments:
   //
   //   f = a + da
@@ -765,7 +766,7 @@ inline Jet<T, N> atan2(const Jet<T, N>& g, const Jet<T, N>& f) {
 // pow -- base is a differentiable function, exponent is a constant.
 // (a+da)^p ~= a^p + p*a^(p-1) da
 template <typename T, int N>
-inline Jet<T, N> pow(const Jet<T, N>& f, double g) {
+constexpr Jet<T, N> pow(const Jet<T, N>& f, double g) {
   T const tmp = g * pow(f.a, g - T(1.0));
   return Jet<T, N>(pow(f.a, g), tmp * f.v);
 }
@@ -782,7 +783,7 @@ inline Jet<T, N> pow(const Jet<T, N>& f, double g) {
 // != 0, the derivatives are not defined and we return NaN.
 
 template <typename T, int N>
-inline Jet<T, N> pow(T f, const Jet<T, N>& g) {
+constexpr Jet<T, N> pow(T f, const Jet<T, N>& g) {
   Jet<T, N> result;
 
   if (f == T(0) && g.a > T(0)) {
@@ -844,7 +845,7 @@ inline Jet<T, N> pow(T f, const Jet<T, N>& g) {
 // 9. For f < 0, g noninteger: The value and derivatives of f^g are not finite.
 
 template <typename T, int N>
-inline Jet<T, N> pow(const Jet<T, N>& f, const Jet<T, N>& g) {
+constexpr Jet<T, N> pow(const Jet<T, N>& f, const Jet<T, N>& g) {
   Jet<T, N> result;
 
   if (f.a == T(0) && g.a >= T(1)) {
@@ -972,15 +973,15 @@ struct NumTraits<ceres::Jet<T, N>> {
   typedef ceres::Jet<T, N> Nested;
   typedef ceres::Jet<T, N> Literal;
 
-  static typename ceres::Jet<T, N> dummy_precision() {
+  static constexpr typename ceres::Jet<T, N> dummy_precision() {
     return ceres::Jet<T, N>(1e-12);
   }
 
-  static inline Real epsilon() {
+  static constexpr Real epsilon() noexcept {
     return Real(std::numeric_limits<T>::epsilon());
   }
 
-  static inline int digits10() { return NumTraits<T>::digits10(); }
+  static constexpr int digits10() noexcept { return NumTraits<T>::digits10(); }
 
   enum {
     IsComplex = 0,
@@ -1009,8 +1010,12 @@ struct NumTraits<ceres::Jet<T, N>> {
     };
   };
 
-  static inline Real highest() { return Real(std::numeric_limits<T>::max()); }
-  static inline Real lowest() { return Real(-std::numeric_limits<T>::max()); }
+  static constexpr Real highest() noexcept {
+    return Real(std::numeric_limits<T>::max());
+  }
+  static constexpr Real lowest() noexcept {
+    return Real(-std::numeric_limits<T>::max());
+  }
 };
 
 // Specifying the return type of binary operations between Jets and scalar types
