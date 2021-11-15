@@ -128,6 +128,22 @@ TEST(Jet, Jet) {
     ExpectJetsClose(w, x);
   }
 
+  {  // Check that expm1(log1p(x)) == x.
+    J z = expm1(x);
+    J w = log1p(z);
+    VL << "z = " << z;
+    VL << "w = " << w;
+    ExpectJetsClose(w, x);
+  }
+
+  {  // Check that log1p(expm1(x)) == x.
+    J z = log1p(x);
+    J w = expm1(z);
+    VL << "z = " << z;
+    VL << "w = " << w;
+    ExpectJetsClose(w, x);
+  }
+
   {  // Check that (x * y) / x == y.
     J z = x * y;
     J w = z / x;
@@ -479,8 +495,16 @@ TEST(Jet, Jet) {
     ExpectJetsClose(a, b);
   }
 
-  {  // Check that abs(-x * x) == sqrt(x * x).
+  {  // Check that abs(-x * x) == x * x.
+    ExpectJetsClose(abs(-x * x), x * x);
+    // Check that abs(-x) == sqrt(x * x).
     ExpectJetsClose(abs(-x), sqrt(x * x));
+  }
+  {
+    J a = MakeJet(-std::numeric_limits<double>::quiet_NaN(), 2.0, 4.0);
+    J b = abs(a);
+    EXPECT_TRUE(std::signbit(b.v[0]));
+    EXPECT_TRUE(std::signbit(b.v[1]));
   }
 
   {  // Check that cos(acos(x)) == x.
@@ -623,6 +647,46 @@ TEST(Jet, Jet) {
   NumericalTest("cbrt", cbrt<double, 2>, 1e-5);
   NumericalTest("cbrt", cbrt<double, 2>, 1.0);
 
+  {  // Check that log1p(x) == log(1 + x)
+    J z = log1p(x);
+    J w = log(J{1} + x);
+    VL << "z = " << z;
+    VL << "w = " << w;
+    ExpectJetsClose(z, w);
+  }
+
+  {  // Check that log1p(x) does not loose precision for small x
+    J x = MakeJet(1e-16, 1e-8, 1e-4);
+    J z = log1p(x);
+    J w = MakeJet(9.9999999999999998e-17, 1e-8, 1e-4);
+    VL << "z = " << z;
+    VL << "w = " << w;
+    ExpectJetsClose(z, w);
+    // log(1 + x) collapes to 0
+    J v = log(J{1} + x);
+    EXPECT_TRUE(v.a == 0);
+  }
+
+  {  // Check that expm1(x) == exp(x) - 1
+    J z = expm1(x);
+    J w = exp(x) - J{1};
+    VL << "z = " << z;
+    VL << "w = " << w;
+    ExpectJetsClose(z, w);
+  }
+
+  {  // Check that expm1(x) does not loose precision for small x
+    J x = MakeJet(9.9999999999999998e-17, 1e-8, 1e-4);
+    J z = expm1(x);
+    J w = MakeJet(1e-16, 1e-8, 1e-4);
+    VL << "z = " << z;
+    VL << "w = " << w;
+    ExpectJetsClose(z, w);
+    // exp(x) - 1 collapes to 0
+    J v = exp(x) - J{1};
+    EXPECT_TRUE(v.a == 0);
+  }
+
   {  // Check that exp2(x) == exp(x * log(2))
     J z = exp2(x);
     J w = exp(x * log(2.0));
@@ -648,6 +712,22 @@ TEST(Jet, Jet) {
   NumericalTest("log2", log2<double, 2>, 1e-5);
   NumericalTest("log2", log2<double, 2>, 1.0);
   NumericalTest("log2", log2<double, 2>, 100.0);
+
+  {  // Check that norm(x) == x^2
+    J v = norm(x);
+    J w = x * x;
+    VL << "v = " << v;
+    VL << "w = " << w;
+    ExpectJetsClose(v, w);
+  }
+
+  {  // Check that norm(-x) == x^2
+    J v = norm(-x);
+    J w = x * x;
+    VL << "v = " << v;
+    VL << "w = " << w;
+    ExpectJetsClose(v, w);
+  }
 
   {  // Check that hypot(x, y) == sqrt(x^2 + y^2)
     J h = hypot(x, y);
@@ -773,6 +853,103 @@ TEST(Jet, Jet) {
     J z = fmin(y.a, x);
     VL << "z = " << z;
     ExpectJetsClose(J{y.a}, z);
+  }
+  {  // copysign(x, +1)
+    J z = copysign(x, J{+1});
+    VL << "z = " << z;
+    ExpectJetsClose(x, z);
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(x, -1)
+    J z = copysign(x, J{-1});
+    VL << "z = " << z;
+    ExpectJetsClose(-x, z);
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(-x, +1)
+
+    J z = copysign(-x, J{+1});
+    VL << "z = " << z;
+    ExpectJetsClose(x, z);
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(-x, -1)
+    J z = copysign(-x, J{-1});
+    VL << "z = " << z;
+    ExpectJetsClose(-x, z);
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(-0, +1)
+    J z = copysign(MakeJet(-0, 1, 2), J{+1});
+    VL << "z = " << z;
+    ExpectJetsClose(MakeJet(+0, 1, 2), z);
+    EXPECT_FALSE(std::signbit(z.a));
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(-0, -1)
+    J z = copysign(MakeJet(-0, 1, 2), J{-1});
+    VL << "z = " << z;
+    ExpectJetsClose(MakeJet(-0, -1, -2), z);
+    EXPECT_TRUE(std::signbit(z.a));
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(+0, -1)
+    J z = copysign(MakeJet(+0, 1, 2), J{-1});
+    VL << "z = " << z;
+    ExpectJetsClose(MakeJet(-0, -1, -2), z);
+    EXPECT_TRUE(std::signbit(z.a));
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(+0, +1)
+    J z = copysign(MakeJet(+0, 1, 2), J{+1});
+    VL << "z = " << z;
+    ExpectJetsClose(MakeJet(+0, 1, 2), z);
+    EXPECT_FALSE(std::signbit(z.a));
+    EXPECT_TRUE(IsFinite(z.v[0]));
+    EXPECT_TRUE(IsFinite(z.v[1]));
+  }
+  {  // copysign(+0, +0)
+    J z = copysign(MakeJet(+0, 1, 2), J{+0});
+    VL << "z = " << z;
+    EXPECT_FALSE(std::signbit(z.a));
+    EXPECT_TRUE(std::signbit(z.v[0]));
+    EXPECT_TRUE(std::signbit(z.v[1]));
+    EXPECT_TRUE(IsNaN(z.v[0]));
+    EXPECT_TRUE(IsNaN(z.v[1]));
+  }
+  {  // copysign(+0, -0)
+    J z = copysign(MakeJet(+0, 1, 2), J{-0});
+    VL << "z = " << z;
+    EXPECT_FALSE(std::signbit(z.a));
+    EXPECT_TRUE(std::signbit(z.v[0]));
+    EXPECT_TRUE(std::signbit(z.v[1]));
+    EXPECT_TRUE(IsNaN(z.v[0]));
+    EXPECT_TRUE(IsNaN(z.v[1]));
+  }
+  {  // copysign(-0, +0)
+    J z = copysign(MakeJet(-0, 1, 2), J{+0});
+    VL << "z = " << z;
+    EXPECT_FALSE(std::signbit(z.a));
+    EXPECT_TRUE(std::signbit(z.v[0]));
+    EXPECT_TRUE(std::signbit(z.v[1]));
+    EXPECT_TRUE(IsNaN(z.v[0]));
+    EXPECT_TRUE(IsNaN(z.v[1]));
+  }
+  {  // copysign(-0, -0)
+    J z = copysign(MakeJet(-0, 1, 2), J{-0});
+    VL << "z = " << z;
+    EXPECT_FALSE(std::signbit(z.a));
+    EXPECT_TRUE(std::signbit(z.v[0]));
+    EXPECT_TRUE(std::signbit(z.v[1]));
+    EXPECT_TRUE(IsNaN(z.v[0]));
+    EXPECT_TRUE(IsNaN(z.v[1]));
   }
 }
 
