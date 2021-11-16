@@ -257,18 +257,12 @@ add_library(Ceres::Ceres ALIAS ceres)
 target_link_libraries(ceres PUBLIC Eigen3::Eigen)
 target_compile_features (ceres PUBLIC cxx_std_14)
 
-target_include_directories (ceres
-  PUBLIC
-  "$<BUILD_INTERFACE:${Ceres_BINARY_DIR}/include>"
-  "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/include>"
-  "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal>"
-  "$<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal/ceres>"
-  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-  PRIVATE
-  ${Ceres_BINARY_DIR}/include
-  ${Ceres_SOURCE_DIR}/include
-  ${Ceres_SOURCE_DIR}/internal
-  ${Ceres_SOURCE_DIR}/internal/ceres
+target_include_directories (ceres PUBLIC
+  $<BUILD_INTERFACE:${Ceres_BINARY_DIR}/include>
+  $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal>
+  $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal/ceres>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 # Eigen SparseQR generates various compiler warnings related to unused and
@@ -329,18 +323,7 @@ install(TARGETS ceres
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if (BUILD_TESTING AND gflags_FOUND)
-  add_library(gtest gmock_gtest_all.cc gmock_main.cc)
-  if (BUILD_SHARED_LIBS)
-    # Define gtest-specific shared library flags for compilation.
-    append_target_property(gtest COMPILE_DEFINITIONS
-      GTEST_CREATE_SHARED_LIBRARY)
-  endif()
-  set_target_properties (gtest PROPERTIES CXX_VISIBILITY_PRESET default)
-
-  target_include_directories (gtest PRIVATE
-    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
-
+if (BUILD_TESTING OR benchmark_FOUND)
   add_library(test_util STATIC
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
@@ -355,6 +338,20 @@ if (BUILD_TESTING AND gflags_FOUND)
   target_link_libraries (test_util
     PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
     PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
+endif (BUILD_TESTING OR benchmark_FOUND)
+
+if (BUILD_TESTING AND gflags_FOUND)
+  add_library(gtest gmock_gtest_all.cc gmock_main.cc)
+  if (BUILD_SHARED_LIBS)
+    # Define gtest-specific shared library flags for compilation.
+    append_target_property(gtest COMPILE_DEFINITIONS
+      GTEST_CREATE_SHARED_LIBRARY)
+  endif()
+  set_target_properties (gtest PROPERTIES CXX_VISIBILITY_PRESET default)
+
+  target_include_directories (gtest PRIVATE
+    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
+
 
   macro (CERES_TEST NAME)
     add_executable(${NAME}_test ${NAME}_test.cc)
@@ -364,8 +361,7 @@ if (BUILD_TESTING AND gflags_FOUND)
     # dependencies that may be directly referenced.
     target_include_directories(${NAME}_test
       PUBLIC ${CMAKE_CURRENT_LIST_DIR}
-             ${Ceres_SOURCE_DIR}/internal/ceres
-             ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
+             ${Ceres_SOURCE_DIR}/internal/ceres)
 
     target_link_libraries(${NAME}_test PRIVATE test_util gtest)
     if (BUILD_SHARED_LIBS)
@@ -478,11 +474,14 @@ if (BUILD_TESTING AND gflags_FOUND)
 endif (BUILD_TESTING AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
-  target_link_libraries(${BENCHMARK_TARGET} PRIVATE test_util benchmark::benchmark)
+  target_link_libraries(${BENCHMARK_TARGET} PRIVATE
+    benchmark::benchmark
+    Eigen3::Eigen
+    test_util
+  )
   target_include_directories(${BENCHMARK_TARGET} PRIVATE
-                             ${Ceres_SOURCE_DIR}/internal
-                             ${Ceres_SOURCE_DIR}/internal/ceres
-                             ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
+    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>
+  )
 endmacro()
 
 if (benchmark_FOUND)
