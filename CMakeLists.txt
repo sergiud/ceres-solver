@@ -156,10 +156,6 @@ option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
-option(PROVIDE_UNINSTALL_TARGET "Add a custom target to ease removal of installed targets" ON)
-set(SANITIZERS "" CACHE STRING "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
-include(EnableSanitizer)
-enable_sanitizer(${SANITIZERS})
 
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
 # library for iOS.
