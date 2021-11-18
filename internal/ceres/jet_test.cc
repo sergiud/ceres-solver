@@ -60,8 +60,9 @@ using J0 = Jet<T, 0>;
 using J0d = J0<double>;
 
 // Convenient shorthand for making a jet.
-J MakeJet(double a, double v0, double v1) {
-  J z;
+template <typename T0, typename T1, typename T2>
+decltype(auto) MakeJet(T0 a, T1 v0, T2 v1) {
+  Jet<std::common_type_t<T0, T1, T2, double>, 2> z;
   z.a = a;
   z.v[0] = v0;
   z.v[1] = v1;
@@ -1192,6 +1193,40 @@ TEST(Jet, Nested3X) {
   ExpectClose(e.v[0].a.a, kE, kTolerance);
   ExpectClose(e.v[0].v[0].a, kE, kTolerance);
   ExpectClose(e.v[0].v[0].v[0], kE, kTolerance);
+}
+
+TEST(Jet, complex) {
+  using namespace std::literals::complex_literals;
+
+  const Jet<std::complex<double>, 2> a = MakeJet(1.0 + 2i, 3.0 + 4i, 5.0 + 6i);
+  const Jet<double, 2, std::complex<double>> b = norm(a);
+  const Jet<double, 2, std::complex<double>> c = abs(a);
+  const Jet<double, 2, std::complex<double>> c2 = c * c;
+
+  EXPECT_NEAR(b.a, c2.a, kTolerance);
+  EXPECT_NEAR(abs(b.v[0] - c2.v[0]), 0, kTolerance);
+  EXPECT_NEAR(abs(b.v[1] - c2.v[1]), 0, kTolerance);
+
+  // ExpectJetsClose(c * c, b);
+  // a* b;
+  // a *= b;
+  //  polar(a);
+
+  {  // Check that abs(z)^2 = z * conj(z)
+    const Jet<std::complex<double>, 2> v = a * conj(a);
+    const Jet<double, 2, std::complex<double>> w = norm(abs(a));
+
+    std::cout << conj(a) << std::endl;
+
+    EXPECT_NEAR(abs(w.a - b.a), 0, kTolerance);
+    EXPECT_NEAR(abs(w.v[0] - b.v[0]), 0, kTolerance);
+    EXPECT_NEAR(abs(w.v[1] - b.v[1]), 0, kTolerance);
+  }
+
+  // conj(a);
+  // conj(b);
+  // conj(c);
+  // conj(c2);
 }
 
 #if GTEST_HAS_TYPED_TEST

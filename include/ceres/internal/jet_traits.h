@@ -46,8 +46,8 @@ namespace internal {
 template <typename T, typename E = void>
 struct IsJet : std::false_type {};
 
-template <typename T, int N>
-struct IsJet<Jet<T, N>> : std::true_type {};
+template <typename T, int N, typename U>
+struct IsJet<Jet<T, N, U>> : std::true_type {};
 
 // Convenience variable template for IsJet.
 template <typename T>
@@ -60,8 +60,8 @@ struct AreAnyJet : std::false_type {};
 template <typename T, typename... Types>
 struct AreAnyJet<T, Types...> : AreAnyJet<Types...> {};
 
-template <typename T, int N, typename... Types>
-struct AreAnyJet<Jet<T, N>, Types...> : std::true_type {};
+template <typename T, int N, typename U, typename... Types>
+struct AreAnyJet<Jet<T, N, U>, Types...> : std::true_type {};
 
 // Convenience variable template for AreAnyJet.
 template <typename... Types>
@@ -73,8 +73,8 @@ struct UnderlyingScalar {
   using type = T;
 };
 
-template <typename T, int N>
-struct UnderlyingScalar<Jet<T, N>> : UnderlyingScalar<T> {};
+template <typename T, int N, typename U>
+struct UnderlyingScalar<Jet<T, N, U>> : UnderlyingScalar<T> {};
 
 // Convenience template alias for UnderlyingScalar type trait.
 template <typename T>
@@ -119,8 +119,8 @@ struct Rank<T, std::enable_if_t<std::is_scalar<T>::value>>
     : std::integral_constant<int, 0> {};
 
 // The rank of a Jet is given by its dimensionality.
-template <typename T, int N>
-struct Rank<Jet<T, N>> : std::integral_constant<int, N> {};
+template <typename T, int N, typename U>
+struct Rank<Jet<T, N, U>> : std::integral_constant<int, N> {};
 
 // Convenience variable template for Rank.
 template <typename T>
@@ -138,8 +138,8 @@ constexpr decltype(auto) AsScalar(T&& value) noexcept {
 
 // Recursively unwraps the scalar part of a Jet until a non-Jet scalar type is
 // encountered.
-template <typename T, int N>
-constexpr decltype(auto) AsScalar(const Jet<T, N>& value) noexcept(
+template <typename T, int N, typename U>
+constexpr decltype(auto) AsScalar(const Jet<T, N, U>& value) noexcept(
     noexcept(AsScalar(value.a))) {
   return AsScalar(value.a);
 }
@@ -169,8 +169,8 @@ struct CompatibleJetOperands : std::integral_constant
 {};
 
 // Single Jet operand is always compatible.
-template <typename T, int N>
-struct CompatibleJetOperands<Jet<T, N>> : std::true_type {};
+template <typename T, int N, typename U>
+struct CompatibleJetOperands<Jet<T, N, U>> : std::true_type {};
 
 // Single non-Jet operand is always incompatible.
 template <typename T>

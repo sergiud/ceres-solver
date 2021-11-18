@@ -36,7 +36,7 @@ namespace ceres {
 
 // Jet forward declaration necessary for the following partial specialization of
 // std::common_type and type traits.
-template <typename T, int N>
+template <typename T, int N, typename U = T>
 struct Jet;
 
 }  // namespace ceres
