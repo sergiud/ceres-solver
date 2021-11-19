@@ -702,6 +702,17 @@ TEST(Jet, Jet) {
   NumericalTest("exp2", exp2<double, 2>, 1e-5);
   NumericalTest("exp2", exp2<double, 2>, 1.0);
 
+  {  // Check that log10(x) == log(x) / log(10)
+    J z = log10(x);
+    J w = log(x) / log(10.0);
+    VL << "z = " << z;
+    VL << "w = " << w;
+    ExpectJetsClose(z, w);
+  }
+  NumericalTest("log10", log10<double, 2>, 1e-5);
+  NumericalTest("log10", log10<double, 2>, 1.0);
+  NumericalTest("log10", log10<double, 2>, 98.76);
+
   {  // Check that log2(x) == log(x) / log(2)
     J z = log2(x);
     J w = log(x) / log(2.0);
@@ -823,6 +834,16 @@ TEST(Jet, Jet) {
     VL << "z = " << z;
     ExpectJetsClose(x, z);
   }
+  {
+    J z = fmax(std::numeric_limits<double>::quiet_NaN(), x);
+    VL << "z = " << z;
+    ExpectJetsClose(x, z);
+  }
+  {
+    J z = fmax(x, std::numeric_limits<double>::quiet_NaN());
+    VL << "z = " << z;
+    ExpectJetsClose(x, z);
+  }
 
   {
     J z = fmin(x, y);
@@ -854,6 +875,17 @@ TEST(Jet, Jet) {
     VL << "z = " << z;
     ExpectJetsClose(J{y.a}, z);
   }
+  {
+    J z = fmin(x, std::numeric_limits<double>::quiet_NaN());
+    VL << "z = " << z;
+    ExpectJetsClose(x, z);
+  }
+  {
+    J z = fmin(std::numeric_limits<double>::quiet_NaN(), x);
+    VL << "z = " << z;
+    ExpectJetsClose(x, z);
+  }
+
   {  // copysign(x, +1)
     J z = copysign(x, J{+1});
     VL << "z = " << z;
@@ -919,8 +951,6 @@ TEST(Jet, Jet) {
     J z = copysign(MakeJet(+0, 1, 2), J{+0});
     VL << "z = " << z;
     EXPECT_FALSE(std::signbit(z.a));
-    EXPECT_TRUE(std::signbit(z.v[0]));
-    EXPECT_TRUE(std::signbit(z.v[1]));
     EXPECT_TRUE(IsNaN(z.v[0]));
     EXPECT_TRUE(IsNaN(z.v[1]));
   }
@@ -928,8 +958,6 @@ TEST(Jet, Jet) {
     J z = copysign(MakeJet(+0, 1, 2), J{-0});
     VL << "z = " << z;
     EXPECT_FALSE(std::signbit(z.a));
-    EXPECT_TRUE(std::signbit(z.v[0]));
-    EXPECT_TRUE(std::signbit(z.v[1]));
     EXPECT_TRUE(IsNaN(z.v[0]));
     EXPECT_TRUE(IsNaN(z.v[1]));
   }
@@ -937,8 +965,6 @@ TEST(Jet, Jet) {
     J z = copysign(MakeJet(-0, 1, 2), J{+0});
     VL << "z = " << z;
     EXPECT_FALSE(std::signbit(z.a));
-    EXPECT_TRUE(std::signbit(z.v[0]));
-    EXPECT_TRUE(std::signbit(z.v[1]));
     EXPECT_TRUE(IsNaN(z.v[0]));
     EXPECT_TRUE(IsNaN(z.v[1]));
   }
@@ -946,10 +972,28 @@ TEST(Jet, Jet) {
     J z = copysign(MakeJet(-0, 1, 2), J{-0});
     VL << "z = " << z;
     EXPECT_FALSE(std::signbit(z.a));
-    EXPECT_TRUE(std::signbit(z.v[0]));
-    EXPECT_TRUE(std::signbit(z.v[1]));
     EXPECT_TRUE(IsNaN(z.v[0]));
     EXPECT_TRUE(IsNaN(z.v[1]));
+  }
+  {  // copysign(1, -nan)
+    J z = copysign(MakeJet(1, 2, 3),
+                   -J{std::numeric_limits<double>::quiet_NaN()});
+    VL << "z = " << z;
+    EXPECT_TRUE(std::signbit(z.a));
+    EXPECT_TRUE(std::signbit(z.v[0]));
+    EXPECT_TRUE(std::signbit(z.v[1]));
+    EXPECT_FALSE(IsNaN(z.v[0]));
+    EXPECT_FALSE(IsNaN(z.v[1]));
+  }
+  {  // copysign(1, +nan)
+    J z = copysign(MakeJet(1, 2, 3),
+                   +J{std::numeric_limits<double>::quiet_NaN()});
+    VL << "z = " << z;
+    EXPECT_FALSE(std::signbit(z.a));
+    EXPECT_FALSE(std::signbit(z.v[0]));
+    EXPECT_FALSE(std::signbit(z.v[1]));
+    EXPECT_FALSE(IsNaN(z.v[0]));
+    EXPECT_FALSE(IsNaN(z.v[1]));
   }
 }
 

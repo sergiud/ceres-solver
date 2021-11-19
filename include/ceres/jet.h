@@ -404,6 +404,7 @@ using std::isinf;
 using std::isnan;
 using std::isnormal;
 using std::log;
+using std::log10;
 using std::log1p;
 using std::log2;
 using std::norm;
@@ -473,6 +474,14 @@ inline Jet<T, N> log(const Jet<T, N>& f) {
   return Jet<T, N>(log(f.a), f.v * a_inverse);
 }
 
+// log10(a + h) ~= log10(a) + h / (a log(10))
+template <typename T, int N>
+inline Jet<T, N> log10(const Jet<T, N>& f) {
+  // Most compilers will expand log(10) to a constant.
+  const T a_inverse = T(1.0) / (f.a * log(T(10.0)));
+  return Jet<T, N>(log10(f.a), f.v * a_inverse);
+}
+
 // log1p(a + h) ~= log1p(a) + h / (1 + a)
 template <typename T, int N>
 inline Jet<T, N> log1p(const Jet<T, N>& f) {
@@ -490,7 +499,9 @@ inline Jet<T, N> exp(const Jet<T, N>& f) {
 // expm1(a + h) ~= expm1(a) + exp(a) h
 template <typename T, int N>
 inline Jet<T, N> expm1(const Jet<T, N>& f) {
-  return Jet<T, N>(expm1(f.a), exp(f.a) * f.v);
+  const T tmp = expm1(f.a);
+  const T expa = tmp + T(1.0);  // exp(a) = expm1(a) + 1
+  return Jet<T, N>(tmp, expa * f.v);
 }
 
 // sqrt(a + h) ~= sqrt(a) + h / (2 sqrt(a))
@@ -621,28 +632,34 @@ inline Jet<T, N> hypot(const Jet<T, N>& x, const Jet<T, N>& y) {
 
 template <typename T, int N>
 inline Jet<T, N> fmax(const Jet<T, N>& x, const Jet<T, N>& y) {
-  return x < y ? y : x;
+  using std::isgreater;
+  return isnan(y.a) || isgreater(x.a, y.a) ? x : y;
 }
+
 template <typename T, int N>
 inline Jet<T, N> fmax(const Jet<T, N>& x, const T& y) {
-  return x < y ? Jet<T, N>{y} : x;
+  return fmax(x, Jet<T, N>{y});
 }
+
 template <typename T, int N>
 inline Jet<T, N> fmax(const T& x, const Jet<T, N>& y) {
-  return x < y ? y : Jet<T, N>{x};
+  return fmax(Jet<T, N>{x}, y);
 }
 
 template <typename T, int N>
 inline Jet<T, N> fmin(const Jet<T, N>& x, const Jet<T, N>& y) {
-  return y < x ? y : x;
+  using std::isless;
+  return isnan(x.a) || isless(y.a, x.a) ? y : x;
 }
+
 template <typename T, int N>
 inline Jet<T, N> fmin(const Jet<T, N>& x, const T& y) {
-  return y < x ? Jet<T, N>{y} : x;
+  return fmin(x, Jet<T, N>{y});
 }
+
 template <typename T, int N>
 inline Jet<T, N> fmin(const T& x, const Jet<T, N>& y) {
-  return y < x ? y : Jet<T, N>{x};
+  return fmin(Jet<T, N>{x}, y);
 }
 
 // erf is defined as an integral that cannot be expressed analytically
