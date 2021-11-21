@@ -693,23 +693,23 @@ inline Jet<T, N> erfc(const Jet<T, N>& x) {
 // Ceres itself is built).
 inline double BesselJ0(double x) {
 #ifdef HAVE__J0
-    return _j0(x);
+  return _j0(x);
 #else
-    return j0(x);
+  return j0(x);
 #endif
 }
 inline double BesselJ1(double x) {
 #ifdef HAVE__J1
-    return _j1(x);
+  return _j1(x);
 #else
-    return j1(x);
+  return j1(x);
 #endif
 }
 inline double BesselJn(int n, double x) {
 #ifdef HAVE__JN
-    return _jn(n, x);
+  return _jn(n, x);
 #else
-    return jn(n, x);
+  return jn(n, x);
 #endif
 }
 
