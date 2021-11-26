@@ -116,9 +116,11 @@ TEST(Jet, Jet) {
   // Pick arbitrary values for x and y.
   J x = MakeJet(2.3, -2.7, 1e-3);
   J y = MakeJet(1.7, 0.5, 1e+2);
+  J z = MakeJet(1e-6, 1e-4, 1e-2);
 
   VL << "x = " << x;
   VL << "y = " << y;
+  VL << "z = " << z;
 
   {  // Check that log(exp(x)) == x.
     J z = exp(x);
@@ -792,17 +794,180 @@ TEST(Jet, Jet) {
     ExpectJetsClose(h, huge);
   }
 
+  // Resolve the ambiguity between two and three argument hypot overloads
+  using Hypot2 = J(const J&, const J&);
+  Hypot2* const hypot2 = static_cast<Hypot2*>(&hypot<double, 2>);
+
   // clang-format off
-  NumericalTest2("hypot", hypot<double, 2>,  0.0,   1e-5);
-  NumericalTest2("hypot", hypot<double, 2>, -1e-5,  0.0);
-  NumericalTest2("hypot", hypot<double, 2>,  1e-5,  1e-5);
-  NumericalTest2("hypot", hypot<double, 2>,  0.0,   1.0);
-  NumericalTest2("hypot", hypot<double, 2>,  1e-3,  1.0);
-  NumericalTest2("hypot", hypot<double, 2>,  1e-3, -1.0);
-  NumericalTest2("hypot", hypot<double, 2>, -1e-3,  1.0);
-  NumericalTest2("hypot", hypot<double, 2>, -1e-3, -1.0);
-  NumericalTest2("hypot", hypot<double, 2>,  1.0,   2.0);
+  NumericalTest2("hypot2", hypot2,  0.0,   1e-5);
+  NumericalTest2("hypot2", hypot2, -1e-5,  0.0);
+  NumericalTest2("hypot2", hypot2,  1e-5,  1e-5);
+  NumericalTest2("hypot2", hypot2,  0.0,   1.0);
+  NumericalTest2("hypot2", hypot2,  1e-3,  1.0);
+  NumericalTest2("hypot2", hypot2,  1e-3, -1.0);
+  NumericalTest2("hypot2", hypot2, -1e-3,  1.0);
+  NumericalTest2("hypot2", hypot2, -1e-3, -1.0);
+  NumericalTest2("hypot2", hypot2,  1.0,   2.0);
   // clang-format on
+
+#ifdef CERES_HAS_CPP17
+  {  // Check that hypot(x, y) == sqrt(x^2 + y^2)
+    J h = hypot(x, y, z);
+    J s = sqrt(x * x + y * y + z * z);
+    VL << "h = " << h;
+    VL << "s = " << s;
+    ExpectJetsClose(h, s);
+  }
+
+  {  // Check that hypot(x, x) == sqrt(3) * abs(x)
+    J h = hypot(x, x, x);
+    J s = sqrt(3.0) * abs(x);
+    VL << "h = " << h;
+    VL << "s = " << s;
+    ExpectJetsClose(h, s);
+  }
+
+  {  // Check that the derivative is zero tangentially to the circle:
+    J h = hypot(MakeJet(2.0, 1.0, 1.0),
+                MakeJet(2.0, 1.0, -1.0),
+                MakeJet(2.0, -1.0, 0.0));
+    VL << "h = " << h;
+    ExpectJetsClose(h, MakeJet(sqrt(12.0), 1.0 / std::sqrt(3.0), 0.0));
+  }
+
+  {  // Check that hypot(x, 0, 0) == x
+    J zero = MakeJet(0.0, 2.0, 3.14);
+    J h = hypot(x, zero, zero);
+    VL << "h = " << h;
+    ExpectJetsClose(x, h);
+  }
+
+  {  // Check that hypot(0, y, 0) == y
+    J zero = MakeJet(0.0, 2.0, 3.14);
+    J h = hypot(zero, y, zero);
+    VL << "h = " << h;
+    ExpectJetsClose(y, h);
+  }
+
+  {  // Check that hypot(0, 0, z) == z
+    J zero = MakeJet(0.0, 2.0, 3.14);
+    J h = hypot(zero, zero, z);
+    VL << "h = " << h;
+    ExpectJetsClose(z, h);
+  }
+
+  {  // Check that hypot(x, y, z) == hypot(hypot(x, y), z)
+    J v = hypot(x, y, z);
+    J w = hypot(hypot(x, y), z);
+    VL << "v = " << v;
+    VL << "w = " << w;
+    ExpectJetsClose(v, w);
+  }
+
+  {  // Check that hypot(x, y, z) == hypot(x, hypot(y, z))
+    J v = hypot(x, y, z);
+    J w = hypot(x, hypot(y, z));
+    VL << "v = " << v;
+    VL << "w = " << w;
+    ExpectJetsClose(v, w);
+  }
+
+  {  // Check that hypot(x, 0, 0) == sqrt(x * x) == x, even when x * x
+     // underflows:
+    EXPECT_EQ(
+        std::numeric_limits<double>::min() * std::numeric_limits<double>::min(),
+        0.0);  // Make sure it underflows
+    J huge = MakeJet(std::numeric_limits<double>::min(), 2.0, 3.14);
+    J h = hypot(huge, J(0.0), J(0.0));
+    VL << "h = " << h;
+    ExpectJetsClose(h, huge);
+  }
+
+  {  // Check that hypot(x, 0, 0) == sqrt(x * x) == x, even when x * x
+     // overflows:
+    EXPECT_EQ(
+        std::numeric_limits<double>::max() * std::numeric_limits<double>::max(),
+        std::numeric_limits<double>::infinity());
+    J huge = MakeJet(std::numeric_limits<double>::max(), 2.0, 3.14);
+    J h = hypot(huge, J(0.0), J(0.0));
+    VL << "h = " << h;
+    ExpectJetsClose(h, huge);
+  }
+#endif  // defined(CERES_HAS_CPP17)
+
+#ifdef CERES_HAS_CPP20
+  {  // Check lerp(x, y, 0) == x
+    J z = lerp(x, y, J{0});
+    VL << "z = " << z;
+    ExpectJetsClose(z, x);
+  }
+
+  {  // Check lerp(x, y, 1) == y
+    J z = lerp(x, y, J{1});
+    VL << "z = " << z;
+    ExpectJetsClose(z, y);
+  }
+
+  {  // Check lerp(x, x, 1) == x
+    J z = lerp(x, x, J{1});
+    VL << "z = " << z;
+    ExpectJetsClose(z, x);
+  }
+
+  {  // Check lerp(y, y, 0) == y
+    J z = lerp(y, y, J{1});
+    VL << "z = " << z;
+    ExpectJetsClose(z, y);
+  }
+
+  {  // Check lerp(x, y, 0.5) == (x + y) / 2
+    J z = lerp(x, y, J{0.5});
+    J v = (x + y) / J{2};
+    VL << "z = " << z;
+    VL << "v = " << v;
+    ExpectJetsClose(z, v);
+  }
+
+  {  // Check lerp(x, y, 2) == 2y - x
+    J z = lerp(x, y, J{2});
+    J v = J{2} * y - x;
+    VL << "z = " << z;
+    VL << "v = " << v;
+    ExpectJetsClose(z, v);
+  }
+
+  {  // Check lerp(x, y, -2) == 3x - 2y
+    J z = lerp(x, y, -J{2});
+    J v = J{3} * x - J{2} * y;
+    VL << "z = " << z;
+    VL << "v = " << v;
+    ExpectJetsClose(z, v);
+  }
+
+  {  // Check that midpoint(x, y) = (x + y) / 2
+    J z = midpoint(x, y);
+    J v = (x + y) / J{2};
+    VL << "z = " << z;
+    VL << "v = " << v;
+    ExpectJetsClose(z, v);
+  }
+
+  {  // Check that midpoint(x, x) = x
+    J z = midpoint(x, x);
+    VL << "z = " << z;
+    ExpectJetsClose(z, x);
+  }
+
+  {  // Check that midpoint(x, x) = x while avoiding overflow
+    J x = MakeJet(std::numeric_limits<double>::min(), 1, 2);
+    J y = MakeJet(std::numeric_limits<double>::max(), 3, 4);
+    J z = midpoint(x, y);
+    J v = x + (y - x) / J{2};
+    VL << "z = " << z;
+    VL << "v = " << v;
+    ExpectJetsClose(z, v);
+  }
+#endif  // defined(CERES_HAS_CPP20)
 
   {
     J z = fmax(x, y);

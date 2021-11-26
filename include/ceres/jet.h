@@ -162,6 +162,7 @@
 #include <iosfwd>
 #include <iostream>  // NOLINT
 #include <limits>
+#include <numeric>
 #include <string>
 
 #include "Eigen/Core"
@@ -415,6 +416,11 @@ using std::sqrt;
 using std::tan;
 using std::tanh;
 
+#ifdef CERES_HAS_CPP20
+using std::lerp;
+using std::midpoint;
+#endif  // defined(CERES_HAS_CPP20)
+
 // Legacy names from pre-C++11 days.
 // clang-format off
 inline bool IsFinite(double x)   { return std::isfinite(x); }
@@ -630,6 +636,28 @@ inline Jet<T, N> hypot(const Jet<T, N>& x, const Jet<T, N>& y) {
   return Jet<T, N>(tmp, x.a / tmp * x.v + y.a / tmp * y.v);
 }
 
+#ifdef CERES_HAS_CPP17
+// Like sqrt(x^2 + y^2 + z^2),
+// but acts to prevent underflow/overflow for small/large x/y/z.
+// Note that the function is non-smooth at x=y=z=0,
+// so the derivative is undefined there.
+template <typename T, int N>
+inline Jet<T, N> hypot(const Jet<T, N>& x,
+                       const Jet<T, N>& y,
+                       const Jet<T, N>& z) {
+  // d/da sqrt(a) = 0.5 / sqrt(a)
+  // d/dx x^2 + y^2 + z^2 = 2x
+  // So by the chain rule:
+  // d/dx sqrt(x^2 + y^2 + z^2)
+  //    = 0.5 / sqrt(x^2 + y^2 + z^2) * 2x
+  //    = x / sqrt(x^2 + y^2 + z^2)
+  // d/dy sqrt(x^2 + y^2 + z^2) = y / sqrt(x^2 + y^2 + z^2)
+  // d/dz sqrt(x^2 + y^2 + z^2) = z / sqrt(x^2 + y^2 + z^2)
+  const T tmp = hypot(x.a, y.a, z.a);
+  return Jet<T, N>(tmp, x.a / tmp * x.v + y.a / tmp * y.v + z.a / tmp * z.v);
+}
+#endif  // defined(CERES_HAS_CPP17)
+
 template <typename T, int N>
 inline Jet<T, N> fmax(const Jet<T, N>& x, const Jet<T, N>& y) {
   using std::isgreater;
@@ -816,6 +844,45 @@ template <typename T, int N>
 inline bool IsInfinite(const Jet<T, N>& f) {
   return isinf(f);
 }
+
+#ifdef CERES_HAS_CPP20
+// Computes the linear interpolation a + t(b - a) between a and b at the value
+// t. For arguments outside of the range 0 <= t <= 1, the values are
+// extrapolated.
+//
+// Differentiating lerp(a, b, t) with respect to a, b, and t gives:
+//
+//   d/da lerp(a, b, t) = 1 - t
+//   d/db lerp(a, b, t) = t
+//   d/dt lerp(a, b, t) = b - a
+//
+// with the dual representation given by
+//
+//   lerp(a + da, b + db, t + dt)
+//      ~= lerp(a, b, t) + (1 - t) da + t db + (b - a) dt .
+template <typename T, int N>
+inline Jet<T, N> lerp(const Jet<T, N>& a,
+                      const Jet<T, N>& b,
+                      const Jet<T, N>& t) {
+  return Jet<T, N>{lerp(a.a, b.a, t.a),
+                   (T(1) - t.a) * a.v + t.a * b.v + (b.a - a.a) * t.v};
+}
+
+// Computes the midpoint a + (b - a) / 2.
+//
+// Differentiating midpoint(a, b) with respect to a and b gives:
+//
+//   d/da midpoint(a, b) = 1/2
+//   d/db midpoint(a, b) = 1/2
+//
+// with the dual representation given by
+//
+//   midpoint(a + da, b + db) ~= midpoint(a, b) + (da + db) / 2 .
+template <typename T, int N>
+inline Jet<T, N> midpoint(const Jet<T, N>& a, const Jet<T, N>& b) {
+  return Jet<T, N>{midpoint(a.a, b.a), T(0.5) * (a.v + b.v)};
+}
+#endif  // defined(CERES_HAS_CPP20)
 
 // atan2(b + db, a + da) ~= atan2(b, a) + (- b da + a db) / (a^2 + b^2)
 //
