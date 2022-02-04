@@ -103,11 +103,10 @@ class CERES_NO_EXPORT SparseCholesky {
   // Convenience method which combines a call to Factorize and
   // Solve. Solve is only called if Factorize returns
   // LINEAR_SOLVER_SUCCESS.
-  virtual LinearSolverTerminationType FactorAndSolve(
-      CompressedRowSparseMatrix* lhs,
-      const double* rhs,
-      double* solution,
-      std::string* message);
+  LinearSolverTerminationType FactorAndSolve(CompressedRowSparseMatrix* lhs,
+                                             const double* rhs,
+                                             double* solution,
+                                             std::string* message);
 };
 
 class IterativeRefiner;

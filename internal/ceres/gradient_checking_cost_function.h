@@ -40,7 +40,7 @@
 #include "ceres/internal/port.h"
 #include "ceres/internal/prefix.h"
 #include "ceres/iteration_callback.h"
-#include "ceres/local_parameterization.h"
+#include "ceres/manifold.h"
 
 namespace ceres {
 namespace internal {
@@ -77,7 +77,7 @@ class CERES_NO_EXPORT GradientCheckingIterationCallback
 // implementation directly.
 CERES_NO_EXPORT CostFunction* CreateGradientCheckingCostFunction(
     const CostFunction* cost_function,
-    const std::vector<const LocalParameterization*>* local_parameterizations,
+    const std::vector<const Manifold*>* manifolds,
     double relative_step_size,
     double relative_precision,
     const std::string& extra_info,

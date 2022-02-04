@@ -45,10 +45,12 @@ set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CERES_INTERNAL_SRC
     c_api.cc
+    dense_cholesky.cc
     gradient_checker.cc
     gradient_problem.cc
     local_parameterization.cc
     loss_function.cc
+    manifold.cc
     normal_prior.cc
     problem.cc
     solver.cc
@@ -381,6 +383,7 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(autodiff_first_order_function)
   ceres_test(autodiff_cost_function)
   ceres_test(autodiff_local_parameterization)
+  ceres_test(autodiff_manifold)
   ceres_test(block_jacobi_preconditioner)
   ceres_test(block_random_access_dense_matrix)
   ceres_test(block_random_access_diagonal_matrix)
@@ -398,6 +401,7 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(covariance)
   ceres_test(cubic_interpolation)
   ceres_test(dense_linear_solver)
+  ceres_test(dense_cholesky)
   ceres_test(dense_sparse_matrix)
   ceres_test(detect_structure)
   ceres_test(dogleg_strategy)
@@ -429,6 +433,7 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(line_search_preprocessor)
   ceres_test(local_parameterization)
   ceres_test(loss_function)
+  ceres_test(manifold)
   ceres_test(minimizer)
   ceres_test(normal_prior)
   ceres_test(numeric_diff_cost_function)
