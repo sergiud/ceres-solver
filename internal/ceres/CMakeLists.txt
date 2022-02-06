@@ -505,5 +505,8 @@ if (benchmark_FOUND)
   add_executable(jet_operator_benchmark jet_operator_benchmark.cc)
   add_dependencies_to_benchmark(jet_operator_benchmark)
 
+  add_executable(dense_linear_solver_benchmark dense_linear_solver_benchmark.cc)
+  add_dependencies_to_benchmark(dense_linear_solver_benchmark)
+
   add_subdirectory(autodiff_benchmarks)
 endif (benchmark_FOUND)
