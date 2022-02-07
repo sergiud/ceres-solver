@@ -43,10 +43,8 @@ template <ceres::DenseLinearAlgebraLibraryType kLibraryType,
 static void BM_DenseSolver(benchmark::State& state) {
   const int num_rows = state.range(0);
   const int num_cols = state.range(1);
-  constexpr bool kReserveDiagonal = true;
-
-  DenseSparseMatrix jacobian(num_rows, num_cols, kReserveDiagonal);
-  jacobian.mutable_matrix() = Eigen::MatrixXd::Random(num_rows, num_cols);
+  DenseSparseMatrix jacobian(num_rows, num_cols);
+  *jacobian.mutable_matrix() = Eigen::MatrixXd::Random(num_rows, num_cols);
   Eigen::VectorXd rhs = Eigen::VectorXd::Random(num_rows, 1);
 
   Eigen::VectorXd solution(num_cols);
@@ -87,13 +85,15 @@ static void MatrixSizes(benchmark::internal::Benchmark* b) {
   b->Args({800, 25});
 }
 
-BENCHMARK(BM_DenseSolver<ceres::EIGEN, ceres::DENSE_QR>)->Apply(MatrixSizes);
-BENCHMARK(BM_DenseSolver<ceres::EIGEN, ceres::DENSE_NORMAL_CHOLESKY>)
+BENCHMARK_TEMPLATE2(BM_DenseSolver, ceres::EIGEN, ceres::DENSE_QR)
+    ->Apply(MatrixSizes);
+BENCHMARK_TEMPLATE2(BM_DenseSolver, ceres::EIGEN, ceres::DENSE_NORMAL_CHOLESKY)
     ->Apply(MatrixSizes);
 
 #ifndef CERES_NO_LAPACK
-BENCHMARK(BM_DenseSolver<ceres::LAPACK, ceres::DENSE_QR>)->Apply(MatrixSizes);
-BENCHMARK(BM_DenseSolver<ceres::LAPACK, ceres::DENSE_NORMAL_CHOLESKY>)
+BENCHMARK_TEMPLATE2(BM_DenseSolver, ceres::LAPACK, ceres::DENSE_QR)
+    ->Apply(MatrixSizes);
+BENCHMARK_TEMPLATE2(BM_DenseSolver, ceres::LAPACK, ceres::DENSE_NORMAL_CHOLESKY)
     ->Apply(MatrixSizes);
 #endif
 

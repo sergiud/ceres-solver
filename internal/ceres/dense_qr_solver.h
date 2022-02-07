@@ -32,6 +32,9 @@
 #ifndef CERES_INTERNAL_DENSE_QR_SOLVER_H_
 #define CERES_INTERNAL_DENSE_QR_SOLVER_H_
 
+#include <memory>
+
+#include "ceres/dense_qr.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
@@ -107,7 +110,7 @@ class CERES_NO_EXPORT DenseQRSolver : public DenseSparseMatrixSolver {
   const LinearSolver::Options options_;
   ColMajorMatrix lhs_;
   Vector rhs_;
-  Vector work_;
+  std::unique_ptr<DenseQR> dense_qr_;
 };
 
 }  // namespace internal

@@ -46,6 +46,7 @@ set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CERES_INTERNAL_SRC
     c_api.cc
     dense_cholesky.cc
+    dense_qr.cc
     gradient_checker.cc
     gradient_problem.cc
     local_parameterization.cc
@@ -179,7 +180,6 @@ add_library (ceresbase OBJECT
     is_close.cc
     iterative_refiner.cc
     iterative_schur_complement_solver.cc
-    lapack.cc
     levenberg_marquardt_strategy.cc
     line_search.cc
     line_search_direction.cc
@@ -402,6 +402,7 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(cubic_interpolation)
   ceres_test(dense_linear_solver)
   ceres_test(dense_cholesky)
+  ceres_test(dense_qr)
   ceres_test(dense_sparse_matrix)
   ceres_test(detect_structure)
   ceres_test(dogleg_strategy)
@@ -428,6 +429,7 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(iterative_refiner)
   ceres_test(iterative_schur_complement_solver)
   ceres_test(jet)
+  ceres_test(jet_traits)
   ceres_test(levenberg_marquardt_strategy)
   ceres_test(line_search_minimizer)
   ceres_test(line_search_preprocessor)

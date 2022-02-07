@@ -113,17 +113,11 @@ class SparseCholesky;
 // be at least 1.
 class CERES_NO_EXPORT SchurComplementSolver : public BlockSparseMatrixSolver {
  public:
-  explicit SchurComplementSolver(const LinearSolver::Options& options)
-      : options_(options) {
-    CHECK_GT(options.elimination_groups.size(), 1);
-    CHECK_GT(options.elimination_groups[0], 0);
-    CHECK(options.context != NULL);
-  }
+  explicit SchurComplementSolver(const LinearSolver::Options& options);
   SchurComplementSolver(const SchurComplementSolver&) = delete;
   void operator=(const SchurComplementSolver&) = delete;
 
-  // LinearSolver methods
-  virtual ~SchurComplementSolver() {}
+  ~SchurComplementSolver() override;
   LinearSolver::Summary SolveImpl(
       BlockSparseMatrix* A,
       const double* b,
@@ -157,13 +151,11 @@ class CERES_NO_EXPORT SchurComplementSolver : public BlockSparseMatrixSolver {
 class CERES_NO_EXPORT DenseSchurComplementSolver
     : public SchurComplementSolver {
  public:
-  explicit DenseSchurComplementSolver(const LinearSolver::Options& options)
-      : SchurComplementSolver(options),
-        cholesky_(DenseCholesky::Create(options)) {}
+  explicit DenseSchurComplementSolver(const LinearSolver::Options& options);
   DenseSchurComplementSolver(const DenseSchurComplementSolver&) = delete;
   void operator=(const DenseSchurComplementSolver&) = delete;
 
-  virtual ~DenseSchurComplementSolver() {}
+  ~DenseSchurComplementSolver() override;
 
  private:
   void InitStorage(const CompressedRowBlockStructure* bs) final;

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -114,6 +114,16 @@ class BlockRandomAccessDiagonalMatrixAdapter : public LinearOperator {
 
 }  // namespace
 
+SchurComplementSolver::SchurComplementSolver(
+    const LinearSolver::Options& options)
+    : options_(options) {
+  CHECK_GT(options.elimination_groups.size(), 1);
+  CHECK_GT(options.elimination_groups[0], 0);
+  CHECK(options.context != NULL);
+}
+
+SchurComplementSolver::~SchurComplementSolver() {}
+
 LinearSolver::Summary SchurComplementSolver::SolveImpl(
     BlockSparseMatrix* A,
     const double* b,
@@ -173,6 +183,12 @@ LinearSolver::Summary SchurComplementSolver::SolveImpl(
 
   return summary;
 }
+DenseSchurComplementSolver::DenseSchurComplementSolver(
+    const LinearSolver::Options& options)
+    : SchurComplementSolver(options),
+      cholesky_(DenseCholesky::Create(options)) {}
+
+DenseSchurComplementSolver::~DenseSchurComplementSolver() {}
 
 // Initialize a BlockRandomAccessDenseMatrix to store the Schur
 // complement.
