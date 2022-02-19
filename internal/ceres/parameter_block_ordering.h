@@ -31,12 +31,12 @@
 #ifndef CERES_INTERNAL_PARAMETER_BLOCK_ORDERING_H_
 #define CERES_INTERNAL_PARAMETER_BLOCK_ORDERING_H_
 
+#include <memory>
 #include <vector>
 
 #include "ceres/graph.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/ordered_groups.h"
 #include "ceres/types.h"
 
@@ -80,7 +80,7 @@ CERES_NO_EXPORT void ComputeRecursiveIndependentSetOrdering(
 // vertex corresponds to a parameter block in the Problem except for
 // parameter blocks that are marked constant. An edge connects two
 // parameter blocks, if they co-occur in a residual block.
-CERES_NO_EXPORT Graph<ParameterBlock*>* CreateHessianGraph(
+CERES_NO_EXPORT std::unique_ptr<Graph<ParameterBlock*>> CreateHessianGraph(
     const Program& program);
 
 // Iterate over each of the groups in order of their priority and fill
@@ -91,6 +91,6 @@ CERES_NO_EXPORT void OrderingToGroupSizes(
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_PARAMETER_BLOCK_ORDERING_H_

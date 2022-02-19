@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <string>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/types.h"
@@ -64,5 +65,7 @@ std::string VersionString();
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_SOLVER_UTILS_H_

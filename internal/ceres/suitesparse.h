@@ -34,12 +34,12 @@
 #define CERES_INTERNAL_SUITESPARSE_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 
 #ifndef CERES_NO_SUITESPARSE
 
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -71,7 +71,7 @@
 #define SuiteSparse_long UF_long
 #endif
 
-#include "ceres/internal/prefix.h"
+#include "ceres/internal/disable_warnings.h"
 
 namespace ceres {
 namespace internal {
@@ -109,7 +109,7 @@ class CERES_NO_EXPORT SuiteSparse {
   cholmod_dense CreateDenseVectorView(const double* x, int size);
 
   // Given a vector x, build a cholmod_dense vector of size out_size
-  // with the first in_size entries copied from x. If x is NULL, then
+  // with the first in_size entries copied from x. If x is nullptr, then
   // an all zeros vector is returned. Caller owns the result.
   cholmod_dense* CreateDenseVector(const double* x, int in_size, int out_size);
 
@@ -126,7 +126,7 @@ class CERES_NO_EXPORT SuiteSparse {
   // Create and return a matrix m = A * A'. Caller owns the
   // result. The matrix A is not modified.
   cholmod_sparse* AATranspose(cholmod_sparse* A) {
-    cholmod_sparse* m = cholmod_aat(A, NULL, A->nrow, 1, &cc_);
+    cholmod_sparse* m = cholmod_aat(A, nullptr, A->nrow, 1, &cc_);
     m->stype = 1;  // Pay attention to the upper triangular part.
     return m;
   }
@@ -199,7 +199,7 @@ class CERES_NO_EXPORT SuiteSparse {
 
   // Given a Cholesky factorization of a matrix A = LL^T, solve the
   // linear system Ax = b, and return the result. If the Solve fails
-  // NULL is returned. Caller owns the result.
+  // nullptr is returned. Caller owns the result.
   //
   // message contains an explanation of the failures if any.
   cholmod_dense* Solve(cholmod_factor* L,
@@ -291,12 +291,12 @@ class CERES_NO_EXPORT SuiteSparse {
   cholmod_common cc_;
 };
 
-class CERES_NO_EXPORT SuiteSparseCholesky : public SparseCholesky {
+class CERES_NO_EXPORT SuiteSparseCholesky final : public SparseCholesky {
  public:
   static std::unique_ptr<SparseCholesky> Create(OrderingType ordering_type);
 
   // SparseCholesky interface.
-  virtual ~SuiteSparseCholesky();
+  ~SuiteSparseCholesky() override;
   CompressedRowSparseMatrix::StorageType StorageType() const final;
   LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
                                         std::string* message) final;
@@ -315,13 +315,13 @@ class CERES_NO_EXPORT SuiteSparseCholesky : public SparseCholesky {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #else  // CERES_NO_SUITESPARSE
 
 typedef void cholmod_factor;
 
-#include "ceres/internal/prefix.h"
+#include "ceres/internal/disable_warnings.h"
 
 namespace ceres {
 namespace internal {
@@ -345,7 +345,7 @@ class CERES_NO_EXPORT SuiteSparse {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_NO_SUITESPARSE
 

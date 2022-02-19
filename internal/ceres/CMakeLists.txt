@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2022 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 # Avoid 'xxx.cc has no symbols' warnings from source files which are 'empty'
 # when their enclosing #ifdefs are disabled.
 if (WITH_CXX_THREADS)
-  set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc)
+  set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
   list(APPEND APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
   set (Threads_DEPENDENCY "find_dependency (Threads)")
 elseif (WITH_OPENMP)
@@ -41,12 +41,11 @@ else()
   set(CERES_PARALLEL_FOR_SRC parallel_for_nothreads.cc)
 endif()
 
-set (CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-set(CERES_INTERNAL_SRC
+# Source files that contain public symbols and live in the ceres namespaces.
+# Such symbols are expected to be marked with CERES_EXPORT and the files below
+# sorted in lexicographical order.
+set(CERES_EXPORTED_SRCS
     c_api.cc
-    dense_cholesky.cc
-    dense_qr.cc
     gradient_checker.cc
     gradient_problem.cc
     local_parameterization.cc
@@ -71,6 +70,7 @@ endif()
 # Depend also on public headers so they appear in IDEs.
 file(GLOB CERES_PUBLIC_HDRS ${Ceres_SOURCE_DIR}/include/ceres/*.h)
 file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/internal/*.h)
+file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_BINARY_DIR}/include/ceres/internal/*.h)
 
 # Include the specialized schur solvers.
 if (WITH_SCHUR_SPECIALIZATIONS)
@@ -101,25 +101,30 @@ if (glog_FOUND)
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
 endif (glog_FOUND)
 
-if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
+if (CXSparse_FOUND)
+  # Define version information for use in Solver::FullReport.
+  add_definitions(-DCERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES CXSparse::CXSparse)
+endif (CXSparse_FOUND)
+
+if (SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::CHOLMOD SuiteSparse::SPQR)
-endif (WITH_SUITESPARSE AND SuiteSparse_FOUND)
+endif (SuiteSparse_FOUND)
 
 if (LAPACK_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES LAPACK::LAPACK)
 endif (LAPACK_FOUND)
 
-if (WITH_OPENMP AND OPENMP_FOUND)
-  # OpenMP support in Clang requires a non-GNU OpenMP library.
-  if (CMAKE_COMPILER_IS_GNUCXX)
-    list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES gomp)
-  endif()
-  if (NOT MSVC)
-    list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
-  endif()
-endif (WITH_OPENMP AND OPENMP_FOUND)
+if (CUDA_FOUND)
+  list(APPEND
+       CERES_LIBRARY_PRIVATE_DEPENDENCIES
+       ${CUDA_LIBRARIES}
+       ${CUDA_cublas_LIBRARY}
+       ${CUDA_cusolver_LIBRARY}
+       ${CUDA_cusparse_LIBRARY})
+endif (CUDA_FOUND)
 
 if (WITH_TBB AND TBB_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES tbb::tbb)
@@ -128,12 +133,15 @@ if (WITH_TBB AND TBB_FOUND)
   endif (NOT MSVC)
 endif (WITH_TBB AND TBB_FOUND)
 
-add_library (ceresbase OBJECT
+# Source files that contain private symbols and live in the ceres::internal
+# namespace. The corresponding symbols (classes, functions, etc.) are expected
+# to be marked with CERES_NO_EXPORT and the files below sorted in
+# lexicographical order.
+add_library(ceres_internal OBJECT
     ${CERES_INTERNAL_SCHUR_FILES}
     ${CERES_PARALLEL_FOR_SRC}
     accelerate_sparse.cc
     array_utils.cc
-    blas.cc
     block_evaluate_preparer.cc
     block_jacobi_preconditioner.cc
     block_jacobian_writer.cc
@@ -159,7 +167,9 @@ add_library (ceresbase OBJECT
     covariance.cc
     covariance_impl.cc
     cxsparse.cc
+    dense_cholesky.cc
     dense_normal_cholesky_solver.cc
+    dense_qr.cc
     dense_qr_solver.cc
     dense_sparse_matrix.cc
     detect_structure.cc
@@ -168,8 +178,10 @@ add_library (ceresbase OBJECT
     dynamic_compressed_row_sparse_matrix.cc
     dynamic_sparse_normal_cholesky_solver.cc
     eigensparse.cc
+    evaluation_callback.cc
     evaluator.cc
     file.cc
+    first_order_function.cc
     float_cxsparse.cc
     float_suitesparse.cc
     function_sample.cc
@@ -178,6 +190,7 @@ add_library (ceresbase OBJECT
     implicit_schur_complement.cc
     inner_product_computer.cc
     is_close.cc
+    iteration_callback.cc
     iterative_refiner.cc
     iterative_schur_complement_solver.cc
     levenberg_marquardt_strategy.cc
@@ -214,7 +227,6 @@ add_library (ceresbase OBJECT
     stringprintf.cc
     subset_preconditioner.cc
     suitesparse.cc
-    thread_pool.cc
     thread_token_provider.cc
     triplet_sparse_matrix.cc
     trust_region_minimizer.cc
@@ -226,13 +238,8 @@ add_library (ceresbase OBJECT
     wall_time.cc
 )
 
-target_include_directories (ceresbase PUBLIC
-  $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
-target_compile_definitions (ceresbase PUBLIC
-  $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
-
 set(CERES_LIBRARY_SOURCE
-    ${CERES_INTERNAL_SRC}
+    ${CERES_EXPORTED_SRCS}
     ${CERES_INTERNAL_HDRS}
     ${CERES_PUBLIC_HDRS}
     ${CERES_PUBLIC_INTERNAL_HDRS})
@@ -253,71 +260,94 @@ if (CHECK_CXX_FLAG_Wno_missing_declarations)
                APPEND_STRING PROPERTY COMPILE_FLAGS "-Wno-missing-declarations")
 endif()
 
-add_library(ceres $<TARGET_OBJECTS:ceresbase> ${CERES_LIBRARY_SOURCE})
+add_library(ceres $<TARGET_OBJECTS:ceres_internal> ${CERES_LIBRARY_SOURCE})
+
+if(BUILD_SHARED_LIBS)
+  # While building shared libraries, we additionally require a static variant to
+  # be able to access internal symbols which are not intended for general use.
+  # Therefore, create a static library from object files and apply all the
+  # compiler options from the main library to the static one.
+  add_library(ceres_static STATIC $<TARGET_OBJECTS:ceres_internal> ${CERES_LIBRARY_SOURCE})
+  target_include_directories(ceres_static PUBLIC $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
+  target_compile_definitions(ceres_static PUBLIC $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
+  target_compile_options(ceres_static PUBLIC $<TARGET_PROPERTY:ceres,COMPILE_OPTIONS>)
+  target_link_libraries(ceres_static
+    INTERFACE $<TARGET_PROPERTY:ceres,INTERFACE_LINK_LIBRARIES>
+    PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
+  # CERES_STATIC_DEFINE is generated by the GenerateExportHeader CMake module
+  # used to autogerate export.h. The macro should not be renamed without
+  # updating the corresponding generate_export_header invocation.
+  target_compile_definitions(ceres_static PRIVATE CERES_STATIC_DEFINE)
+else()
+  # In a static library build, not additional access layer is necessary as all
+  # symbols are visible.
+  add_library(ceres_static ALIAS ceres)
+endif()
+
+# Create a local alias target that matches the expected installed target.
 add_library(Ceres::Ceres ALIAS ceres)
 
-target_link_libraries(ceres PUBLIC Eigen3::Eigen)
-target_compile_features (ceres PUBLIC cxx_std_14)
+# Apply all compiler options from the main Ceres target. Compiler options should
+# be generally defined on the main target referenced by the ceres_target CMake
+# variable.
+target_include_directories(ceres_internal PUBLIC $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
+target_compile_definitions(ceres_internal PUBLIC $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
+target_compile_options(ceres_internal PUBLIC $<TARGET_PROPERTY:ceres,COMPILE_OPTIONS>)
+target_compile_definitions(ceres_internal PRIVATE ceres_EXPORTS)
+target_compile_features(ceres_internal PRIVATE $<TARGET_PROPERTY:ceres,COMPILE_FEATURES>)
 
-target_include_directories (ceres PUBLIC
-  $<BUILD_INTERFACE:${Ceres_BINARY_DIR}/include>
-  $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/include>
-  $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal>
-  $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal/ceres>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-
-# Eigen SparseQR generates various compiler warnings related to unused and
-# uninitialised local variables, which prevents Ceres compilation as we use
-# -Werror.  To avoid having to individually suppress these warnings around
-# the #include statments for Eigen headers across all GCC/Clang versions, we
-# tell CMake to treat Eigen headers as system headers.  This results in all
-# compiler warnings from them being suppressed.
-target_include_directories (ceres SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS})
-
-if (HAVE__J0)
-  target_compile_definitions (ceres PUBLIC HAVE__J0)
-endif (HAVE__J0)
-
-if (HAVE__J1)
-  target_compile_definitions (ceres PUBLIC HAVE__J1)
-endif (HAVE__J1)
-
-if (HAVE__JN)
-  target_compile_definitions (ceres PUBLIC HAVE__JN)
-endif (HAVE__JN)
-
-if (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
-  # Define version information for use in Solver::FullReport.
-  target_compile_definitions (ceres PRIVATE
-    CERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
-  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES CXSparse::CXSparse)
-endif (WITH_CXSPARSE AND TARGET CXSparse::CXSparse)
-
-if (gflags_FOUND)
-  if (TARGET gflags::gflags)
-    list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES gflags::gflags)
-  else (TARGET gflags::gflags)
-    list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES gflags)
-  endif (TARGET gflags::gflags)
-endif (gflags_FOUND)
+# Ensure the minimum required C++ language version is fulfilled as our
+# requirement by downstream clients. Consumers can choose the same or a newer
+# language standard revision.
+target_compile_features(ceres PUBLIC cxx_std_14)
 
 set_target_properties(ceres PROPERTIES
   VERSION ${CERES_VERSION}
-  SOVERSION ${CERES_VERSION_MAJOR})
-if (BUILD_SHARED_LIBS)
-  set_target_properties(ceres PROPERTIES
-    # Set the default symbol visibility to hidden to unify the behavior among
-    # the various compilers and to get smaller binaries
-    C_VISIBILITY_PRESET hidden
-    CXX_VISIBILITY_PRESET hidden)
-endif()
-
-include(AppendTargetProperty)
+  SOVERSION 3)
 
 target_link_libraries(ceres
   PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
   PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
+
+# Add the Ceres headers to its target.
+#
+# Force the location containing the configured config.h to the front of the
+# include_directories list (by default it is appended to the back) to ensure
+# that if the user has an installed version of Ceres in the same location as one
+# of the dependencies (e.g. /usr/local) that we find the config.h we just
+# configured, not the (older) installed config.h.
+target_include_directories(ceres
+  BEFORE PUBLIC $<BUILD_INTERFACE:${Ceres_BINARY_DIR}/include>
+  PRIVATE ${Ceres_SOURCE_DIR}/internal
+  PUBLIC $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/include>
+         $<INSTALL_INTERFACE:include>)
+
+# Eigen SparseQR generates various compiler warnings related to unused and
+# uninitialised local variables.  To avoid having to individually suppress these
+# warnings around the #include statements for Eigen headers across all GCC/Clang
+# versions, we tell CMake to treat Eigen headers as system headers.  This
+# results in all compiler warnings from them being suppressed.
+target_link_libraries(ceres PUBLIC Eigen3::Eigen)
+
+# Gather the list of public & private include locations for all enabled optional
+# dependencies to be added to the Ceres target.
+set(CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS "")
+set(CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS "")
+
+if (CUDA_FOUND)
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS
+    ${CUDA_INCLUDE_DIRS})
+endif()
+# Add include locations for optional dependencies to the Ceres target without
+# duplication.
+list(REMOVE_DUPLICATES CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS)
+target_include_directories(ceres PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
+list(REMOVE_DUPLICATES CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS)
+target_include_directories(ceres PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS})
+
+# Generate an export header for annotating symbols visibility
+include(GenerateExportHeader)
+generate_export_header(ceres EXPORT_FILE_NAME ${Ceres_BINARY_DIR}/include/ceres/internal/export.h)
 
 install(TARGETS ceres
         EXPORT  CeresTargets
@@ -325,35 +355,30 @@ install(TARGETS ceres
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if (BUILD_TESTING OR benchmark_FOUND)
+if (BUILD_TESTING AND gflags_FOUND)
   add_library(test_util STATIC
               evaluator_test_utils.cc
               numeric_diff_test_utils.cc
-              test_util.cc
-              $<TARGET_OBJECTS:ceresbase>
-              ${CERES_LIBRARY_SOURCE})
+              test_util.cc)
 
-  target_include_directories (test_util PUBLIC
-    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
-  target_compile_definitions (test_util PUBLIC
-    $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
-  target_link_libraries (test_util
-    PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES}
-    PRIVATE ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
-endif (BUILD_TESTING OR benchmark_FOUND)
+  target_include_directories(test_util PUBLIC ${Ceres_SOURCE_DIR}/internal)
+  target_link_libraries (test_util PUBLIC ceres_static gflags)
 
-if (BUILD_TESTING AND gflags_FOUND)
   add_library(gtest gmock_gtest_all.cc gmock_main.cc)
   if (BUILD_SHARED_LIBS)
     # Define gtest-specific shared library flags for compilation.
-    append_target_property(gtest COMPILE_DEFINITIONS
-      GTEST_CREATE_SHARED_LIBRARY)
+    #
+    # NOTE: We export the test_srcdir flag not from gflags but from our gtest
+    # target. Therefore, the gflags visibility macro must be overriden by that
+    # of gtest.
+    target_compile_definitions(gtest
+      PRIVATE GTEST_CREATE_SHARED_LIBRARY=1
+              GFLAGS_DLL_DEFINE_FLAG=GTEST_API_
+      INTERFACE GTEST_LINKED_AS_SHARED_LIBRARY=1)
   endif()
-  set_target_properties (gtest PROPERTIES CXX_VISIBILITY_PRESET default)
 
-  target_include_directories (gtest PRIVATE
-    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
-
+  target_include_directories(gtest PRIVATE ${Ceres_SOURCE_DIR}/internal/ceres)
+  target_link_libraries(gtest PRIVATE Ceres::Ceres gflags)
 
   macro (CERES_TEST NAME)
     add_executable(${NAME}_test ${NAME}_test.cc)
@@ -362,15 +387,9 @@ if (BUILD_TESTING AND gflags_FOUND)
     # may be referenced without the 'ceres' path prefix and all private
     # dependencies that may be directly referenced.
     target_include_directories(${NAME}_test
-      PUBLIC ${CMAKE_CURRENT_LIST_DIR}
-             ${Ceres_SOURCE_DIR}/internal/ceres)
-
-    target_link_libraries(${NAME}_test PRIVATE test_util gtest)
-    if (BUILD_SHARED_LIBS)
-      # Define gtest-specific shared library flags for linking.
-      append_target_property(${NAME}_test COMPILE_DEFINITIONS
-        GTEST_LINKED_AS_SHARED_LIBRARY)
-    endif()
+      PRIVATE ${Ceres_SOURCE_DIR}/internal/ceres
+              ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
+    target_link_libraries(${NAME}_test PRIVATE gtest test_util ceres_static)
     add_test(NAME ${NAME}_test
              COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME}_test
              --test_srcdir
@@ -400,6 +419,8 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(cost_function_to_functor)
   ceres_test(covariance)
   ceres_test(cubic_interpolation)
+  ceres_test(cuda_dense_cholesky)
+  ceres_test(cuda_dense_qr)
   ceres_test(dense_linear_solver)
   ceres_test(dense_cholesky)
   ceres_test(dense_qr)
@@ -474,21 +495,14 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(visibility_based_preconditioner)
 
   add_subdirectory(generated_bundle_adjustment_tests)
-
-  if(CODE_GENERATION)
-    add_subdirectory(codegen)
-  endif()
 endif (BUILD_TESTING AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
-  target_link_libraries(${BENCHMARK_TARGET} PRIVATE
-    benchmark::benchmark
-    Eigen3::Eigen
-    test_util
-  )
-  target_include_directories(${BENCHMARK_TARGET} PRIVATE
-    $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>
-  )
+  target_include_directories(${BENCHMARK_TARGET}
+    PRIVATE ${Ceres_SOURCE_DIR}/internal
+            ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
+  target_link_libraries(${BENCHMARK_TARGET}
+    PRIVATE benchmark::benchmark ceres_static)
 endmacro()
 
 if (benchmark_FOUND)

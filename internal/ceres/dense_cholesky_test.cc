@@ -47,9 +47,12 @@ namespace internal {
 
 typedef DenseLinearAlgebraLibraryType Param;
 
+namespace {
+
 std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
   return DenseLinearAlgebraLibraryTypeToString(info.param);
 }
+}  // namespace
 
 class DenseCholeskyTest : public ::testing::TestWithParam<Param> {};
 
@@ -62,6 +65,8 @@ TEST_P(DenseCholeskyTest, FactorAndSolve) {
   using VectorType = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
   LinearSolver::Options options;
+  ContextImpl context;
+  options.context = &context;
   options.dense_linear_algebra_library_type = GetParam();
   std::unique_ptr<DenseCholesky> dense_cholesky =
       DenseCholesky::Create(options);
@@ -92,17 +97,19 @@ TEST_P(DenseCholeskyTest, FactorAndSolve) {
   }
 }
 
+INSTANTIATE_TEST_SUITE_P(_,
+                         DenseCholeskyTest,
+                         ::testing::Values(EIGEN
 #ifndef CERES_NO_LAPACK
-INSTANTIATE_TEST_SUITE_P(_,
-                         DenseCholeskyTest,
-                         ::testing::Values(EIGEN, LAPACK),
-                         ParamInfoToString);
-#else
-INSTANTIATE_TEST_SUITE_P(_,
-                         DenseCholeskyTest,
-                         ::testing::Values(EIGEN),
-                         ParamInfoToString);
+                                           ,
+                                           LAPACK
 #endif
+#ifndef CERES_NO_CUDA
+                                           ,
+                                           CUDA
+#endif
+                                           ),
+                         ParamInfoToString);
 
 }  // namespace internal
 }  // namespace ceres

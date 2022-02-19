@@ -35,7 +35,7 @@
 //
 // For least squares problem where there are no outliers and standard
 // squared loss is expected, it is not necessary to create a loss
-// function; instead passing a NULL to the problem when adding
+// function; instead passing a nullptr to the problem when adding
 // residuals implies a standard squared loss.
 //
 // For least squares problems where the minimization may encounter
@@ -78,16 +78,15 @@
 #include <memory>
 
 #include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/types.h"
 #include "glog/logging.h"
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 
 class CERES_EXPORT LossFunction {
  public:
-  virtual ~LossFunction() {}
+  virtual ~LossFunction();
 
   // For a residual vector with squared 2-norm 'sq_norm', this method
   // is required to fill in the value and derivatives of the loss
@@ -127,7 +126,7 @@ class CERES_EXPORT LossFunction {
 //
 // At s = 0: rho = [0, 1, 0].
 //
-// It is not normally necessary to use this, as passing NULL for the
+// It is not normally necessary to use this, as passing nullptr for the
 // loss function when building the problem accomplishes the same
 // thing.
 class CERES_EXPORT TrivialLoss : public LossFunction {
@@ -296,14 +295,14 @@ class CERES_EXPORT TukeyLoss : public ceres::LossFunction {
 
 // Composition of two loss functions.  The error is the result of first
 // evaluating g followed by f to yield the composition f(g(s)).
-// The loss functions must not be NULL.
+// The loss functions must not be nullptr.
 class CERES_EXPORT ComposedLoss : public LossFunction {
  public:
   explicit ComposedLoss(const LossFunction* f,
                         Ownership ownership_f,
                         const LossFunction* g,
                         Ownership ownership_g);
-  virtual ~ComposedLoss();
+  ~ComposedLoss() override;
   void Evaluate(double, double*) const override;
 
  private:
@@ -324,8 +323,8 @@ class CERES_EXPORT ComposedLoss : public LossFunction {
 // s -> a * rho'(s)
 // s -> a * rho''(s)
 //
-// Since we treat the a NULL Loss function as the Identity loss
-// function, rho = NULL is a valid input and will result in the input
+// Since we treat the a nullptr Loss function as the Identity loss
+// function, rho = nullptr is a valid input and will result in the input
 // being scaled by a. This provides a simple way of implementing a
 // scaled ResidualBlock.
 class CERES_EXPORT ScaledLoss : public LossFunction {
@@ -338,7 +337,7 @@ class CERES_EXPORT ScaledLoss : public LossFunction {
   ScaledLoss(const ScaledLoss&) = delete;
   void operator=(const ScaledLoss&) = delete;
 
-  virtual ~ScaledLoss() {
+  ~ScaledLoss() override {
     if (ownership_ == DO_NOT_TAKE_OWNERSHIP) {
       rho_.release();
     }
@@ -363,8 +362,8 @@ class CERES_EXPORT ScaledLoss : public LossFunction {
 // whose scale can be mutated after an optimization problem has been
 // constructed.
 //
-// Since we treat the a NULL Loss function as the Identity loss
-// function, rho = NULL is a valid input.
+// Since we treat the a nullptr Loss function as the Identity loss
+// function, rho = nullptr is a valid input.
 //
 // Example usage
 //
@@ -398,14 +397,14 @@ class CERES_EXPORT LossFunctionWrapper : public LossFunction {
   LossFunctionWrapper(const LossFunctionWrapper&) = delete;
   void operator=(const LossFunctionWrapper&) = delete;
 
-  virtual ~LossFunctionWrapper() {
+  ~LossFunctionWrapper() override {
     if (ownership_ == DO_NOT_TAKE_OWNERSHIP) {
       rho_.release();
     }
   }
 
   void Evaluate(double sq_norm, double out[3]) const override {
-    if (rho_.get() == NULL) {
+    if (rho_.get() == nullptr) {
       out[0] = sq_norm;
       out[1] = 1.0;
       out[2] = 0.0;
@@ -428,8 +427,6 @@ class CERES_EXPORT LossFunctionWrapper : public LossFunction {
 };
 
 }  // namespace ceres
-
-#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

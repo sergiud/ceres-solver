@@ -31,11 +31,11 @@
 #ifndef CERES_INTERNAL_COMPRESSED_ROW_SPARSE_MATRIX_H_
 #define CERES_INTERNAL_COMPRESSED_ROW_SPARSE_MATRIX_H_
 
+#include <memory>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
 #include "glog/logging.h"
@@ -65,9 +65,7 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   // entries.
   //
   // The storage type of the matrix is set to UNSYMMETRIC.
-  //
-  // Caller owns the result.
-  static CompressedRowSparseMatrix* FromTripletSparseMatrix(
+  static std::unique_ptr<CompressedRowSparseMatrix> FromTripletSparseMatrix(
       const TripletSparseMatrix& input);
 
   // Create a matrix with the same content as the TripletSparseMatrix
@@ -75,10 +73,8 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   // entries.
   //
   // The storage type of the matrix is set to UNSYMMETRIC.
-  //
-  // Caller owns the result.
-  static CompressedRowSparseMatrix* FromTripletSparseMatrixTransposed(
-      const TripletSparseMatrix& input);
+  static std::unique_ptr<CompressedRowSparseMatrix>
+  FromTripletSparseMatrixTransposed(const TripletSparseMatrix& input);
 
   // Use this constructor only if you know what you are doing. This
   // creates a "blank" matrix with the appropriate amount of memory
@@ -102,7 +98,7 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   CompressedRowSparseMatrix(const double* diagonal, int num_rows);
 
   // SparseMatrix interface.
-  virtual ~CompressedRowSparseMatrix();
+  ~CompressedRowSparseMatrix() override;
   void SetZero() final;
   void RightMultiply(const double* x, double* y) const final;
   void LeftMultiply(const double* x, double* y) const final;
@@ -126,7 +122,7 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
 
   void ToCRSMatrix(CRSMatrix* matrix) const;
 
-  CompressedRowSparseMatrix* Transpose() const;
+  std::unique_ptr<CompressedRowSparseMatrix> Transpose() const;
 
   // Destructive array resizing method.
   void SetMaxNumNonZeros(int num_nonzeros);
@@ -156,9 +152,7 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   // Create a block diagonal CompressedRowSparseMatrix with the given
   // block structure. The individual blocks are assumed to be laid out
   // contiguously in the diagonal array, one block at a time.
-  //
-  // Caller owns the result.
-  static CompressedRowSparseMatrix* CreateBlockDiagonalMatrix(
+  static std::unique_ptr<CompressedRowSparseMatrix> CreateBlockDiagonalMatrix(
       const double* diagonal, const std::vector<int>& blocks);
 
   // Options struct to control the generation of random block sparse
@@ -200,13 +194,11 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   // Create a random CompressedRowSparseMatrix whose entries are
   // normally distributed and whose structure is determined by
   // RandomMatrixOptions.
-  //
-  // Caller owns the result.
-  static CompressedRowSparseMatrix* CreateRandomMatrix(
+  static std::unique_ptr<CompressedRowSparseMatrix> CreateRandomMatrix(
       RandomMatrixOptions options);
 
  private:
-  static CompressedRowSparseMatrix* FromTripletSparseMatrix(
+  static std::unique_ptr<CompressedRowSparseMatrix> FromTripletSparseMatrix(
       const TripletSparseMatrix& input, bool transpose);
 
   int num_rows_;
@@ -228,6 +220,6 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_COMPRESSED_ROW_SPARSE_MATRIX_H_

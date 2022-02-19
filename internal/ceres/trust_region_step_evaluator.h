@@ -31,7 +31,7 @@
 #ifndef CERES_INTERNAL_TRUST_REGION_STEP_EVALUATOR_H_
 #define CERES_INTERNAL_TRUST_REGION_STEP_EVALUATOR_H_
 
-#include <ceres/internal/export.h>
+#include "ceres/internal/export.h"
 
 namespace ceres {
 namespace internal {

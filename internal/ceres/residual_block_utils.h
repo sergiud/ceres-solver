@@ -46,14 +46,13 @@
 #include <string>
 
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
 
 namespace ceres {
 namespace internal {
 
 class ResidualBlock;
 
-// Invalidate cost, resdual and jacobian arrays (if not NULL).
+// Invalidate cost, resdual and jacobian arrays (if not nullptr).
 CERES_NO_EXPORT
 void InvalidateEvaluation(const ResidualBlock& block,
                           double* cost,

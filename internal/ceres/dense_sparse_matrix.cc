@@ -33,7 +33,7 @@
 #include <algorithm>
 
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "glog/logging.h"
 
@@ -56,8 +56,6 @@ DenseSparseMatrix::DenseSparseMatrix(const TripletSparseMatrix& m)
 }
 
 DenseSparseMatrix::DenseSparseMatrix(const Matrix& m) : m_(m) {}
-
-DenseSparseMatrix::~DenseSparseMatrix() = default;
 
 void DenseSparseMatrix::SetZero() { m_.setZero(); }
 

@@ -35,9 +35,8 @@
 #include <string>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/sparse_matrix.h"
 
 namespace ceres {
@@ -62,19 +61,19 @@ struct CERES_NO_EXPORT LinearLeastSquaresProblem {
 };
 
 // Factories for linear least squares problem.
-CERES_NO_EXPORT LinearLeastSquaresProblem*
+CERES_NO_EXPORT std::unique_ptr<LinearLeastSquaresProblem>
 CreateLinearLeastSquaresProblemFromId(int id);
 
 CERES_NO_EXPORT
-LinearLeastSquaresProblem* LinearLeastSquaresProblem0();
+std::unique_ptr<LinearLeastSquaresProblem> LinearLeastSquaresProblem0();
 CERES_NO_EXPORT
-LinearLeastSquaresProblem* LinearLeastSquaresProblem1();
+std::unique_ptr<LinearLeastSquaresProblem> LinearLeastSquaresProblem1();
 CERES_NO_EXPORT
-LinearLeastSquaresProblem* LinearLeastSquaresProblem2();
+std::unique_ptr<LinearLeastSquaresProblem> LinearLeastSquaresProblem2();
 CERES_NO_EXPORT
-LinearLeastSquaresProblem* LinearLeastSquaresProblem3();
+std::unique_ptr<LinearLeastSquaresProblem> LinearLeastSquaresProblem3();
 CERES_NO_EXPORT
-LinearLeastSquaresProblem* LinearLeastSquaresProblem4();
+std::unique_ptr<LinearLeastSquaresProblem> LinearLeastSquaresProblem4();
 
 // Write the linear least squares problem to disk. The exact format
 // depends on dump_format_type.
@@ -89,6 +88,6 @@ bool DumpLinearLeastSquaresProblem(const std::string& filename_base,
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_LINEAR_LEAST_SQUARES_PROBLEMS_H_

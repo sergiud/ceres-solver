@@ -69,7 +69,7 @@
 // The following CHECK macros are defined:
 //
 //   CHECK(condition)        - fails if condition is false and logs condition.
-//   CHECK_NOTNULL(variable) - fails if the variable is NULL.
+//   CHECK_NOTNULL(variable) - fails if the variable is nullptr.
 //
 // The following binary check macros are also defined :
 //
@@ -105,12 +105,8 @@
 #include <string>
 #include <vector>
 
-// For appropriate definition of CERES_NO_EXPORT macro.
-// clang-format off
-#include "ceres/internal/port.h"
-// clang-format on
-
 #include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 
 // Log severity level constants.
 // clang-format off
@@ -138,7 +134,7 @@ const int FATAL   = ::FATAL;
 // This implementation is not thread safe.
 class CERES_NO_EXPORT LogSink {
  public:
-  virtual ~LogSink() {}
+  virtual ~LogSink() = default;
   virtual void send(LogSeverity severity,
                     const char* full_filename,
                     const char* base_filename,
@@ -294,7 +290,6 @@ class CERES_NO_EXPORT MessageLogger {
 // is not used" and "statement has no effect".
 class CERES_NO_EXPORT LoggerVoidify {
  public:
-  LoggerVoidify() {}
   // This has to be an operator with a precedence lower than << but
   // higher than ?:
   void operator&(const std::ostream& s) {}
@@ -407,7 +402,7 @@ void LogMessageFatal(const char* file, int line, const T& message) {
 // and smart pointers.
 template <typename T>
 T& CheckNotNullCommon(const char* file, int line, const char* names, T& t) {
-  if (t == NULL) {
+  if (t == nullptr) {
     LogMessageFatal(file, line, std::string(names));
   }
   return t;
@@ -425,17 +420,17 @@ T& CheckNotNull(const char* file, int line, const char* names, T& t) {
 
 // Check that a pointer is not null.
 #define CHECK_NOTNULL(val) \
-  CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non NULL", (val))
+  CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non nullptr", (val))
 
 #ifndef NDEBUG
 // Debug only version of CHECK_NOTNULL
 #define DCHECK_NOTNULL(val) \
-  CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non NULL", (val))
+  CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non nullptr", (val))
 #else
 // Optimized version - generates no code.
 #define DCHECK_NOTNULL(val) \
   if (false)                \
-  CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non NULL", (val))
+  CheckNotNull(__FILE__, __LINE__, "'" #val "' Must be non nullptr", (val))
 #endif  // NDEBUG
 
 #include "ceres/internal/reenable_warnings.h"

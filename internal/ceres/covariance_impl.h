@@ -38,9 +38,8 @@
 #include <vector>
 
 #include "ceres/covariance.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/problem_impl.h"
 #include "ceres/suitesparse.h"
 
@@ -100,6 +99,6 @@ class CERES_NO_EXPORT CovarianceImpl {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_COVARIANCE_IMPL_H_

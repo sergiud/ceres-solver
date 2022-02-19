@@ -41,9 +41,8 @@
 #include <cstdarg>
 #include <string>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -94,6 +93,6 @@ CERES_NO_EXPORT extern void StringAppendV(std::string* dst,
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_STRINGPRINTF_H_

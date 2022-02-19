@@ -34,8 +34,8 @@
 #include <functional>
 
 #include "ceres/context_impl.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
 
 namespace ceres {
 namespace internal {
@@ -67,5 +67,7 @@ CERES_NO_EXPORT void ParallelFor(
     const std::function<void(int thread_id, int i)>& function);
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/disable_warnings.h"
 
 #endif  // CERES_INTERNAL_PARALLEL_FOR_H_

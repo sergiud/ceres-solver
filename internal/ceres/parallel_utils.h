@@ -32,7 +32,6 @@
 #define CERES_INTERNAL_PARALLEL_UTILS_H_
 
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
 
 namespace ceres {
 namespace internal {

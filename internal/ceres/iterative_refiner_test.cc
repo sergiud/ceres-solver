@@ -54,7 +54,6 @@ namespace internal {
 class FakeSparseMatrix : public SparseMatrix {
  public:
   FakeSparseMatrix(const Matrix& m) : m_(m) {}
-  virtual ~FakeSparseMatrix() {}
 
   // y += Ax
   void RightMultiply(const double* x, double* y) const final {
@@ -90,7 +89,6 @@ template <typename Scalar>
 class FakeSparseCholesky : public SparseCholesky {
  public:
   FakeSparseCholesky(const Matrix& lhs) { lhs_ = lhs.cast<Scalar>(); }
-  virtual ~FakeSparseCholesky() {}
 
   LinearSolverTerminationType Solve(const double* rhs_ptr,
                                     double* solution_ptr,
@@ -118,7 +116,7 @@ class FakeSparseCholesky : public SparseCholesky {
 
 class IterativeRefinerTest : public ::testing::Test {
  public:
-  void SetUp() {
+  void SetUp() override {
     num_cols_ = 5;
     max_num_iterations_ = 30;
     Matrix m(num_cols_, num_cols_);

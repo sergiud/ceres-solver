@@ -78,14 +78,14 @@ TEST(_, ReorderResidualBlockNormalFunction) {
   problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &x, &y);
   problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &y);
 
-  ParameterBlockOrdering* linear_solver_ordering = new ParameterBlockOrdering;
+  auto linear_solver_ordering = std::make_shared<ParameterBlockOrdering>();
   linear_solver_ordering->AddElementToGroup(&x, 0);
   linear_solver_ordering->AddElementToGroup(&y, 0);
   linear_solver_ordering->AddElementToGroup(&z, 1);
 
   Solver::Options options;
   options.linear_solver_type = DENSE_SCHUR;
-  options.linear_solver_ordering.reset(linear_solver_ordering);
+  options.linear_solver_ordering = linear_solver_ordering;
 
   const vector<ResidualBlock*>& residual_blocks =
       problem.program().residual_blocks();
@@ -167,7 +167,7 @@ TEST(_, ApplyOrderingNormal) {
 class ReorderProgramFoSparseCholeskyUsingSuiteSparseTest
     : public ::testing::Test {
  protected:
-  void SetUp() {
+  void SetUp() override {
     problem_.AddResidualBlock(new UnaryCostFunction(), nullptr, &x_);
     problem_.AddResidualBlock(new BinaryCostFunction(), nullptr, &z_, &x_);
     problem_.AddResidualBlock(new BinaryCostFunction(), nullptr, &z_, &y_);

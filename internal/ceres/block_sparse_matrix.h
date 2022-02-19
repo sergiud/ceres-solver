@@ -37,10 +37,9 @@
 #include <memory>
 
 #include "ceres/block_structure.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/sparse_matrix.h"
 
 namespace ceres {
@@ -56,7 +55,7 @@ class TripletSparseMatrix;
 //
 //   internal/ceres/block_structure.h
 //
-class CERES_NO_EXPORT BlockSparseMatrix : public SparseMatrix {
+class CERES_NO_EXPORT BlockSparseMatrix final : public SparseMatrix {
  public:
   // Construct a block sparse matrix with a fully initialized
   // CompressedRowBlockStructure objected. The matrix takes over
@@ -69,8 +68,6 @@ class CERES_NO_EXPORT BlockSparseMatrix : public SparseMatrix {
   BlockSparseMatrix();
   BlockSparseMatrix(const BlockSparseMatrix&) = delete;
   void operator=(const BlockSparseMatrix&) = delete;
-
-  virtual ~BlockSparseMatrix();
 
   // Implementation of SparseMatrix interface.
   void SetZero() final;
@@ -99,7 +96,7 @@ class CERES_NO_EXPORT BlockSparseMatrix : public SparseMatrix {
   // Delete the bottom delta_rows_blocks.
   void DeleteRowBlocks(int delta_row_blocks);
 
-  static BlockSparseMatrix* CreateDiagonalMatrix(
+  static std::unique_ptr<BlockSparseMatrix> CreateDiagonalMatrix(
       const double* diagonal, const std::vector<Block>& column_blocks);
 
   struct RandomMatrixOptions {
@@ -124,9 +121,7 @@ class CERES_NO_EXPORT BlockSparseMatrix : public SparseMatrix {
   // Create a random BlockSparseMatrix whose entries are normally
   // distributed and whose structure is determined by
   // RandomMatrixOptions.
-  //
-  // Caller owns the result.
-  static BlockSparseMatrix* CreateRandomMatrix(
+  static std::unique_ptr<BlockSparseMatrix> CreateRandomMatrix(
       const RandomMatrixOptions& options);
 
  private:
@@ -166,6 +161,6 @@ class CERES_NO_EXPORT BlockSparseMatrixData {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_BLOCK_SPARSE_MATRIX_H_

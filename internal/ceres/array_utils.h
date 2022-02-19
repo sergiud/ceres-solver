@@ -45,9 +45,8 @@
 
 #include <string>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -66,7 +65,7 @@ CERES_NO_EXPORT bool IsArrayValid(int size, const double* x);
 CERES_NO_EXPORT int FindInvalidValue(const int size, const double* x);
 
 // Utility routine to print an array of doubles to a string. If the
-// array pointer is NULL, it is treated as an array of zeros.
+// array pointer is nullptr, it is treated as an array of zeros.
 CERES_NO_EXPORT void AppendArrayToString(const int size,
                                          const double* x,
                                          std::string* result);
@@ -89,6 +88,6 @@ CERES_NO_EXPORT void MapValuesToContiguousRange(int size, int* array);
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_ARRAY_UTILS_H_

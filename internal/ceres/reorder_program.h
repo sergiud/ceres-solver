@@ -33,9 +33,8 @@
 
 #include <string>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/parameter_block_ordering.h"
 #include "ceres/problem_impl.h"
 #include "ceres/types.h"
@@ -116,6 +115,6 @@ CERES_NO_EXPORT int ReorderResidualBlocksByPartition(
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_REORDER_PROGRAM_

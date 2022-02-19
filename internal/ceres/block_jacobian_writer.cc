@@ -30,10 +30,13 @@
 
 #include "ceres/block_jacobian_writer.h"
 
+#include <algorithm>
+#include <memory>
+
 #include "ceres/block_evaluate_preparer.h"
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/parameter_block.h"
 #include "ceres/program.h"
 #include "ceres/residual_block.h"
@@ -136,19 +139,19 @@ BlockJacobianWriter::BlockJacobianWriter(const Evaluator::Options& options,
 
 // Create evaluate prepareres that point directly into the final jacobian. This
 // makes the final Write() a nop.
-BlockEvaluatePreparer* BlockJacobianWriter::CreateEvaluatePreparers(
-    int num_threads) {
+std::unique_ptr<BlockEvaluatePreparer[]>
+BlockJacobianWriter::CreateEvaluatePreparers(int num_threads) {
   int max_derivatives_per_residual_block =
       program_->MaxDerivativesPerResidualBlock();
 
-  BlockEvaluatePreparer* preparers = new BlockEvaluatePreparer[num_threads];
+  auto preparers = std::make_unique<BlockEvaluatePreparer[]>(num_threads);
   for (int i = 0; i < num_threads; i++) {
     preparers[i].Init(&jacobian_layout_[0], max_derivatives_per_residual_block);
   }
   return preparers;
 }
 
-SparseMatrix* BlockJacobianWriter::CreateJacobian() const {
+std::unique_ptr<SparseMatrix> BlockJacobianWriter::CreateJacobian() const {
   CompressedRowBlockStructure* bs = new CompressedRowBlockStructure;
 
   const vector<ParameterBlock*>& parameter_blocks =
@@ -201,12 +204,10 @@ SparseMatrix* BlockJacobianWriter::CreateJacobian() const {
       }
     }
 
-    sort(row->cells.begin(), row->cells.end(), CellLessThan);
+    std::sort(row->cells.begin(), row->cells.end(), CellLessThan);
   }
 
-  BlockSparseMatrix* jacobian = new BlockSparseMatrix(bs);
-  CHECK(jacobian != nullptr);
-  return jacobian;
+  return std::make_unique<BlockSparseMatrix>(bs);
 }
 
 }  // namespace internal

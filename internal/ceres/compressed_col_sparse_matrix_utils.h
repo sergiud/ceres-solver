@@ -31,11 +31,11 @@
 #ifndef CERES_INTERNAL_COMPRESSED_COL_SPARSE_MATRIX_UTILS_H_
 #define CERES_INTERNAL_COMPRESSED_COL_SPARSE_MATRIX_UTILS_H_
 
+#include <algorithm>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -144,6 +144,6 @@ void SolveRTRWithSparseRHS(IntegerType num_cols,
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_COMPRESSED_COL_SPARSE_MATRIX_UTILS_H_

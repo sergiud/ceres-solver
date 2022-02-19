@@ -55,7 +55,7 @@ SubsetPreconditioner::SubsetPreconditioner(
   sparse_cholesky_ = SparseCholesky::Create(sparse_cholesky_options);
 }
 
-SubsetPreconditioner::~SubsetPreconditioner() {}
+SubsetPreconditioner::~SubsetPreconditioner() = default;
 
 void SubsetPreconditioner::RightMultiply(const double* x, double* y) const {
   CHECK(x != nullptr);
@@ -73,7 +73,7 @@ bool SubsetPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
   //     [Q]
 
   // Now add D to A if needed.
-  if (D != NULL) {
+  if (D != nullptr) {
     // A = [P]
     //     [Q]
     //     [D]
@@ -82,19 +82,19 @@ bool SubsetPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
     m->AppendRows(*regularizer);
   }
 
-  if (inner_product_computer_.get() == NULL) {
-    inner_product_computer_.reset(InnerProductComputer::Create(
+  if (inner_product_computer_ == nullptr) {
+    inner_product_computer_ = InnerProductComputer::Create(
         *m,
         options_.subset_preconditioner_start_row_block,
         bs->rows.size(),
-        sparse_cholesky_->StorageType()));
+        sparse_cholesky_->StorageType());
   }
 
   // Compute inner_product = [Q'*Q + D'*D]
   inner_product_computer_->Compute();
 
   // Unappend D if needed.
-  if (D != NULL) {
+  if (D != nullptr) {
     // A = [P]
     //     [Q]
     m->DeleteRowBlocks(bs->cols.size());

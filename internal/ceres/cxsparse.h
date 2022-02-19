@@ -32,8 +32,7 @@
 #define CERES_INTERNAL_CXSPARSE_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 
 #ifndef CERES_NO_CXSPARSE
 
@@ -41,15 +40,10 @@
 #include <string>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/linear_solver.h"
 #include "ceres/sparse_cholesky.h"
 #include "cs.h"
-
-#ifdef I
-#undef I
-#endif // defined(I)
-
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -87,7 +81,7 @@ class CERES_NO_EXPORT CXSparse {
   cs_di CreateSparseMatrixTransposeView(CompressedRowSparseMatrix* A);
 
   // Creates a new matrix from a triplet form. Deallocate the returned matrix
-  // with Free. May return NULL if the compression or allocation fails.
+  // with Free. May return nullptr if the compression or allocation fails.
   cs_di* CreateSparseMatrix(TripletSparseMatrix* A);
 
   // B = A'
@@ -129,7 +123,7 @@ class CERES_NO_EXPORT CXSparse {
                                const std::vector<int>& col_blocks);
 
   // Compute an fill-reducing approximate minimum degree ordering of
-  // the matrix A. ordering should be non-NULL and should point to
+  // the matrix A. ordering should be non-nullptr and should point to
   // enough memory to hold the ordering for the rows of A.
   void ApproximateMinimumDegreeOrdering(cs_di* A, int* ordering);
 
@@ -145,13 +139,13 @@ class CERES_NO_EXPORT CXSparse {
 
 // An implementation of SparseCholesky interface using the CXSparse
 // library.
-class CXSparseCholesky : public SparseCholesky {
+class CERES_NO_EXPORT CXSparseCholesky final : public SparseCholesky {
  public:
   // Factory
   static std::unique_ptr<SparseCholesky> Create(OrderingType ordering_type);
 
   // SparseCholesky interface.
-  virtual ~CXSparseCholesky();
+  ~CXSparseCholesky() override;
   CompressedRowSparseMatrix::StorageType StorageType() const final;
   LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
                                         std::string* message) final;
@@ -173,7 +167,7 @@ class CXSparseCholesky : public SparseCholesky {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #else
 

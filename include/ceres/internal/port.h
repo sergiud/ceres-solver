@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,43 +31,16 @@
 #ifndef CERES_PUBLIC_INTERNAL_PORT_H_
 #define CERES_PUBLIC_INTERNAL_PORT_H_
 
-#include <ceres/internal/export.h>
-
-// This file needs to compile as c code.
-#include "ceres/internal/config.h"
-
-#if defined(CERES_USE_OPENMP)
-#if defined(CERES_USE_CXX_THREADS) || defined(CERES_NO_THREADS)
-#error CERES_USE_OPENMP is mutually exclusive to CERES_USE_CXX_THREADS and CERES_NO_THREADS
-#endif
-#elif defined(CERES_USE_CXX_THREADS)
-#if defined(CERES_USE_OPENMP) || defined(CERES_NO_THREADS)
-#error CERES_USE_CXX_THREADS is mutually exclusive to CERES_USE_OPENMP, CERES_USE_CXX_THREADS and CERES_NO_THREADS
-#endif
-#elif defined(CERES_NO_THREADS)
-#if defined(CERES_USE_OPENMP) || defined(CERES_USE_CXX_THREADS)
-#error CERES_NO_THREADS is mutually exclusive to CERES_USE_OPENMP and CERES_USE_CXX_THREADS
-#endif
+// A macro to mark a function/variable/class as deprecated.
+// We use compiler specific attributes rather than the c++
+// attribute because they do not mix well with each other.
+#if defined(_MSC_VER)
+#define CERES_DEPRECATED_WITH_MSG(message) __declspec(deprecated(message))
+#elif defined(__GNUC__)
+#define CERES_DEPRECATED_WITH_MSG(message) __attribute__((deprecated(message)))
 #else
-#  error One of CERES_USE_OPENMP, CERES_USE_CXX_THREADS or CERES_NO_THREADS must be defined.
-#endif
-
-// CERES_NO_SPARSE should be automatically defined by config.h if Ceres was
-// compiled without any sparse back-end.  Verify that it has not subsequently
-// been inconsistently redefined.
-#if defined(CERES_NO_SPARSE)
-#if !defined(CERES_NO_SUITESPARSE)
-#error CERES_NO_SPARSE requires CERES_NO_SUITESPARSE.
-#endif
-#if !defined(CERES_NO_CXSPARSE)
-#error CERES_NO_SPARSE requires CERES_NO_CXSPARSE
-#endif
-#if !defined(CERES_NO_ACCELERATE_SPARSE)
-#error CERES_NO_SPARSE requires CERES_NO_ACCELERATE_SPARSE
-#endif
-#if defined(CERES_USE_EIGEN_SPARSE)
-#error CERES_NO_SPARSE requires !CERES_USE_EIGEN_SPARSE
-#endif
+// In the worst case fall back to c++ attribute.
+#define CERES_DEPRECATED_WITH_MSG(message) [[deprecated(message)]]
 #endif
 
 #ifndef CERES_GET_FLAG

@@ -43,6 +43,7 @@
 #include <utility>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
 #include "ceres/preconditioner.h"
 
@@ -70,7 +71,7 @@ class SchurEliminatorBase;
 //   options.elimination_groups.push_back(num_cameras);
 //   SchurJacobiPreconditioner preconditioner(
 //      *A.block_structure(), options);
-//   preconditioner.Update(A, NULL);
+//   preconditioner.Update(A, nullptr);
 //   preconditioner.RightMultiply(x, y);
 //
 class CERES_NO_EXPORT SchurJacobiPreconditioner
@@ -87,7 +88,7 @@ class CERES_NO_EXPORT SchurJacobiPreconditioner
   SchurJacobiPreconditioner(const SchurJacobiPreconditioner&) = delete;
   void operator=(const SchurJacobiPreconditioner&) = delete;
 
-  virtual ~SchurJacobiPreconditioner();
+  ~SchurJacobiPreconditioner() override;
 
   // Preconditioner interface.
   void RightMultiply(const double* x, double* y) const final;
@@ -105,5 +106,7 @@ class CERES_NO_EXPORT SchurJacobiPreconditioner
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_SCHUR_JACOBI_PRECONDITIONER_H_

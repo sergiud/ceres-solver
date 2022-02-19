@@ -33,14 +33,14 @@
 #define CERES_INTERNAL_EVALUATOR_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "ceres/context_impl.h"
 #include "ceres/execution_summary.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/types.h"
 
 namespace ceres {
@@ -70,9 +70,9 @@ class CERES_NO_EXPORT Evaluator {
     EvaluationCallback* evaluation_callback = nullptr;
   };
 
-  static Evaluator* Create(const Options& options,
-                           Program* program,
-                           std::string* error);
+  static std::unique_ptr<Evaluator> Create(const Options& options,
+                                           Program* program,
+                                           std::string* error);
 
   // Build and return a sparse matrix for storing and working with the Jacobian
   // of the objective function. The jacobian has dimensions
@@ -90,7 +90,7 @@ class CERES_NO_EXPORT Evaluator {
   // the jacobian for use with CHOLMOD, where as BlockOptimizationProblem
   // creates a BlockSparseMatrix representation of the jacobian for use in the
   // Schur complement based methods.
-  virtual SparseMatrix* CreateJacobian() const = 0;
+  virtual std::unique_ptr<SparseMatrix> CreateJacobian() const = 0;
 
   // Options struct to control Evaluator::Evaluate;
   struct EvaluateOptions {
@@ -104,10 +104,10 @@ class CERES_NO_EXPORT Evaluator {
 
   // Evaluate the cost function for the given state. Returns the cost,
   // residuals, and jacobian in the corresponding arguments. Both residuals and
-  // jacobian are optional; to avoid computing them, pass NULL.
+  // jacobian are optional; to avoid computing them, pass nullptr.
   //
-  // If non-NULL, the Jacobian must have a suitable sparsity pattern; only the
-  // values array of the jacobian is modified.
+  // If non-nullptr, the Jacobian must have a suitable sparsity pattern; only
+  // the values array of the jacobian is modified.
   //
   // state is an array of size NumParameters(), cost is a pointer to a single
   // double, and residuals is an array of doubles of size NumResiduals().
@@ -167,6 +167,6 @@ class CERES_NO_EXPORT Evaluator {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_EVALUATOR_H_

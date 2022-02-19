@@ -34,9 +34,7 @@
 #include <vector>
 
 #include "ceres/internal/disable_warnings.h"
-#include "ceres/internal/port.h"
-
-#include "ceres/internal/prefix.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 
@@ -83,8 +81,6 @@ struct CERES_EXPORT CRSMatrix {
 };
 
 }  // namespace ceres
-
-#include "ceres/internal/suffix.h"
 
 #include "ceres/internal/reenable_warnings.h"
 

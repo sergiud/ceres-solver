@@ -34,10 +34,9 @@
 #include <memory>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
 
@@ -48,7 +47,7 @@ namespace internal {
 // manipulate sparse matrices in triplet (i,j,s) form.  This object is
 // inspired by the design of the cholmod_triplet struct used in the
 // SuiteSparse package and is memory layout compatible with it.
-class CERES_NO_EXPORT TripletSparseMatrix : public SparseMatrix {
+class CERES_NO_EXPORT TripletSparseMatrix final : public SparseMatrix {
  public:
   TripletSparseMatrix();
   TripletSparseMatrix(int num_rows, int num_cols, int max_num_nonzeros);
@@ -62,7 +61,7 @@ class CERES_NO_EXPORT TripletSparseMatrix : public SparseMatrix {
 
   TripletSparseMatrix& operator=(const TripletSparseMatrix& rhs);
 
-  virtual ~TripletSparseMatrix();
+  ~TripletSparseMatrix() override;
 
   // Implementation of the SparseMatrix interface.
   void SetZero() final;
@@ -117,8 +116,8 @@ class CERES_NO_EXPORT TripletSparseMatrix : public SparseMatrix {
   // Build a sparse diagonal matrix of size num_rows x num_rows from
   // the array values. Entries of the values array are copied into the
   // sparse matrix.
-  static TripletSparseMatrix* CreateSparseDiagonalMatrix(const double* values,
-                                                         int num_rows);
+  static std::unique_ptr<TripletSparseMatrix> CreateSparseDiagonalMatrix(
+      const double* values, int num_rows);
 
   // Options struct to control the generation of random
   // TripletSparseMatrix objects.
@@ -134,9 +133,7 @@ class CERES_NO_EXPORT TripletSparseMatrix : public SparseMatrix {
   // Create a random CompressedRowSparseMatrix whose entries are
   // normally distributed and whose structure is determined by
   // RandomMatrixOptions.
-  //
-  // Caller owns the result.
-  static TripletSparseMatrix* CreateRandomMatrix(
+  static std::unique_ptr<TripletSparseMatrix> CreateRandomMatrix(
       const TripletSparseMatrix::RandomMatrixOptions& options);
 
  private:
@@ -160,6 +157,6 @@ class CERES_NO_EXPORT TripletSparseMatrix : public SparseMatrix {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_TRIPLET_SPARSE_MATRIX_H__

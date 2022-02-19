@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2015 Google Inc. All rights reserved.
+# Copyright 2022 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,95 +28,92 @@
 #
 # Author: keir@google.com (Keir Mierle)
 
-# Only Ceres itself should be compiled with CERES_BUILDING_SHARED_LIBRARY
-# defined, any users of Ceres will have CERES_USING_SHARED_LIBRARY defined
-# for them in Ceres' config.h if appropriate.
-if (BUILD_SHARED_LIBS)
-  remove_definitions(-DCERES_BUILDING_SHARED_LIBRARY)
-endif()
-
 add_executable(helloworld helloworld.cc)
-target_link_libraries(helloworld Ceres::Ceres)
+target_link_libraries(helloworld PRIVATE Ceres::Ceres)
 
 add_executable(helloworld_numeric_diff helloworld_numeric_diff.cc)
-target_link_libraries(helloworld_numeric_diff Ceres::Ceres)
+target_link_libraries(helloworld_numeric_diff PRIVATE Ceres::Ceres)
 
 add_executable(helloworld_analytic_diff helloworld_analytic_diff.cc)
-target_link_libraries(helloworld_analytic_diff Ceres::Ceres)
+target_link_libraries(helloworld_analytic_diff PRIVATE Ceres::Ceres)
 
 add_executable(curve_fitting curve_fitting.cc)
-target_link_libraries(curve_fitting Ceres::Ceres)
+target_link_libraries(curve_fitting PRIVATE Ceres::Ceres)
 
 add_executable(rosenbrock rosenbrock.cc)
-target_link_libraries(rosenbrock Ceres::Ceres)
+target_link_libraries(rosenbrock PRIVATE Ceres::Ceres)
 
 add_executable(rosenbrock_analytic_diff rosenbrock_analytic_diff.cc)
-target_link_libraries(rosenbrock_analytic_diff Ceres::Ceres)
+target_link_libraries(rosenbrock_analytic_diff PRIVATE Ceres::Ceres)
 
 add_executable(rosenbrock_numeric_diff rosenbrock_numeric_diff.cc)
-target_link_libraries(rosenbrock_numeric_diff Ceres::Ceres)
+target_link_libraries(rosenbrock_numeric_diff PRIVATE Ceres::Ceres)
 
 add_executable(curve_fitting_c curve_fitting.c)
-target_link_libraries(curve_fitting_c Ceres::Ceres)
+target_link_libraries(curve_fitting_c PRIVATE Ceres::Ceres)
 # Force CMake to link curve_fitting_c using the C linker.
 set_target_properties(curve_fitting_c PROPERTIES LINKER_LANGUAGE C)
 # As this is a C file #including <math.h> we have to explicitly add the math
 # library (libm). Although some compilers (dependent upon options) will accept
 # the indirect link to libm via Ceres, at least GCC 4.8 on pure Debian won't.
-if (NOT MSVC)
-  target_link_libraries(curve_fitting_c m)
-endif (NOT MSVC)
+if (HAVE_LIBM)
+  target_link_libraries(curve_fitting_c PRIVATE m)
+endif (HAVE_LIBM)
 
 add_executable(ellipse_approximation ellipse_approximation.cc)
-target_link_libraries(ellipse_approximation Ceres::Ceres)
+target_link_libraries(ellipse_approximation PRIVATE Ceres::Ceres)
 
 add_executable(robust_curve_fitting robust_curve_fitting.cc)
-target_link_libraries(robust_curve_fitting Ceres::Ceres)
+target_link_libraries(robust_curve_fitting PRIVATE Ceres::Ceres)
 
 add_executable(simple_bundle_adjuster simple_bundle_adjuster.cc)
-target_link_libraries(simple_bundle_adjuster Ceres::Ceres)
+target_link_libraries(simple_bundle_adjuster PRIVATE Ceres::Ceres)
 
 add_executable(bicubic_interpolation bicubic_interpolation.cc)
-target_link_libraries(bicubic_interpolation Ceres::Ceres)
+target_link_libraries(bicubic_interpolation PRIVATE Ceres::Ceres)
 
 add_executable(bicubic_interpolation_analytic bicubic_interpolation_analytic.cc)
-target_link_libraries(bicubic_interpolation_analytic Ceres::Ceres)
+target_link_libraries(bicubic_interpolation_analytic PRIVATE Ceres::Ceres)
 
-if (WITH_GFLAGS AND gflags_FOUND)
+if (gflags_FOUND)
   add_executable(powell powell.cc)
-  target_link_libraries(powell Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(powell PRIVATE Ceres::Ceres gflags)
 
   add_executable(nist nist.cc)
-  target_link_libraries(nist Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(nist PRIVATE Ceres::Ceres gflags)
+
+  if (HAVE_BIGOBJ)
+    target_compile_options(nist PRIVATE /bigobj)
+  endif (HAVE_BIGOBJ)
 
   add_executable(more_garbow_hillstrom more_garbow_hillstrom.cc)
-  target_link_libraries(more_garbow_hillstrom Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(more_garbow_hillstrom PRIVATE Ceres::Ceres gflags)
 
   add_executable(circle_fit circle_fit.cc)
-  target_link_libraries(circle_fit Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(circle_fit PRIVATE Ceres::Ceres gflags)
 
   add_executable(bundle_adjuster
                  bundle_adjuster.cc
                  bal_problem.cc)
-  target_link_libraries(bundle_adjuster Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(bundle_adjuster PRIVATE Ceres::Ceres gflags)
 
   add_executable(libmv_bundle_adjuster
                  libmv_bundle_adjuster.cc)
-  target_link_libraries(libmv_bundle_adjuster Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(libmv_bundle_adjuster PRIVATE Ceres::Ceres gflags)
 
   add_executable(libmv_homography
                  libmv_homography.cc)
-  target_link_libraries(libmv_homography Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(libmv_homography PRIVATE Ceres::Ceres gflags)
 
   add_executable(denoising
                  denoising.cc
                  fields_of_experts.cc)
-  target_link_libraries(denoising Ceres::Ceres ${gflags_LIBRARIES})
+  target_link_libraries(denoising PRIVATE Ceres::Ceres gflags)
 
   add_executable(robot_pose_mle
                  robot_pose_mle.cc)
-  target_link_libraries(robot_pose_mle Ceres::Ceres ${gflags_LIBRARIES})
-endif (WITH_GFLAGS AND gflags_FOUND)
+  target_link_libraries(robot_pose_mle PRIVATE Ceres::Ceres gflags)
+endif (gflags_FOUND)
 
 add_subdirectory(sampled_function)
 add_subdirectory(slam)

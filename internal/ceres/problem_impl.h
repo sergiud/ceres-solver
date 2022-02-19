@@ -47,8 +47,8 @@
 #include <vector>
 
 #include "ceres/context_impl.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/internal/port.h"
 #include "ceres/manifold.h"
 #include "ceres/problem.h"
@@ -252,6 +252,6 @@ class CERES_NO_EXPORT ProblemImpl {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_PUBLIC_PROBLEM_IMPL_H_

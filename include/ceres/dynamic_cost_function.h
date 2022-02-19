@@ -32,8 +32,7 @@
 #define CERES_PUBLIC_DYNAMIC_COST_FUNCTION_H_
 
 #include "ceres/cost_function.h"
-
-#include "ceres/internal/prefix.h"
+#include "ceres/internal/disable_warnings.h"
 
 namespace ceres {
 
@@ -42,7 +41,6 @@ namespace ceres {
 // parameter blocks and set the number of residuals at run time.
 class CERES_EXPORT DynamicCostFunction : public CostFunction {
  public:
-  ~DynamicCostFunction() {}
 
   virtual void AddParameterBlock(int size) {
     mutable_parameter_block_sizes()->push_back(size);
@@ -55,6 +53,6 @@ class CERES_EXPORT DynamicCostFunction : public CostFunction {
 
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_PUBLIC_DYNAMIC_COST_FUNCTION_H_

@@ -32,8 +32,8 @@
 #define CERES_INTERNAL_DETECT_STRUCTURE_H_
 
 #include "ceres/block_structure.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -66,6 +66,6 @@ void CERES_NO_EXPORT DetectStructure(const CompressedRowBlockStructure& bs,
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_DETECT_STRUCTURE_H_

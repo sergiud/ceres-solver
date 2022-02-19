@@ -122,7 +122,7 @@ class SchurEliminatorBase;
 //   options.elimination_groups.push_back(num_cameras);
 //   VisibilityBasedPreconditioner preconditioner(
 //      *A.block_structure(), options);
-//   preconditioner.Update(A, NULL);
+//   preconditioner.Update(A, nullptr);
 //   preconditioner.RightMultiply(x, y);
 class CERES_NO_EXPORT VisibilityBasedPreconditioner
     : public BlockSparseMatrixPreconditioner {
@@ -138,7 +138,7 @@ class CERES_NO_EXPORT VisibilityBasedPreconditioner
   VisibilityBasedPreconditioner(const VisibilityBasedPreconditioner&) = delete;
   void operator=(const VisibilityBasedPreconditioner&) = delete;
 
-  virtual ~VisibilityBasedPreconditioner();
+  ~VisibilityBasedPreconditioner() override;
 
   // Preconditioner interface
   void RightMultiply(const double* x, double* y) const final;
@@ -161,7 +161,7 @@ class CERES_NO_EXPORT VisibilityBasedPreconditioner
   void ComputeClusterVisibility(
       const std::vector<std::set<int>>& visibility,
       std::vector<std::set<int>>* cluster_visibility) const;
-  WeightedGraph<int>* CreateClusterGraph(
+  std::unique_ptr<WeightedGraph<int>> CreateClusterGraph(
       const std::vector<std::set<int>>& visibility) const;
   void ForestToClusterPairs(
       const WeightedGraph<int>& forest,

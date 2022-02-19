@@ -1,5 +1,6 @@
-
 .. default-domain:: cpp
+
+.. highlight:: c++
 
 .. cpp:namespace:: ceres
 
@@ -1239,8 +1240,8 @@ elimination group [LiSaad]_.
 
    where :math:`\|\cdot\|_\infty` refers to the max norm, :math:`\Pi`
    is projection onto the bounds constraints and :math:`\boxplus` is
-   Plus operation for the overall local parameterization associated
-   with the parameter vector.
+   Plus operation for the overall manifold associated with the
+   parameter vector.
 
 .. member:: double Solver::Options::parameter_tolerance
 
@@ -1324,16 +1325,17 @@ elimination group [LiSaad]_.
    Default:``EIGEN``
 
    Ceres supports using multiple dense linear algebra libraries for
-   dense matrix factorizations. Currently ``EIGEN`` and ``LAPACK`` are
-   the valid choices. ``EIGEN`` is always available, ``LAPACK`` refers
-   to the system ``BLAS + LAPACK`` library which may or may not be
-   available.
+   dense matrix factorizations. Currently ``EIGEN``, ``LAPACK`` and
+   ``CUDA`` are the valid choices. ``EIGEN`` is always available,
+   ``LAPACK`` refers to the system ``BLAS + LAPACK`` library which may
+   or may not be available. ``CUDA`` refers to Nvidia's GPU based
+   dense linear algebra library which may or may not be available.
 
    This setting affects the ``DENSE_QR``, ``DENSE_NORMAL_CHOLESKY``
    and ``DENSE_SCHUR`` solvers. For small to moderate sized probem
    ``EIGEN`` is a fine choice but for large problems, an optimized
-   ``LAPACK + BLAS`` implementation can make a substantial difference
-   in performance.
+   ``LAPACK + BLAS`` or ``CUDA`` implementation can make a substantial
+   difference in performance.
 
 .. member:: SparseLinearAlgebraLibrary Solver::Options::sparse_linear_algebra_library_type
 
@@ -2212,7 +2214,7 @@ The three arrays will be:
    Dimension of the tangent space of the problem (or the number of
    columns in the Jacobian for the problem). This is different from
    :member:`Solver::Summary::num_parameters` if a parameter block is
-   associated with a :class:`LocalParameterization`.
+   associated with a :class:`Manifold`.
 
 .. member:: int Solver::Summary::num_residual_blocks
 
@@ -2238,7 +2240,7 @@ The three arrays will be:
    number of columns in the Jacobian for the reduced problem). This is
    different from :member:`Solver::Summary::num_parameters_reduced` if
    a parameter block in the reduced problem is associated with a
-   :class:`LocalParameterization`.
+   :class:`Manifold`.
 
 .. member:: int Solver::Summary::num_residual_blocks_reduced
 

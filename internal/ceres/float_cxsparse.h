@@ -32,7 +32,7 @@
 #define CERES_INTERNAL_FLOAT_CXSPARSE_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 
 #if !defined(CERES_NO_CXSPARSE)
 

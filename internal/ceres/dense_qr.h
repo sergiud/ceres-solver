@@ -33,18 +33,26 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 // clang-format off
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 // clang-format on
 
 #include <memory>
 #include <vector>
 
 #include "Eigen/Dense"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
+
+#ifndef CERES_NO_CUDA
+#include "ceres/context_impl.h"
+#include "ceres/cuda_buffer.h"
+#include "cublas_v2.h"
+#include "cuda_runtime.h"
+#include "cusolverDn.h"
+#endif  // CERES_NO_CUDA
 
 namespace ceres {
 namespace internal {
@@ -56,7 +64,7 @@ class CERES_NO_EXPORT DenseQR {
  public:
   static std::unique_ptr<DenseQR> Create(const LinearSolver::Options& options);
 
-  virtual ~DenseQR() = default;
+  virtual ~DenseQR();
 
   // Computes the QR factorization of the given matrix.
   //
@@ -98,10 +106,8 @@ class CERES_NO_EXPORT DenseQR {
                                              std::string* message);
 };
 
-class CERES_NO_EXPORT EigenDenseQR : public DenseQR {
+class CERES_NO_EXPORT EigenDenseQR final : public DenseQR {
  public:
-  ~EigenDenseQR() override = default;
-
   LinearSolverTerminationType Factorize(int num_rows,
                                         int num_cols,
                                         double* lhs,
@@ -116,10 +122,8 @@ class CERES_NO_EXPORT EigenDenseQR : public DenseQR {
 };
 
 #ifndef CERES_NO_LAPACK
-class CERES_NO_EXPORT LAPACKDenseQR : public DenseQR {
+class CERES_NO_EXPORT LAPACKDenseQR final : public DenseQR {
  public:
-  ~LAPACKDenseQR() override = default;
-
   LinearSolverTerminationType Factorize(int num_rows,
                                         int num_cols,
                                         double* lhs,
@@ -139,9 +143,65 @@ class CERES_NO_EXPORT LAPACKDenseQR : public DenseQR {
 };
 #endif  // CERES_NO_LAPACK
 
+#ifndef CERES_NO_CUDA
+// Implementation of DenseQR using the 32-bit cuSolverDn interface. A
+// requirement for using this solver is that the lhs must not be rank deficient.
+// This is because cuSolverDn does not implement the singularity-checking
+// wrapper trtrs, hence this solver directly uses trsv from CUBLAS for the
+// backsubstitution.
+class CERES_NO_EXPORT CUDADenseQR final : public DenseQR {
+ public:
+  static std::unique_ptr<CUDADenseQR> Create(
+      const LinearSolver::Options& options);
+  CUDADenseQR(const CUDADenseQR&) = delete;
+  CUDADenseQR& operator=(const CUDADenseQR&) = delete;
+  LinearSolverTerminationType Factorize(int num_rows,
+                                        int num_cols,
+                                        double* lhs,
+                                        std::string* message) override;
+  LinearSolverTerminationType Solve(const double* rhs,
+                                    double* solution,
+                                    std::string* message) override;
+
+ private:
+  CUDADenseQR();
+  // Picks up the cuSolverDN, cuBLAS, and cuStream handles from the context. If
+  // the context is unable to initialize CUDA, returns false with a
+  // human-readable message indicating the reason.
+  bool Init(ContextImpl* context, std::string* message);
+
+  // Handle to the cuSOLVER context.
+  cusolverDnHandle_t cusolver_handle_ = nullptr;
+  // Handle to cuBLAS context.
+  cublasHandle_t cublas_handle_ = nullptr;
+  // CUDA device stream.
+  cudaStream_t stream_ = nullptr;
+  // Number of rowns in the A matrix, to be cached between calls to *Factorize
+  // and *Solve.
+  size_t num_rows_ = 0;
+  // Number of columns in the A matrix, to be cached between calls to *Factorize
+  // and *Solve.
+  size_t num_cols_ = 0;
+  // GPU memory allocated for the A matrix (lhs matrix).
+  CudaBuffer<double> lhs_;
+  // GPU memory allocated for the B matrix (rhs vector).
+  CudaBuffer<double> rhs_;
+  // GPU memory allocated for the TAU matrix (scaling of householder vectors).
+  CudaBuffer<double> tau_;
+  // Scratch space for cuSOLVER on the GPU.
+  CudaBuffer<uint8_t> device_workspace_;
+  // Required for error handling with cuSOLVER.
+  CudaBuffer<int> error_;
+  // Cache the result of Factorize to ensure that when Solve is called, the
+  // factiorization of lhs is valid.
+  LinearSolverTerminationType factorize_result_ = LINEAR_SOLVER_FATAL_ERROR;
+};
+
+#endif  // CERES_NO_CUDA
+
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_DENSE_QR_H_

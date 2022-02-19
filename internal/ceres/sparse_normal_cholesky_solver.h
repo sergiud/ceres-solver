@@ -36,9 +36,10 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 // clang-format off
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 // clang-format on
 
+#include <memory>
 #include <vector>
 
 #include "ceres/internal/export.h"
@@ -60,7 +61,7 @@ class CERES_NO_EXPORT SparseNormalCholeskySolver
   SparseNormalCholeskySolver(const SparseNormalCholeskySolver&) = delete;
   void operator=(const SparseNormalCholeskySolver&) = delete;
 
-  virtual ~SparseNormalCholeskySolver();
+  ~SparseNormalCholeskySolver() override;
 
  private:
   LinearSolver::Summary SolveImpl(BlockSparseMatrix* A,

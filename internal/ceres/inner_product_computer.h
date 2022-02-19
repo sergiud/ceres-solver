@@ -36,8 +36,8 @@
 
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/compressed_row_sparse_matrix.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -75,7 +75,7 @@ class CERES_NO_EXPORT InnerProductComputer {
   //
   // The user must ensure that the matrix m is valid for the life time
   // of this object.
-  static InnerProductComputer* Create(
+  static std::unique_ptr<InnerProductComputer> Create(
       const BlockSparseMatrix& m,
       CompressedRowSparseMatrix::StorageType storage_type);
 
@@ -84,7 +84,7 @@ class CERES_NO_EXPORT InnerProductComputer {
   //
   // a = m(start_row_block : end_row_block, :);
   // result = a' * a;
-  static InnerProductComputer* Create(
+  static std::unique_ptr<InnerProductComputer> Create(
       const BlockSparseMatrix& m,
       int start_row_block,
       int end_row_block,
@@ -128,7 +128,7 @@ class CERES_NO_EXPORT InnerProductComputer {
 
   void Init(CompressedRowSparseMatrix::StorageType storage_type);
 
-  CompressedRowSparseMatrix* CreateResultMatrix(
+  std::unique_ptr<CompressedRowSparseMatrix> CreateResultMatrix(
       const CompressedRowSparseMatrix::StorageType storage_type,
       int num_nonzeros);
 
@@ -156,6 +156,6 @@ class CERES_NO_EXPORT InnerProductComputer {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_INNER_PRODUCT_COMPUTER_H_

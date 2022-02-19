@@ -31,6 +31,8 @@
 #ifndef CERES_INTERNAL_LINE_SEARCH_DIRECTION_H_
 #define CERES_INTERNAL_LINE_SEARCH_DIRECTION_H_
 
+#include <memory>
+
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
 #include "ceres/line_search_minimizer.h"
@@ -58,9 +60,9 @@ class CERES_NO_EXPORT LineSearchDirection {
     bool use_approximate_eigenvalue_bfgs_scaling;
   };
 
-  static LineSearchDirection* Create(const Options& options);
+  static std::unique_ptr<LineSearchDirection> Create(const Options& options);
 
-  virtual ~LineSearchDirection() {}
+  virtual ~LineSearchDirection();
   virtual bool NextDirection(const LineSearchMinimizer::State& previous,
                              const LineSearchMinimizer::State& current,
                              Vector* search_direction) = 0;

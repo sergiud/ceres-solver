@@ -44,13 +44,13 @@
 #include <vector>
 
 #include "ceres/compressed_row_sparse_matrix.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
 
-class CERES_NO_EXPORT DynamicCompressedRowSparseMatrix
+class CERES_NO_EXPORT DynamicCompressedRowSparseMatrix final
     : public CompressedRowSparseMatrix {
  public:
   // Set the number of rows and columns for the underlyig
@@ -101,6 +101,6 @@ class CERES_NO_EXPORT DynamicCompressedRowSparseMatrix
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_DYNAMIC_COMPRESSED_ROW_SPARSE_MATRIX_H_

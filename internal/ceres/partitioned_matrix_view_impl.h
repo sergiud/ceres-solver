@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 #include "ceres/block_sparse_matrix.h"
@@ -79,10 +80,6 @@ PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 
   CHECK_EQ(num_cols_e_ + num_cols_f_, matrix_.num_cols());
 }
-
-template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
-PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
-    ~PartitionedMatrixView() {}
 
 // The next four methods don't seem to be particularly cache
 // friendly. This is an artifact of how the BlockStructure of the
@@ -235,7 +232,7 @@ void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 // and return a BlockSparseMatrix with the this block structure. The
 // caller owns the result.
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
-BlockSparseMatrix*
+std::unique_ptr<BlockSparseMatrix>
 PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
     CreateBlockDiagonalMatrixLayout(int start_col_block,
                                     int end_col_block) const {
@@ -270,28 +267,27 @@ PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 
   // Build a BlockSparseMatrix with the just computed block
   // structure.
-  return new BlockSparseMatrix(block_diagonal_structure);
+  return std::make_unique<BlockSparseMatrix>(block_diagonal_structure);
 }
 
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
-BlockSparseMatrix* PartitionedMatrixView<kRowBlockSize,
-                                         kEBlockSize,
-                                         kFBlockSize>::CreateBlockDiagonalEtE()
-    const {
-  BlockSparseMatrix* block_diagonal =
+std::unique_ptr<BlockSparseMatrix>
+PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
+    CreateBlockDiagonalEtE() const {
+  std::unique_ptr<BlockSparseMatrix> block_diagonal =
       CreateBlockDiagonalMatrixLayout(0, num_col_blocks_e_);
-  UpdateBlockDiagonalEtE(block_diagonal);
+  UpdateBlockDiagonalEtE(block_diagonal.get());
   return block_diagonal;
 }
 
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
-BlockSparseMatrix* PartitionedMatrixView<kRowBlockSize,
-                                         kEBlockSize,
-                                         kFBlockSize>::CreateBlockDiagonalFtF()
-    const {
-  BlockSparseMatrix* block_diagonal = CreateBlockDiagonalMatrixLayout(
-      num_col_blocks_e_, num_col_blocks_e_ + num_col_blocks_f_);
-  UpdateBlockDiagonalFtF(block_diagonal);
+std::unique_ptr<BlockSparseMatrix>
+PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
+    CreateBlockDiagonalFtF() const {
+  std::unique_ptr<BlockSparseMatrix> block_diagonal =
+      CreateBlockDiagonalMatrixLayout(num_col_blocks_e_,
+                                      num_col_blocks_e_ + num_col_blocks_f_);
+  UpdateBlockDiagonalFtF(block_diagonal.get());
   return block_diagonal;
 }
 

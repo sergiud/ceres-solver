@@ -36,8 +36,8 @@
 #include "ceres/casts.h"
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/context_impl.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
 #include "ceres/linear_operator.h"
 #include "ceres/sparse_matrix.h"
 #include "ceres/types.h"
@@ -116,7 +116,7 @@ class CERES_NO_EXPORT Preconditioner : public LinearOperator {
   static PreconditionerType PreconditionerForZeroEBlocks(
       PreconditionerType preconditioner_type);
 
-  virtual ~Preconditioner();
+  ~Preconditioner() override;
 
   // Update the numerical value of the preconditioner for the linear
   // system:
@@ -127,7 +127,7 @@ class CERES_NO_EXPORT Preconditioner : public LinearOperator {
   // for some vector b. It is important that the matrix A have the
   // same block structure as the one used to construct this object.
   //
-  // D can be NULL, in which case its interpreted as a diagonal matrix
+  // D can be nullptr, in which case its interpreted as a diagonal matrix
   // of size zero.
   virtual bool Update(const LinearOperator& A, const double* D) = 0;
 
@@ -148,9 +148,8 @@ class CERES_NO_EXPORT Preconditioner : public LinearOperator {
 // other preconditioners that depend on the particular matrix layout of
 // the underlying linear operator.
 template <typename MatrixType>
-class TypedPreconditioner : public Preconditioner {
+class CERES_NO_EXPORT TypedPreconditioner : public Preconditioner {
  public:
-  virtual ~TypedPreconditioner() {}
   bool Update(const LinearOperator& A, const double* D) final {
     return UpdateImpl(*down_cast<const MatrixType*>(&A), D);
   }
@@ -168,23 +167,25 @@ typedef TypedPreconditioner<CompressedRowSparseMatrix> CompressedRowSparseMatrix
 // clang-format on
 
 // Wrap a SparseMatrix object as a preconditioner.
-class CERES_NO_EXPORT SparseMatrixPreconditionerWrapper
+class CERES_NO_EXPORT SparseMatrixPreconditionerWrapper final
     : public SparseMatrixPreconditioner {
  public:
   // Wrapper does NOT take ownership of the matrix pointer.
   explicit SparseMatrixPreconditionerWrapper(const SparseMatrix* matrix);
-  virtual ~SparseMatrixPreconditionerWrapper();
+  ~SparseMatrixPreconditionerWrapper() override;
 
   // Preconditioner interface
-  virtual void RightMultiply(const double* x, double* y) const;
-  virtual int num_rows() const;
+  void RightMultiply(const double* x, double* y) const override;
+  int num_rows() const override;
 
  private:
-  virtual bool UpdateImpl(const SparseMatrix& A, const double* D);
+  bool UpdateImpl(const SparseMatrix& A, const double* D) override;
   const SparseMatrix* matrix_;
 };
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_PRECONDITIONER_H_

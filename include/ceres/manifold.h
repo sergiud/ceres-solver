@@ -37,7 +37,7 @@
 #include <vector>
 
 #include "ceres/internal/disable_warnings.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/types.h"
 
 namespace ceres {
@@ -94,7 +94,7 @@ namespace ceres {
 // A more interesting case is SO(3), the special orthogonal group in three
 // dimensions - the space of 3x3 rotation matrices. SO(3) is a three dimensional
 // manifold embedded in R^9 or R^(3x3). So points on SO(3) are represented using
-// 9 dimensional vectors or 3x3 matrices, and point in its tangent spaces are
+// 9 dimensional vectors or 3x3 matrices, and points in its tangent spaces are
 // represented by 3 dimensional vectors.
 //
 // Defining Plus and Minus are defined in terms of the matrix Exp and Log
@@ -142,13 +142,9 @@ namespace ceres {
 // Representations through Encapsulation of Manifolds"
 // By C. Hertzberg, R. Wagner, U. Frese and L. Schroder
 // https://arxiv.org/pdf/1107.1119.pdf
-//
-// TODO(sameeragarwal): Add documentation about how this class replaces
-// LocalParameterization once the transition starts happening.
-
 class CERES_EXPORT Manifold {
  public:
-  virtual ~Manifold() = default;
+  virtual ~Manifold();
 
   // Dimension of the ambient space in which the manifold is embedded.
   virtual int AmbientSize() const = 0;
@@ -158,10 +154,9 @@ class CERES_EXPORT Manifold {
 
   //   x_plus_delta = Plus(x, delta),
   //
-  // Plus computes the result of moving along delta in the tangent space at x,
-  // and then projecting back onto the manifold that x belongs to. In
-  // Differential Geometry this is known as a "Retraction". It is a
-  // generalization of vector addition in Euclidean spaces.
+  // A generalization of vector addition in Euclidean space, Plus computes the
+  // result of moving along delta in the tangent space at x, and then projecting
+  // back onto the manifold that x belongs to.
   //
   // x and x_plus_delta are AmbientSize() vectors.
   // delta is a TangentSize() vector.
@@ -231,7 +226,6 @@ class CERES_EXPORT Manifold {
 class CERES_EXPORT EuclideanManifold : public Manifold {
  public:
   EuclideanManifold(int size);
-  virtual ~EuclideanManifold() = default;
   int AmbientSize() const override;
   int TangentSize() const override;
   bool Plus(const double* x,
@@ -255,7 +249,6 @@ class CERES_EXPORT EuclideanManifold : public Manifold {
 class CERES_EXPORT SubsetManifold : public Manifold {
  public:
   SubsetManifold(int size, const std::vector<int>& constant_parameters);
-  virtual ~SubsetManifold() = default;
   int AmbientSize() const override;
   int TangentSize() const override;
 
@@ -284,16 +277,14 @@ class CERES_EXPORT SubsetManifold : public Manifold {
 //
 // Example usage:
 //
-// ProductParameterization product_manifold(new Quaternion(),
-//                                          new EuclideanManifold(3));
+// ProductParameterization se3(new Quaternion(), new EuclideanManifold(3));
 //
-// is the manifold for a rigid transformation, where the
-// rotation is represented using a quaternion.
+// is the manifold for a rigid transformation, where the rotation is represented
+// using a quaternion.
 class CERES_EXPORT ProductManifold : public Manifold {
  public:
   ProductManifold(const ProductManifold&) = delete;
   ProductManifold& operator=(const ProductManifold&) = delete;
-  virtual ~ProductManifold() {}
 
   // NOTE: The constructor takes ownership of the input
   // manifolds.
@@ -368,8 +359,6 @@ class CERES_EXPORT ProductManifold : public Manifold {
 // and to_delta( [q0; u_{3x1}] ) = u / |u| * atan2(|u|, q0)
 class CERES_EXPORT QuaternionManifold : public Manifold {
  public:
-  QuaternionManifold() = default;
-  virtual ~QuaternionManifold() = default;
   int AmbientSize() const override { return 4; }
   int TangentSize() const override { return 3; }
 
@@ -394,8 +383,6 @@ class CERES_EXPORT QuaternionManifold : public Manifold {
 // difference is important and requires a different manifold.
 class CERES_EXPORT EigenQuaternionManifold : public Manifold {
  public:
-  EigenQuaternionManifold() = default;
-  virtual ~EigenQuaternionManifold() = default;
   int AmbientSize() const override { return 4; }
   int TangentSize() const override { return 3; }
 
@@ -430,10 +417,13 @@ class CERES_EXPORT EigenQuaternionManifold : public Manifold {
 //
 // The class works with dynamic and static ambient space dimensions. If the
 // ambient space dimensions is know at compile time use
+//
 //    SphereManifold<3> manifold;
+//
 // If the ambient space dimensions is not known at compile time the template
 // parameter needs to be set to ceres::DYNAMIC and the actual dimension needs to
 // be provided as a constructor argument:
+//
 //    SphereManifold<ceres::DYNAMIC> manifold(ambient_dim);
 //
 // See  section B.2 (p.25) in "Integrating Generic Sensor Fusion Algorithms with
@@ -486,8 +476,80 @@ class SphereManifold : public Manifold {
   const int size_{};
 };
 
+// This provides a manifold for lines, where the line is
+// over-parameterized by an origin point and a direction vector. So the
+// parameter vector size needs to be two times the ambient space dimension,
+// where the first half is interpreted as the origin point and the second half
+// as the direction.
+//
+// The plus operator for the line direction is the same as for the
+// SphereManifold. The update of the origin point is
+// perpendicular to the line direction before the update.
+//
+// This manifold is a special case of the affine Grassmannian
+// manifold (see https://en.wikipedia.org/wiki/Affine_Grassmannian_(manifold))
+// for the case Graff_1(R^n).
+//
+// The class works with dynamic and static ambient space dimensions. If the
+// ambient space dimensions is know at compile time use
+//
+//    LineManifold<3> manifold;
+//
+// If the ambient space dimensions is not known at compile time the template
+// parameter needs to be set to ceres::DYNAMIC and the actual dimension needs to
+// be provided as a constructor argument:
+//
+//    LineManifold<ceres::DYNAMIC> manifold(ambient_dim);
+//
+template <int AmbientSpaceDimension>
+class LineManifold : public Manifold {
+ public:
+  static_assert(AmbientSpaceDimension == DYNAMIC || AmbientSpaceDimension >= 2,
+                "The ambient space must be at least 2.");
+  static_assert(DYNAMIC == Eigen::Dynamic,
+                "ceres::DYNAMIC needs to be the same as Eigen::Dynamic.");
+
+  LineManifold();
+  explicit LineManifold(int size);
+
+  int AmbientSize() const override { return 2 * size_; }
+  int TangentSize() const override { return 2 * (size_ - 1); }
+  bool Plus(const double* x,
+            const double* delta,
+            double* x_plus_delta) const override;
+  bool PlusJacobian(const double* x, double* jacobian) const override;
+  bool Minus(const double* y,
+             const double* x,
+             double* y_minus_x) const override;
+  bool MinusJacobian(const double* x, double* jacobian) const override;
+
+ private:
+  static constexpr int IsDynamic = (AmbientSpaceDimension == Eigen::Dynamic);
+  static constexpr int TangentSpaceDimension =
+      IsDynamic ? Eigen::Dynamic : AmbientSpaceDimension - 1;
+
+  static constexpr int DAmbientSpaceDimension =
+      IsDynamic ? Eigen::Dynamic : 2 * AmbientSpaceDimension;
+  static constexpr int DTangentSpaceDimension =
+      IsDynamic ? Eigen::Dynamic : 2 * TangentSpaceDimension;
+
+  using AmbientVector = Eigen::Matrix<double, AmbientSpaceDimension, 1>;
+  using TangentVector = Eigen::Matrix<double, TangentSpaceDimension, 1>;
+  using MatrixPlusJacobian = Eigen::Matrix<double,
+                                           DAmbientSpaceDimension,
+                                           DTangentSpaceDimension,
+                                           Eigen::RowMajor>;
+  using MatrixMinusJacobian = Eigen::Matrix<double,
+                                            DTangentSpaceDimension,
+                                            DAmbientSpaceDimension,
+                                            Eigen::RowMajor>;
+
+  const int size_{AmbientSpaceDimension};
+};
+
 }  // namespace ceres
 
+#include "internal/line_manifold.h"
 #include "internal/sphere_manifold.h"
 
 // clang-format off

@@ -42,7 +42,6 @@
 #include <vector>
 
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
 
 namespace ceres {
 namespace internal {
@@ -69,10 +68,10 @@ struct CERES_NO_EXPORT Cell {
 };
 
 // Order cell by their block_id;
-bool CERES_NO_EXPORT CellLessThan(const Cell& lhs, const Cell& rhs);
+CERES_NO_EXPORT bool CellLessThan(const Cell& lhs, const Cell& rhs);
 
 struct CERES_NO_EXPORT CompressedList {
-  CompressedList() {}
+  CompressedList() = default;
 
   // Construct a CompressedList with the cells containing num_cells
   // entries.
@@ -84,12 +83,12 @@ struct CERES_NO_EXPORT CompressedList {
 typedef CompressedList CompressedRow;
 typedef CompressedList CompressedColumn;
 
-struct CompressedRowBlockStructure {
+struct CERES_NO_EXPORT CompressedRowBlockStructure {
   std::vector<Block> cols;
   std::vector<CompressedRow> rows;
 };
 
-struct CompressedColumnBlockStructure {
+struct CERES_NO_EXPORT CompressedColumnBlockStructure {
   std::vector<Block> rows;
   std::vector<CompressedColumn> cols;
 };

@@ -34,9 +34,8 @@
 #include <memory>
 
 #include "ceres/block_random_access_diagonal_matrix.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/preconditioner.h"
 
 namespace ceres {
@@ -63,7 +62,7 @@ class CERES_NO_EXPORT BlockJacobiPreconditioner
   BlockJacobiPreconditioner(const BlockJacobiPreconditioner&) = delete;
   void operator=(const BlockJacobiPreconditioner&) = delete;
 
-  virtual ~BlockJacobiPreconditioner();
+  ~BlockJacobiPreconditioner() override;
 
   // Preconditioner interface
   void RightMultiply(const double* x, double* y) const final;
@@ -80,6 +79,6 @@ class CERES_NO_EXPORT BlockJacobiPreconditioner
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_BLOCK_JACOBI_PRECONDITIONER_H_

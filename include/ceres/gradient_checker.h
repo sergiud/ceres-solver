@@ -40,13 +40,11 @@
 
 #include "ceres/cost_function.h"
 #include "ceres/dynamic_numeric_diff_cost_function.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/fixed_array.h"
 #include "ceres/local_parameterization.h"
-#include "ceres/internal/export.h"
-#include "glog/logging.h"
-
-#include "ceres/internal/prefix.h"
 #include "ceres/manifold.h"
 #include "glog/logging.h"
 
@@ -84,6 +82,9 @@ class CERES_EXPORT GradientChecker {
   // NOTE: This constructor is deprecated and will be removed in the next public
   // release of Ceres Solver. Please transition to using the Manifold based
   // version.
+  CERES_DEPRECATED_WITH_MSG(
+      "Local Parameterizations are deprecated. Use the constructor that uses "
+      "Manifolds instead.")
   GradientChecker(
       const CostFunction* function,
       const std::vector<const LocalParameterization*>* local_parameterizations,
@@ -152,7 +153,7 @@ class CERES_EXPORT GradientChecker {
   // Jacobians. If the Jacobians differ by more than this amount, then the
   // probe fails.
   // results: On return, the Jacobians (and other information) will be stored
-  // here. May be NULL.
+  // here. May be nullptr.
   //
   // Returns true if no problems are detected and the difference between the
   // Jacobians is less than error_tolerance.
@@ -183,6 +184,6 @@ class CERES_EXPORT GradientChecker {
 
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_PUBLIC_GRADIENT_CHECKER_H_

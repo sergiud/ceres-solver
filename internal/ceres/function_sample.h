@@ -33,9 +33,9 @@
 
 #include <string>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -91,6 +91,6 @@ struct CERES_NO_EXPORT FunctionSample {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_FUNCTION_SAMPLE_H_

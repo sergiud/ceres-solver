@@ -30,10 +30,7 @@
 
 #include "ceres/dense_normal_cholesky_solver.h"
 
-#include <cstddef>
-
 #include "Eigen/Dense"
-#include "ceres/blas.h"
 #include "ceres/dense_sparse_matrix.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_solver.h"
@@ -72,7 +69,7 @@ LinearSolver::Summary DenseNormalCholeskySolver::SolveImpl(
   //   rhs = A'b
   Vector rhs = A->matrix().transpose() * ConstVectorRef(b, num_rows);
 
-  if (per_solve_options.D != NULL) {
+  if (per_solve_options.D != nullptr) {
     ConstVectorRef D(per_solve_options.D, num_cols);
     lhs += D.array().square().matrix().asDiagonal();
   }

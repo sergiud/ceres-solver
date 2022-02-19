@@ -35,9 +35,8 @@
 #include <string>
 #include <vector>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/solver.h"
 
@@ -180,7 +179,7 @@ class CERES_NO_EXPORT Minimizer {
     std::shared_ptr<CoordinateDescentMinimizer> inner_iteration_minimizer;
   };
 
-  static Minimizer* Create(MinimizerType minimizer_type);
+  static std::unique_ptr<Minimizer> Create(MinimizerType minimizer_type);
   static bool RunCallbacks(const Options& options,
                            const IterationSummary& iteration_summary,
                            Solver::Summary* summary);
@@ -197,6 +196,6 @@ class CERES_NO_EXPORT Minimizer {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_MINIMIZER_H_

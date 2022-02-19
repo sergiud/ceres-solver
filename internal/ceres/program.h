@@ -37,9 +37,8 @@
 #include <vector>
 
 #include "ceres/evaluation_callback.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -61,9 +60,6 @@ class TripletSparseMatrix;
 // not built for transformation.
 class CERES_NO_EXPORT Program {
  public:
-  Program();
-  explicit Program(const Program& program);
-
   // The ordered parameter and residual blocks for the program.
   const std::vector<ParameterBlock*>& parameter_blocks() const;
   const std::vector<ResidualBlock*>& residual_blocks() const;
@@ -148,12 +144,13 @@ class CERES_NO_EXPORT Program {
   // fixed_cost will be equal to the sum of the costs of the residual
   // blocks that were removed.
   //
-  // If there was a problem, then the function will return a NULL
+  // If there was a problem, then the function will return a nullptr
   // pointer and error will contain a human readable description of
   // the problem.
-  Program* CreateReducedProgram(std::vector<double*>* removed_parameter_blocks,
-                                double* fixed_cost,
-                                std::string* error) const;
+  std::unique_ptr<Program> CreateReducedProgram(
+      std::vector<double*>* removed_parameter_blocks,
+      double* fixed_cost,
+      std::string* error) const;
 
   // See problem.h for what these do.
   int NumParameterBlocks() const;
@@ -198,6 +195,6 @@ class CERES_NO_EXPORT Program {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_PROGRAM_H_

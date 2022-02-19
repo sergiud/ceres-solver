@@ -42,16 +42,16 @@ namespace ceres {
 // more information on manifolds, see include/ceres/manifold.h
 //
 // To get an auto differentiated manifold, you must define a class/struct with
-// templated Plus and Minus functions that computes
+// templated Plus and Minus functions that compute
 //
 //   x_plus_delta = Plus(x, delta);
 //   y_minus_x    = Minus(y, x);
 //
 // Where, x, y and x_plus_y are vectors on the manifold in the ambient space (so
-// they are kAmbientSize vectors) and and delta, y_minus_x are vectors in the
+// they are kAmbientSize vectors) and delta, y_minus_x are vectors in the
 // tangent space (so they are kTangentSize vectors).
 //
-// The Functor should have the signatures:
+// The Functor should have the signature:
 //
 // struct Functor {
 //   template <typename T>
@@ -152,7 +152,6 @@ class AutoDiffManifold : public Manifold {
   // Takes ownership of functor.
   explicit AutoDiffManifold(Functor* functor) : functor_(functor) {}
 
-  ~AutoDiffManifold() override {}
 
   int AmbientSize() const override { return kAmbientSize; }
   int TangentSize() const override { return kTangentSize; }

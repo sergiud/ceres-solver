@@ -43,7 +43,7 @@ namespace ceres {
 
 using std::vector;
 
-LocalParameterization::~LocalParameterization() {}
+LocalParameterization::~LocalParameterization() = default;
 
 bool LocalParameterization::MultiplyByJacobian(const double* x,
                                                const int num_rows,
@@ -345,15 +345,5 @@ bool ProductParameterization::ComputeJacobian(const double* x,
 
   return true;
 }
-
-IdentityParameterization::~IdentityParameterization() {}
-
-EigenQuaternionParameterization::~EigenQuaternionParameterization() {}
-
-QuaternionParameterization::~QuaternionParameterization() {}
-
-SubsetParameterization::~SubsetParameterization() {}
-
-HomogeneousVectorParameterization::~HomogeneousVectorParameterization() {}
 
 }  // namespace ceres

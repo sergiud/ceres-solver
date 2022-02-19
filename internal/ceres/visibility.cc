@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cmath>
 #include <ctime>
+#include <memory>
 #include <set>
 #include <unordered_map>
 #include <utility>
@@ -79,9 +80,9 @@ void ComputeVisibility(const CompressedRowBlockStructure& block_structure,
   }
 }
 
-WeightedGraph<int>* CreateSchurComplementGraph(
+std::unique_ptr<WeightedGraph<int>> CreateSchurComplementGraph(
     const vector<set<int>>& visibility) {
-  const time_t start_time = time(NULL);
+  const time_t start_time = time(nullptr);
   // Compute the number of e_blocks/point blocks. Since the visibility
   // set for each e_block/camera contains the set of e_blocks/points
   // visible to it, we find the maximum across all visibility sets.
@@ -121,7 +122,7 @@ WeightedGraph<int>* CreateSchurComplementGraph(
     }
   }
 
-  WeightedGraph<int>* graph = new WeightedGraph<int>;
+  auto graph = std::make_unique<WeightedGraph<int>>();
 
   // Add vertices and initialize the pairs for self edges so that self
   // edges are guaranteed. This is needed for the Canonical views
@@ -146,7 +147,7 @@ WeightedGraph<int>* CreateSchurComplementGraph(
     graph->AddEdge(camera1, camera2, weight);
   }
 
-  VLOG(2) << "Schur complement graph time: " << (time(NULL) - start_time);
+  VLOG(2) << "Schur complement graph time: " << (time(nullptr) - start_time);
   return graph;
 }
 

@@ -35,12 +35,13 @@
 #ifndef CERES_INTERNAL_VISIBILITY_H_
 #define CERES_INTERNAL_VISIBILITY_H_
 
+#include <memory>
 #include <set>
 #include <vector>
 
 #include "ceres/graph.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/prefix.h"
 
 namespace ceres {
 namespace internal {
@@ -73,12 +74,12 @@ CERES_NO_EXPORT void ComputeVisibility(
 //
 // Caller acquires ownership of the returned WeightedGraph pointer
 // (heap-allocated).
-CERES_NO_EXPORT WeightedGraph<int>* CreateSchurComplementGraph(
+CERES_NO_EXPORT std::unique_ptr<WeightedGraph<int>> CreateSchurComplementGraph(
     const std::vector<std::set<int>>& visibility);
 
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_VISIBILITY_H_

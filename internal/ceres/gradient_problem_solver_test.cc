@@ -39,7 +39,6 @@ namespace internal {
 // Rosenbrock function; see http://en.wikipedia.org/wiki/Rosenbrock_function .
 class Rosenbrock : public ceres::FirstOrderFunction {
  public:
-  virtual ~Rosenbrock() {}
 
   bool Evaluate(const double* parameters,
                 double* cost,
@@ -48,7 +47,7 @@ class Rosenbrock : public ceres::FirstOrderFunction {
     const double y = parameters[1];
 
     cost[0] = (1.0 - x) * (1.0 - x) + 100.0 * (y - x * x) * (y - x * x);
-    if (gradient != NULL) {
+    if (gradient != nullptr) {
       gradient[0] = -2.0 * (1.0 - x) - 200.0 * (y - x * x) * 2.0 * x;
       gradient[1] = 200.0 * (y - x * x);
     }
@@ -73,13 +72,12 @@ TEST(GradientProblemSolver, SolvesRosenbrockWithDefaultOptions) {
 }
 
 class QuadraticFunction : public ceres::FirstOrderFunction {
-  virtual ~QuadraticFunction() {}
   bool Evaluate(const double* parameters,
                 double* cost,
                 double* gradient) const final {
     const double x = parameters[0];
     *cost = 0.5 * (5.0 - x) * (5.0 - x);
-    if (gradient != NULL) {
+    if (gradient != nullptr) {
       gradient[0] = x - 5.0;
     }
 
@@ -90,7 +88,6 @@ class QuadraticFunction : public ceres::FirstOrderFunction {
 
 struct RememberingCallback : public IterationCallback {
   explicit RememberingCallback(double* x) : calls(0), x(x) {}
-  virtual ~RememberingCallback() {}
   CallbackReturnType operator()(const IterationSummary& summary) final {
     x_values.push_back(*x);
     return SOLVER_CONTINUE;

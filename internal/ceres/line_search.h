@@ -33,13 +33,13 @@
 #ifndef CERES_INTERNAL_LINE_SEARCH_H_
 #define CERES_INTERNAL_LINE_SEARCH_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "ceres/function_sample.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
 #include "ceres/types.h"
 
 namespace ceres {
@@ -162,11 +162,12 @@ class CERES_NO_EXPORT LineSearch {
   };
 
   explicit LineSearch(const LineSearch::Options& options);
-  virtual ~LineSearch() {}
+  virtual ~LineSearch();
 
-  static LineSearch* Create(const LineSearchType line_search_type,
-                            const LineSearch::Options& options,
-                            std::string* error);
+  static std::unique_ptr<LineSearch> Create(
+      const LineSearchType line_search_type,
+      const LineSearch::Options& options,
+      std::string* error);
 
   // Perform the line search.
   //
@@ -258,10 +259,9 @@ class CERES_NO_EXPORT LineSearchFunction {
 // minFunc package by Mark Schmidt.
 //
 // For more details: http://www.di.ens.fr/~mschmidt/Software/minFunc.html
-class CERES_NO_EXPORT ArmijoLineSearch : public LineSearch {
+class CERES_NO_EXPORT ArmijoLineSearch final : public LineSearch {
  public:
   explicit ArmijoLineSearch(const LineSearch::Options& options);
-  virtual ~ArmijoLineSearch() {}
 
  private:
   void DoSearch(double step_size_estimate,
@@ -277,10 +277,9 @@ class CERES_NO_EXPORT ArmijoLineSearch : public LineSearch {
 //
 // [1] Nocedal J., Wright S., Numerical Optimization, 2nd Ed., Springer, 1999.
 // [2] http://www.di.ens.fr/~mschmidt/Software/minFunc.html.
-class CERES_NO_EXPORT WolfeLineSearch : public LineSearch {
+class CERES_NO_EXPORT WolfeLineSearch final : public LineSearch {
  public:
   explicit WolfeLineSearch(const LineSearch::Options& options);
-  virtual ~WolfeLineSearch() {}
 
   // Returns true iff either a valid point, or valid bracket are found.
   bool BracketingPhase(const FunctionSample& initial_position,

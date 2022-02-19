@@ -30,6 +30,8 @@
 
 #include "ceres/dynamic_compressed_row_jacobian_writer.h"
 
+#include <memory>
+
 #include "ceres/casts.h"
 #include "ceres/compressed_row_jacobian_writer.h"
 #include "ceres/dynamic_compressed_row_sparse_matrix.h"
@@ -43,17 +45,17 @@ namespace internal {
 using std::pair;
 using std::vector;
 
-ScratchEvaluatePreparer*
+std::unique_ptr<ScratchEvaluatePreparer[]>
 DynamicCompressedRowJacobianWriter::CreateEvaluatePreparers(int num_threads) {
   return ScratchEvaluatePreparer::Create(*program_, num_threads);
 }
 
-SparseMatrix* DynamicCompressedRowJacobianWriter::CreateJacobian() const {
-  DynamicCompressedRowSparseMatrix* jacobian =
-      new DynamicCompressedRowSparseMatrix(program_->NumResiduals(),
-                                           program_->NumEffectiveParameters(),
-                                           0 /* max_num_nonzeros */);
-  return jacobian;
+std::unique_ptr<SparseMatrix>
+DynamicCompressedRowJacobianWriter::CreateJacobian() const {
+  return std::make_unique<DynamicCompressedRowSparseMatrix>(
+      program_->NumResiduals(),
+      program_->NumEffectiveParameters(),
+      0 /* max_num_nonzeros */);
 }
 
 void DynamicCompressedRowJacobianWriter::Write(int residual_id,

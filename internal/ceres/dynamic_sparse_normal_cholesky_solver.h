@@ -36,7 +36,7 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 // clang-format off
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 // clang-format on
 
 #include "ceres/internal/export.h"
@@ -59,7 +59,6 @@ class CERES_NO_EXPORT DynamicSparseNormalCholeskySolver
  public:
   explicit DynamicSparseNormalCholeskySolver(
       const LinearSolver::Options& options);
-  virtual ~DynamicSparseNormalCholeskySolver() {}
 
  private:
   LinearSolver::Summary SolveImpl(CompressedRowSparseMatrix* A,

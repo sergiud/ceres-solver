@@ -40,9 +40,8 @@
 #include <vector>
 
 #include "ceres/cost_function.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
 
@@ -79,9 +78,9 @@ class CERES_NO_EXPORT ResidualBlock {
 
   // Evaluates the residual term, storing the scalar cost in *cost, the residual
   // components in *residuals, and the jacobians between the parameters and
-  // residuals in jacobians[i], in row-major order. If residuals is NULL, the
-  // residuals are not computed. If jacobians is NULL, no jacobians are
-  // computed. If jacobians[i] is NULL, then the jacobian for that parameter is
+  // residuals in jacobians[i], in row-major order. If residuals is nullptr, the
+  // residuals are not computed. If jacobians is nullptr, no jacobians are
+  // computed. If jacobians[i] is nullptr, then the jacobian for that parameter is
   // not computed.
   //
   // cost must not be null.
@@ -149,6 +148,6 @@ class CERES_NO_EXPORT ResidualBlock {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_RESIDUAL_BLOCK_H_

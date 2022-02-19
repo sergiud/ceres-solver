@@ -36,10 +36,9 @@
 
 #include <memory>
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/linear_operator.h"
 #include "ceres/linear_solver.h"
 #include "ceres/partitioned_matrix_view.h"
@@ -90,7 +89,7 @@ class BlockSparseMatrix;
 // RightMultiply (and the LeftMultiply) methods are not thread safe as
 // they depend on mutable arrays used for the temporaries needed to
 // compute the product y += Sx;
-class CERES_NO_EXPORT ImplicitSchurComplement : public LinearOperator {
+class CERES_NO_EXPORT ImplicitSchurComplement final : public LinearOperator {
  public:
   // num_eliminate_blocks is the number of E blocks in the matrix
   // A.
@@ -102,7 +101,6 @@ class CERES_NO_EXPORT ImplicitSchurComplement : public LinearOperator {
   // TODO(sameeragarwal): Get rid of the two bools below and replace
   // them with enums.
   explicit ImplicitSchurComplement(const LinearSolver::Options& options);
-  virtual ~ImplicitSchurComplement();
 
   // Initialize the Schur complement for a linear least squares
   // problem of the form
@@ -168,6 +166,6 @@ class CERES_NO_EXPORT ImplicitSchurComplement : public LinearOperator {
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_IMPLICIT_SCHUR_COMPLEMENT_H_

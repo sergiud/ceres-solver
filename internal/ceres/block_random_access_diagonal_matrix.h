@@ -37,9 +37,8 @@
 #include <vector>
 
 #include "ceres/block_random_access_matrix.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
-#include "ceres/internal/prefix.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "ceres/types.h"
 
@@ -59,7 +58,7 @@ class CERES_NO_EXPORT BlockRandomAccessDiagonalMatrix
 
   // The destructor is not thread safe. It assumes that no one is
   // modifying any cells when the matrix is being destroyed.
-  virtual ~BlockRandomAccessDiagonalMatrix();
+  ~BlockRandomAccessDiagonalMatrix() override;
 
   // BlockRandomAccessMatrix Interface.
   CellInfo* GetCell(int row_block_id,
@@ -100,6 +99,6 @@ class CERES_NO_EXPORT BlockRandomAccessDiagonalMatrix
 }  // namespace internal
 }  // namespace ceres
 
-#include "ceres/internal/suffix.h"
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_BLOCK_RANDOM_ACCESS_DIAGONAL_MATRIX_H_

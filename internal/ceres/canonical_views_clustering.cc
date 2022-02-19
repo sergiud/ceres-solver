@@ -35,6 +35,7 @@
 #include <unordered_set>
 
 #include "ceres/graph.h"
+#include "ceres/internal/export.h"
 #include "ceres/map_util.h"
 #include "glog/logging.h"
 
@@ -46,9 +47,8 @@ using std::vector;
 typedef std::unordered_map<int, int> IntMap;
 typedef std::unordered_set<int> IntSet;
 
-class CanonicalViewsClustering {
+class CERES_NO_EXPORT CanonicalViewsClustering {
  public:
-  CanonicalViewsClustering() {}
 
   // Compute the canonical views clustering of the vertices of the
   // graph. centers will contain the vertices that are the identified
@@ -85,11 +85,11 @@ void ComputeCanonicalViewsClustering(
     const WeightedGraph<int>& graph,
     vector<int>* centers,
     IntMap* membership) {
-  time_t start_time = time(NULL);
+  time_t start_time = time(nullptr);
   CanonicalViewsClustering cv;
   cv.ComputeClustering(options, graph, centers, membership);
   VLOG(2) << "Canonical views clustering time (secs): "
-          << time(NULL) - start_time;
+          << time(nullptr) - start_time;
 }
 
 // Implementation of CanonicalViewsClustering
@@ -107,7 +107,7 @@ void CanonicalViewsClustering::ComputeClustering(
 
   IntSet valid_views;
   FindValidViews(&valid_views);
-  while (valid_views.size() > 0) {
+  while (!valid_views.empty()) {
     // Find the next best canonical view.
     double best_difference = -std::numeric_limits<double>::max();
     int best_view = 0;

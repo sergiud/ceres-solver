@@ -58,7 +58,6 @@ class RegularizationCheckingLinearSolver : public DenseSparseMatrixSolver {
   RegularizationCheckingLinearSolver(const int num_cols, const double* diagonal)
       : num_cols_(num_cols), diagonal_(diagonal) {}
 
-  virtual ~RegularizationCheckingLinearSolver() {}
 
  private:
   LinearSolver::Summary SolveImpl(
@@ -87,7 +86,7 @@ TEST(LevenbergMarquardtStrategy, AcceptRejectStepRadiusScaling) {
 
   // We need a non-null pointer here, so anything should do.
   std::unique_ptr<LinearSolver> linear_solver(
-      new RegularizationCheckingLinearSolver(0, NULL));
+      new RegularizationCheckingLinearSolver(0, nullptr));
   options.linear_solver = linear_solver.get();
 
   LevenbergMarquardtStrategy lms(options);

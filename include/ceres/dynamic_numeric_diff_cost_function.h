@@ -89,7 +89,7 @@ class DynamicNumericDiffCostFunction : public DynamicCostFunction {
       DynamicNumericDiffCostFunction&& other)
       : functor_(std::move(other.functor_)), ownership_(other.ownership_) {}
 
-  virtual ~DynamicNumericDiffCostFunction() {
+  ~DynamicNumericDiffCostFunction() override {
     if (ownership_ != TAKE_OWNERSHIP) {
       functor_.release();
     }
@@ -111,7 +111,7 @@ class DynamicNumericDiffCostFunction : public DynamicCostFunction {
     const bool status =
         internal::VariadicEvaluate<internal::DynamicParameterDims>(
             *functor_.get(), parameters, residuals);
-    if (jacobians == NULL || !status) {
+    if (jacobians == nullptr || !status) {
       return status;
     }
 
@@ -133,7 +133,7 @@ class DynamicNumericDiffCostFunction : public DynamicCostFunction {
     }
 
     for (size_t block = 0; block < block_sizes.size(); ++block) {
-      if (jacobians[block] != NULL &&
+      if (jacobians[block] != nullptr &&
           !NumericDiff<CostFunctor,
                        method,
                        ceres::DYNAMIC,

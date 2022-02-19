@@ -36,13 +36,14 @@
 #include "ceres/trust_region_minimizer.h"
 
 #include <cmath>
+#include <memory>
 
 #include "ceres/autodiff_cost_function.h"
 #include "ceres/cost_function.h"
 #include "ceres/dense_qr_solver.h"
 #include "ceres/dense_sparse_matrix.h"
 #include "ceres/evaluator.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 #include "ceres/minimizer.h"
 #include "ceres/problem.h"
@@ -76,13 +77,11 @@ class PowellEvaluator2 : public Evaluator {
   }
   // clang-format on
 
-  virtual ~PowellEvaluator2() {}
-
   // Implementation of Evaluator interface.
-  SparseMatrix* CreateJacobian() const final {
+  std::unique_ptr<SparseMatrix> CreateJacobian() const final {
     CHECK(col1 || col2 || col3 || col4);
-    DenseSparseMatrix* dense_jacobian =
-        new DenseSparseMatrix(NumResiduals(), NumEffectiveParameters());
+    auto dense_jacobian = std::make_unique<DenseSparseMatrix>(
+        NumResiduals(), NumEffectiveParameters());
     dense_jacobian->SetZero();
     return dense_jacobian;
   }
@@ -119,14 +118,14 @@ class PowellEvaluator2 : public Evaluator {
 
     VLOG(1) << "Cost: " << *cost;
 
-    if (residuals != NULL) {
+    if (residuals != nullptr) {
       residuals[0] = f1;
       residuals[1] = f2;
       residuals[2] = f3;
       residuals[3] = f4;
     }
 
-    if (jacobian != NULL) {
+    if (jacobian != nullptr) {
       DenseSparseMatrix* dense_jacobian;
       dense_jacobian = down_cast<DenseSparseMatrix*>(jacobian);
       dense_jacobian->SetZero();
@@ -176,7 +175,7 @@ class PowellEvaluator2 : public Evaluator {
       VLOG(1) << "\n" << jacobian_matrix;
     }
 
-    if (gradient != NULL) {
+    if (gradient != nullptr) {
       int column_index = 0;
       if (col1) {
         gradient[column_index++] = f1 + f4 * sqrt(10.0) * 2.0 * (x1 - x4);
@@ -240,10 +239,9 @@ void IsTrustRegionSolveSuccessful(TrustRegionStrategyType strategy_type) {
   minimizer_options.gradient_tolerance = 1e-26;
   minimizer_options.function_tolerance = 1e-26;
   minimizer_options.parameter_tolerance = 1e-26;
-  minimizer_options.evaluator.reset(
-      new PowellEvaluator2<col1, col2, col3, col4>);
-  minimizer_options.jacobian.reset(
-      minimizer_options.evaluator->CreateJacobian());
+  minimizer_options.evaluator =
+      std::make_unique<PowellEvaluator2<col1, col2, col3, col4>>();
+  minimizer_options.jacobian = minimizer_options.evaluator->CreateJacobian();
 
   TrustRegionStrategy::Options trust_region_strategy_options;
   trust_region_strategy_options.trust_region_strategy_type = strategy_type;
@@ -252,8 +250,8 @@ void IsTrustRegionSolveSuccessful(TrustRegionStrategyType strategy_type) {
   trust_region_strategy_options.max_radius = 1e20;
   trust_region_strategy_options.min_lm_diagonal = 1e-6;
   trust_region_strategy_options.max_lm_diagonal = 1e32;
-  minimizer_options.trust_region_strategy.reset(
-      TrustRegionStrategy::Create(trust_region_strategy_options));
+  minimizer_options.trust_region_strategy =
+      TrustRegionStrategy::Create(trust_region_strategy_options);
 
   TrustRegionMinimizer minimizer;
   Solver::Summary summary;
@@ -330,7 +328,7 @@ class CurveCostFunction : public CostFunction {
 
   bool Evaluate(double const* const* parameters,
                 double* residuals,
-                double** jacobians) const {
+                double** jacobians) const override {
     residuals[0] = target_length_;
 
     for (int i = 0; i < num_vertices_; ++i) {
@@ -343,12 +341,12 @@ class CurveCostFunction : public CostFunction {
       residuals[0] -= sqrt(length);
     }
 
-    if (jacobians == NULL) {
+    if (jacobians == nullptr) {
       return true;
     }
 
     for (int i = 0; i < num_vertices_; ++i) {
-      if (jacobians[i] != NULL) {
+      if (jacobians[i] != nullptr) {
         int prev = (num_vertices_ + i - 1) % num_vertices_;
         int next = (i + 1) % num_vertices_;
 
@@ -398,7 +396,7 @@ TEST(TrustRegionMinimizer, JacobiScalingTest) {
   }
 
   Problem problem;
-  problem.AddResidualBlock(new CurveCostFunction(N, 10.), NULL, y);
+  problem.AddResidualBlock(new CurveCostFunction(N, 10.), nullptr, y);
   Solver::Options options;
   options.linear_solver_type = ceres::DENSE_QR;
   Solver::Summary summary;
@@ -425,7 +423,7 @@ struct ExpCostFunctor {
 TEST(TrustRegionMinimizer, GradientToleranceConvergenceUpdatesStep) {
   double x = 5;
   Problem problem;
-  problem.AddResidualBlock(ExpCostFunctor::Create(), NULL, &x);
+  problem.AddResidualBlock(ExpCostFunctor::Create(), nullptr, &x);
   problem.SetParameterLowerBound(&x, 0, 3.0);
   Solver::Options options;
   Solver::Summary summary;

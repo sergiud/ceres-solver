@@ -33,6 +33,7 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "Eigen/Dense"
@@ -47,9 +48,13 @@ namespace internal {
 
 typedef DenseLinearAlgebraLibraryType Param;
 
+namespace {
+
 std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
   return DenseLinearAlgebraLibraryTypeToString(info.param);
 }
+
+}  // namespace
 
 class DenseQRTest : public ::testing::TestWithParam<Param> {};
 
@@ -62,7 +67,10 @@ TEST_P(DenseQRTest, FactorAndSolve) {
   using VectorType = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
   LinearSolver::Options options;
+  ContextImpl context;
+  options.context = &context;
   options.dense_linear_algebra_library_type = GetParam();
+  const double kEpsilon = std::numeric_limits<double>::epsilon() * 1.5e4;
   std::unique_ptr<DenseQR> dense_qr = DenseQR::Create(options);
 
   const int kNumTrials = 10;
@@ -79,7 +87,6 @@ TEST_P(DenseQRTest, FactorAndSolve) {
         Vector x = VectorType::Random(num_cols);
         Vector rhs = lhs * x;
         Vector actual = Vector::Random(num_cols);
-
         LinearSolver::Summary summary;
         summary.termination_type = dense_qr->FactorAndSolve(num_rows,
                                                             num_cols,
@@ -87,10 +94,8 @@ TEST_P(DenseQRTest, FactorAndSolve) {
                                                             rhs.data(),
                                                             actual.data(),
                                                             &summary.message);
-        EXPECT_EQ(summary.termination_type, LINEAR_SOLVER_SUCCESS);
-        EXPECT_NEAR((x - actual).norm() / x.norm(),
-                    0.0,
-                    std::numeric_limits<double>::epsilon() * 400)
+        ASSERT_EQ(summary.termination_type, LINEAR_SOLVER_SUCCESS);
+        ASSERT_NEAR((x - actual).norm() / x.norm(), 0.0, kEpsilon)
             << "\nexpected: " << x.transpose()
             << "\nactual  : " << actual.transpose();
       }
@@ -98,17 +103,26 @@ TEST_P(DenseQRTest, FactorAndSolve) {
   }
 }
 
+namespace {
+
+// NOTE: preprocessor directives in a macro are not standard conforming
+decltype(auto) MakeValues() {
+  return ::testing::Values(
+      EIGEN
 #ifndef CERES_NO_LAPACK
-INSTANTIATE_TEST_SUITE_P(_,
-                         DenseQRTest,
-                         ::testing::Values(EIGEN, LAPACK),
-                         ParamInfoToString);
-#else
-INSTANTIATE_TEST_SUITE_P(_,
-                         DenseQRTest,
-                         ::testing::Values(EIGEN),
-                         ParamInfoToString);
+      ,
+      LAPACK
 #endif
+#ifndef CERES_NO_CUDA
+      ,
+      CUDA
+#endif
+  );
+}
+
+}  // namespace
+
+INSTANTIATE_TEST_SUITE_P(_, DenseQRTest, MakeValues(), ParamInfoToString);
 
 }  // namespace internal
 }  // namespace ceres

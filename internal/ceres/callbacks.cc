@@ -30,6 +30,7 @@
 
 #include "ceres/callbacks.h"
 
+#include <algorithm>
 #include <iostream>  // NO LINT
 
 #include "ceres/program.h"
@@ -45,7 +46,7 @@ StateUpdatingCallback::StateUpdatingCallback(Program* program,
                                              double* parameters)
     : program_(program), parameters_(parameters) {}
 
-StateUpdatingCallback::~StateUpdatingCallback() {}
+StateUpdatingCallback::~StateUpdatingCallback() = default;
 
 CallbackReturnType StateUpdatingCallback::operator()(
     const IterationSummary& summary) {
@@ -64,14 +65,12 @@ GradientProblemSolverStateUpdatingCallback::
       user_parameters_(user_parameters) {}
 
 GradientProblemSolverStateUpdatingCallback::
-    ~GradientProblemSolverStateUpdatingCallback() {}
+    ~GradientProblemSolverStateUpdatingCallback() = default;
 
 CallbackReturnType GradientProblemSolverStateUpdatingCallback::operator()(
     const IterationSummary& summary) {
   if (summary.step_is_successful) {
-    std::copy(internal_parameters_,
-              internal_parameters_ + num_parameters_,
-              user_parameters_);
+    std::copy_n(internal_parameters_, num_parameters_, user_parameters_);
   }
   return SOLVER_CONTINUE;
 }
@@ -80,7 +79,7 @@ LoggingCallback::LoggingCallback(const MinimizerType minimizer_type,
                                  const bool log_to_stdout)
     : minimizer_type(minimizer_type), log_to_stdout_(log_to_stdout) {}
 
-LoggingCallback::~LoggingCallback() {}
+LoggingCallback::~LoggingCallback() = default;
 
 CallbackReturnType LoggingCallback::operator()(
     const IterationSummary& summary) {

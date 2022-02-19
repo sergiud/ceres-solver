@@ -33,7 +33,6 @@
 
 #include "ceres/internal/config.h"
 #include "ceres/internal/export.h"
-#include "ceres/internal/port.h"
 
 #ifdef CERES_USE_CXX_THREADS
 #include "ceres/concurrent_queue.h"
@@ -88,8 +87,8 @@ class CERES_NO_EXPORT ThreadTokenProvider {
   ConcurrentQueue<int> pool_;
 #endif
 
-  ThreadTokenProvider(ThreadTokenProvider&);
-  ThreadTokenProvider& operator=(ThreadTokenProvider&);
+  ThreadTokenProvider(ThreadTokenProvider&) = delete;
+  ThreadTokenProvider& operator=(ThreadTokenProvider&) = delete;
 };
 
 }  // namespace internal

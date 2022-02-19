@@ -34,7 +34,11 @@
 #ifndef CERES_INTERNAL_DENSE_NORMAL_CHOLESKY_SOLVER_H_
 #define CERES_INTERNAL_DENSE_NORMAL_CHOLESKY_SOLVER_H_
 
+#include <memory>
+
 #include "ceres/dense_cholesky.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 
 namespace ceres {
@@ -92,5 +96,7 @@ class CERES_NO_EXPORT DenseNormalCholeskySolver
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_DENSE_NORMAL_CHOLESKY_SOLVER_H_

@@ -33,14 +33,21 @@
 
 // This include must come before any #ifndef check on Ceres compile options.
 // clang-format off
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 // clang-format on
 
 #include <memory>
+#include <vector>
 
 #include "Eigen/Dense"
+#include "ceres/cuda_buffer.h"
 #include "ceres/linear_solver.h"
 #include "glog/logging.h"
+#ifndef CERES_NO_CUDA
+#include "ceres/context_impl.h"
+#include "cuda_runtime.h"
+#include "cusolverDn.h"
+#endif  // CERES_NO_CUDA
 
 namespace ceres {
 namespace internal {
@@ -53,7 +60,7 @@ class CERES_NO_EXPORT DenseCholesky {
   static std::unique_ptr<DenseCholesky> Create(
       const LinearSolver::Options& options);
 
-  virtual ~DenseCholesky() = default;
+  virtual ~DenseCholesky();
 
   // Computes the Cholesky factorization of the given matrix.
   //
@@ -94,10 +101,8 @@ class CERES_NO_EXPORT DenseCholesky {
                                              std::string* message);
 };
 
-class CERES_NO_EXPORT EigenDenseCholesky : public DenseCholesky {
+class CERES_NO_EXPORT EigenDenseCholesky final : public DenseCholesky {
  public:
-  ~EigenDenseCholesky() override = default;
-
   LinearSolverTerminationType Factorize(int num_cols,
                                         double* lhs,
                                         std::string* message) override;
@@ -111,10 +116,8 @@ class CERES_NO_EXPORT EigenDenseCholesky : public DenseCholesky {
 };
 
 #ifndef CERES_NO_LAPACK
-class CERES_NO_EXPORT LAPACKDenseCholesky : public DenseCholesky {
+class CERES_NO_EXPORT LAPACKDenseCholesky final : public DenseCholesky {
  public:
-  ~LAPACKDenseCholesky() override = default;
-
   LinearSolverTerminationType Factorize(int num_cols,
                                         double* lhs,
                                         std::string* message) override;
@@ -128,6 +131,51 @@ class CERES_NO_EXPORT LAPACKDenseCholesky : public DenseCholesky {
   LinearSolverTerminationType termination_type_ = LINEAR_SOLVER_FATAL_ERROR;
 };
 #endif  // CERES_NO_LAPACK
+
+#ifndef CERES_NO_CUDA
+// CUDA implementation of DenseCholesky using the cuSolverDN library using the
+// 32-bit legacy interface for maximum compatibility.
+class CERES_NO_EXPORT CUDADenseCholesky final : public DenseCholesky {
+ public:
+  static std::unique_ptr<CUDADenseCholesky> Create(
+      const LinearSolver::Options& options);
+  CUDADenseCholesky(const CUDADenseCholesky&) = delete;
+  CUDADenseCholesky& operator=(const CUDADenseCholesky&) = delete;
+  LinearSolverTerminationType Factorize(int num_cols,
+                                        double* lhs,
+                                        std::string* message) override;
+  LinearSolverTerminationType Solve(const double* rhs,
+                                    double* solution,
+                                    std::string* message) override;
+
+ private:
+  CUDADenseCholesky() = default;
+  // Picks up the cuSolverDN and cuStream handles from the context. If
+  // the context is unable to initialize CUDA, returns false with a
+  // human-readable message indicating the reason.
+  bool Init(ContextImpl* context, std::string* message);
+
+  // Handle to the cuSOLVER context.
+  cusolverDnHandle_t cusolver_handle_ = nullptr;
+  // CUDA device stream.
+  cudaStream_t stream_ = nullptr;
+  // Number of columns in the A matrix, to be cached between calls to *Factorize
+  // and *Solve.
+  size_t num_cols_ = 0;
+  // GPU memory allocated for the A matrix (lhs matrix).
+  CudaBuffer<double> lhs_;
+  // GPU memory allocated for the B matrix (rhs vector).
+  CudaBuffer<double> rhs_;
+  // Scratch space for cuSOLVER on the GPU.
+  CudaBuffer<uint8_t> device_workspace_;
+  // Required for error handling with cuSOLVER.
+  CudaBuffer<int> error_;
+  // Cache the result of Factorize to ensure that when Solve is called, the
+  // factiorization of lhs is valid.
+  LinearSolverTerminationType factorize_result_ = LINEAR_SOLVER_FATAL_ERROR;
+};
+
+#endif  // CERES_NO_CUDA
 
 }  // namespace internal
 }  // namespace ceres

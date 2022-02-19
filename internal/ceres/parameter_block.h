@@ -40,8 +40,9 @@
 #include <unordered_set>
 
 #include "ceres/array_utils.h"
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "ceres/manifold.h"
 #include "ceres/stringprintf.h"
 #include "glog/logging.h"
@@ -61,7 +62,7 @@ class ResidualBlock;
 // parameter block may also hold a pointer to a manifold; the parameter block
 // does not take ownership of this pointer, so the user is responsible for the
 // proper disposal of the manifold.
-class ParameterBlock {
+class CERES_NO_EXPORT ParameterBlock {
  public:
   typedef std::unordered_set<ResidualBlock*> ResidualBlockSet;
 
@@ -166,7 +167,7 @@ class ParameterBlock {
 
     if (new_manifold == nullptr) {
       manifold_ = nullptr;
-      plus_jacobian_.reset(nullptr);
+      plus_jacobian_ = nullptr;
       return;
     }
 
@@ -180,8 +181,8 @@ class ParameterBlock {
         << "non-negative dimensional tangent space.";
 
     manifold_ = new_manifold;
-    plus_jacobian_.reset(
-        new double[manifold_->AmbientSize() * manifold_->TangentSize()]);
+    plus_jacobian_ = std::make_unique<double[]>(manifold_->AmbientSize() *
+                                                manifold_->TangentSize());
     CHECK(UpdatePlusJacobian())
         << "Manifold::PlusJacobian computation failed for x: "
         << ConstVectorRef(state_, Size()).transpose();
@@ -195,7 +196,7 @@ class ParameterBlock {
     }
 
     if (!upper_bounds_) {
-      upper_bounds_.reset(new double[size_]);
+      upper_bounds_ = std::make_unique<double[]>(size_);
       std::fill(upper_bounds_.get(),
                 upper_bounds_.get() + size_,
                 std::numeric_limits<double>::max());
@@ -212,7 +213,7 @@ class ParameterBlock {
     }
 
     if (!lower_bounds_) {
-      lower_bounds_.reset(new double[size_]);
+      lower_bounds_ = std::make_unique<double[]>(size_);
       std::fill(lower_bounds_.get(),
                 lower_bounds_.get() + size_,
                 -std::numeric_limits<double>::max());
@@ -269,7 +270,7 @@ class ParameterBlock {
     CHECK(residual_blocks_.get() == nullptr)
         << "Ceres bug: There is already a residual block collection "
         << "for parameter block: " << ToString();
-    residual_blocks_.reset(new ResidualBlockSet);
+    residual_blocks_ = std::make_unique<ResidualBlockSet>();
   }
 
   void AddResidualBlock(ResidualBlock* residual_block) {
@@ -383,5 +384,7 @@ class ParameterBlock {
 
 }  // namespace internal
 }  // namespace ceres
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_PARAMETER_BLOCK_H_

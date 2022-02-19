@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -60,7 +61,7 @@ using std::vector;
 
 namespace {
 
-class GradientCheckingCostFunction : public CostFunction {
+class GradientCheckingCostFunction final : public CostFunction {
  public:
   GradientCheckingCostFunction(const CostFunction* function,
                                const std::vector<const Manifold*>* manifolds,
@@ -80,14 +81,12 @@ class GradientCheckingCostFunction : public CostFunction {
     set_num_residuals(function->num_residuals());
   }
 
-  virtual ~GradientCheckingCostFunction() {}
-
   bool Evaluate(double const* const* parameters,
                 double* residuals,
                 double** jacobians) const final {
     if (!jacobians) {
       // Nothing to check in this case; just forward.
-      return function_->Evaluate(parameters, residuals, NULL);
+      return function_->Evaluate(parameters, residuals, nullptr);
     }
 
     GradientChecker::ProbeResults results;
@@ -107,7 +106,7 @@ class GradientCheckingCostFunction : public CostFunction {
     // Copy the original jacobian blocks into the jacobians array.
     const vector<int32_t>& block_sizes = function_->parameter_block_sizes();
     for (int k = 0; k < block_sizes.size(); k++) {
-      if (jacobians[k] != NULL) {
+      if (jacobians[k] != nullptr) {
         MatrixRef(jacobians[k],
                   results.jacobians[k].rows(),
                   results.jacobians[k].cols()) = results.jacobians[k];
@@ -144,6 +143,7 @@ CallbackReturnType GradientCheckingIterationCallback::operator()(
   }
   return SOLVER_CONTINUE;
 }
+
 void GradientCheckingIterationCallback::SetGradientErrorDetected(
     std::string& error_log) {
   std::lock_guard<std::mutex> l(mutex_);
@@ -151,7 +151,7 @@ void GradientCheckingIterationCallback::SetGradientErrorDetected(
   error_log_ += "\n" + error_log;
 }
 
-CostFunction* CreateGradientCheckingCostFunction(
+std::unique_ptr<CostFunction> CreateGradientCheckingCostFunction(
     const CostFunction* cost_function,
     const std::vector<const Manifold*>* manifolds,
     double relative_step_size,
@@ -161,15 +161,15 @@ CostFunction* CreateGradientCheckingCostFunction(
   NumericDiffOptions numeric_diff_options;
   numeric_diff_options.relative_step_size = relative_step_size;
 
-  return new GradientCheckingCostFunction(cost_function,
-                                          manifolds,
-                                          numeric_diff_options,
-                                          relative_precision,
-                                          extra_info,
-                                          callback);
+  return std::make_unique<GradientCheckingCostFunction>(cost_function,
+                                                        manifolds,
+                                                        numeric_diff_options,
+                                                        relative_precision,
+                                                        extra_info,
+                                                        callback);
 }
 
-ProblemImpl* CreateGradientCheckingProblemImpl(
+std::unique_ptr<ProblemImpl> CreateGradientCheckingProblemImpl(
     ProblemImpl* problem_impl,
     double relative_step_size,
     double relative_precision,
@@ -190,8 +190,8 @@ ProblemImpl* CreateGradientCheckingProblemImpl(
   NumericDiffOptions numeric_diff_options;
   numeric_diff_options.relative_step_size = relative_step_size;
 
-  ProblemImpl* gradient_checking_problem_impl =
-      new ProblemImpl(gradient_checking_problem_options);
+  auto gradient_checking_problem_impl =
+      std::make_unique<ProblemImpl>(gradient_checking_problem_options);
 
   Program* program = problem_impl->mutable_program();
 
