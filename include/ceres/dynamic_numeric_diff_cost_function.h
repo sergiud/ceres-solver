@@ -77,7 +77,7 @@ namespace ceres {
 //   cost_function.AddParameterBlock(10);
 //   cost_function.SetNumResiduals(21);
 template <typename CostFunctor, NumericDiffMethodType method = CENTRAL>
-class DynamicNumericDiffCostFunction : public DynamicCostFunction {
+class DynamicNumericDiffCostFunction final : public DynamicCostFunction {
  public:
   explicit DynamicNumericDiffCostFunction(
       const CostFunctor* functor,
@@ -85,8 +85,7 @@ class DynamicNumericDiffCostFunction : public DynamicCostFunction {
       const NumericDiffOptions& options = NumericDiffOptions())
       : functor_(functor), ownership_(ownership), options_(options) {}
 
-  explicit DynamicNumericDiffCostFunction(
-      DynamicNumericDiffCostFunction&& other)
+  DynamicNumericDiffCostFunction(DynamicNumericDiffCostFunction&& other)
       : functor_(std::move(other.functor_)), ownership_(other.ownership_) {}
 
   ~DynamicNumericDiffCostFunction() override {

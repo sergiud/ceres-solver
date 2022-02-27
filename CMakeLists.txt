@@ -189,7 +189,6 @@ option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
 option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
-
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
 # library for iOS.
 if (IOS)
@@ -407,8 +406,7 @@ add_compile_options(
 # built against this configured header, it needs to have the same relative
 # include path as it would if it were in the source tree (or installed).
 create_ceres_config("${CERES_COMPILE_OPTIONS}"
-  ${Ceres_BINARY_DIR}/include/ceres/internal
-)
+  ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
 if (CMAKE_CL OR CMAKE_CL_64)
   add_compile_options (/bigobj)
@@ -417,9 +415,6 @@ endif (CMAKE_CL OR CMAKE_CL_64)
 add_subdirectory(internal/ceres)
 
 if (BUILD_DOCUMENTATION)
-  set(CERES_DOCS_INSTALL_DIR "share/doc/ceres" CACHE STRING
-      "Ceres docs install path relative to CMAKE_INSTALL_PREFIX")
-
   find_package(Sphinx)
 
   if (NOT SPHINX_FOUND)
@@ -448,8 +443,8 @@ install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
 
 # Also setup installation of Ceres config.h configured with the current
 # build options and export.h into the installed headers directory.
-install(DIRECTORY ${Ceres_BINARY_DIR}/include/
-        DESTINATION include)
+install(DIRECTORY ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 if (NOT glog_FOUND)
   # Install miniglog header if being used as logging #includes appear in

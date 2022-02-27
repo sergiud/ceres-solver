@@ -145,13 +145,12 @@ namespace ceres {
 //   Manifold* manifold = new AutoDiffManifold<QuaternionFunctor, 4, 3>;
 
 template <typename Functor, int kAmbientSize, int kTangentSize>
-class AutoDiffManifold : public Manifold {
+class AutoDiffManifold final : public Manifold {
  public:
   AutoDiffManifold() : functor_(std::make_unique<Functor>()) {}
 
   // Takes ownership of functor.
   explicit AutoDiffManifold(Functor* functor) : functor_(functor) {}
-
 
   int AmbientSize() const override { return kAmbientSize; }
   int TangentSize() const override { return kTangentSize; }
@@ -172,7 +171,7 @@ class AutoDiffManifold : public Manifold {
 
   bool MinusJacobian(const double* x, double* jacobian) const override;
 
-  const Functor & functor() const { return *functor_; }
+  const Functor& functor() const { return *functor_; }
 
  private:
   std::unique_ptr<Functor> functor_;
@@ -185,7 +184,7 @@ namespace internal {
 // expects a Functor with operator().
 template <typename Functor>
 struct PlusWrapper {
-  PlusWrapper(const Functor& functor) : functor(functor) {}
+  explicit PlusWrapper(const Functor& functor) : functor(functor) {}
   template <typename T>
   bool operator()(const T* x, const T* delta, T* x_plus_delta) const {
     return functor.Plus(x, delta, x_plus_delta);
@@ -195,7 +194,7 @@ struct PlusWrapper {
 
 template <typename Functor>
 struct MinusWrapper {
-  MinusWrapper(const Functor& functor) : functor(functor) {}
+  explicit MinusWrapper(const Functor& functor) : functor(functor) {}
   template <typename T>
   bool operator()(const T* y, const T* x, T* y_minus_x) const {
     return functor.Minus(y, x, y_minus_x);

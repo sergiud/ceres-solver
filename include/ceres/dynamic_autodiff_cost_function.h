@@ -77,14 +77,14 @@ namespace ceres {
 // pass. There is a tradeoff with the size of the passes; you may want
 // to experiment with the stride.
 template <typename CostFunctor, int Stride = 4>
-class DynamicAutoDiffCostFunction : public DynamicCostFunction {
+class DynamicAutoDiffCostFunction final : public DynamicCostFunction {
  public:
   // Takes ownership by default.
-  DynamicAutoDiffCostFunction(CostFunctor* functor,
-                              Ownership ownership = TAKE_OWNERSHIP)
+  explicit DynamicAutoDiffCostFunction(CostFunctor* functor,
+                                       Ownership ownership = TAKE_OWNERSHIP)
       : functor_(functor), ownership_(ownership) {}
 
-  explicit DynamicAutoDiffCostFunction(DynamicAutoDiffCostFunction&& other)
+  DynamicAutoDiffCostFunction(DynamicAutoDiffCostFunction&& other)
       : functor_(std::move(other.functor_)), ownership_(other.ownership_) {}
 
   ~DynamicAutoDiffCostFunction() override {

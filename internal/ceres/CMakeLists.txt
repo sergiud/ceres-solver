@@ -70,7 +70,8 @@ endif()
 # Depend also on public headers so they appear in IDEs.
 file(GLOB CERES_PUBLIC_HDRS ${Ceres_SOURCE_DIR}/include/ceres/*.h)
 file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/internal/*.h)
-file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_BINARY_DIR}/include/ceres/internal/*.h)
+file(GLOB CERES_PUBLIC_INTERNAL_HDRS
+  ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/*.h)
 
 # Include the specialized schur solvers.
 if (WITH_SCHUR_SPECIALIZATIONS)
@@ -270,6 +271,7 @@ if(BUILD_SHARED_LIBS)
   add_library(ceres_static STATIC $<TARGET_OBJECTS:ceres_internal> ${CERES_LIBRARY_SOURCE})
   target_include_directories(ceres_static PUBLIC $<TARGET_PROPERTY:ceres,INCLUDE_DIRECTORIES>)
   target_compile_definitions(ceres_static PUBLIC $<TARGET_PROPERTY:ceres,COMPILE_DEFINITIONS>)
+  target_compile_features(ceres_static PUBLIC $<TARGET_PROPERTY:ceres,COMPILE_FEATURES>)
   target_compile_options(ceres_static PUBLIC $<TARGET_PROPERTY:ceres,COMPILE_OPTIONS>)
   target_link_libraries(ceres_static
     INTERFACE $<TARGET_PROPERTY:ceres,INTERFACE_LINK_LIBRARIES>
@@ -317,10 +319,11 @@ target_link_libraries(ceres
 # of the dependencies (e.g. /usr/local) that we find the config.h we just
 # configured, not the (older) installed config.h.
 target_include_directories(ceres
-  BEFORE PUBLIC $<BUILD_INTERFACE:${Ceres_BINARY_DIR}/include>
+  BEFORE PUBLIC
+  $<BUILD_INTERFACE:${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE ${Ceres_SOURCE_DIR}/internal
   PUBLIC $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/include>
-         $<INSTALL_INTERFACE:include>)
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 # Eigen SparseQR generates various compiler warnings related to unused and
 # uninitialised local variables.  To avoid having to individually suppress these
@@ -347,7 +350,8 @@ target_include_directories(ceres PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCL
 
 # Generate an export header for annotating symbols visibility
 include(GenerateExportHeader)
-generate_export_header(ceres EXPORT_FILE_NAME ${Ceres_BINARY_DIR}/include/ceres/internal/export.h)
+generate_export_header(ceres EXPORT_FILE_NAME
+  ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/export.h)
 
 install(TARGETS ceres
         EXPORT  CeresTargets
