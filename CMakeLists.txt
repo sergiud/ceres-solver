@@ -146,7 +146,7 @@ if (NOT WITH_LAPACK)
 endif (NOT WITH_LAPACK)
 
 find_package (AccelerateSparse)
-find_package (benchmark)
+find_package (benchmark 1.3)
 find_package (CUDA)
 find_package (CXSparse NO_MODULE)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
@@ -398,6 +398,15 @@ endif ()
 add_compile_options(
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wno-deprecated-declarations>
   $<$<CXX_COMPILER_ID:MSVC>:/wd4996>)
+
+if (CMAKE_VERSION VERSION_LESS 3.12)
+  # Disable the definiton of min/max macros within the project
+  if (WIN32)
+    add_definitions (-DNOMINMAX)
+  endif (WIN32)
+else (CMAKE_VERSION VERSION_LESS 3.12)
+  add_compile_definitions($<$<BOOL:${WIN32}>:NOMINMAX>)
+endif (CMAKE_VERSION VERSION_LESS 3.12)
 
 # Configure the Ceres config.h compile options header using the current
 # compile options and put the configured header into the Ceres build
