@@ -219,6 +219,10 @@ add_feature_info (EigenSparse WITH_EIGENSPARSE
 "Use Eigen as a sparse linear algebra library for solving the nonlinear \
 least squares problems (LGPL licensed Ceres)")
 
+# Set the install path for the installed CeresConfig.cmake configuration file
+# relative to CMAKE_INSTALL_PREFIX.
+set(RELATIVE_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Ceres)
+
 # SuiteSparse.
 IF (SuiteSparse_FOUND)
   set (SUITESPARSE_DEPENDENCY
@@ -468,8 +472,6 @@ add_custom_target(uninstall
 
 # Set relative install paths, which are appended to CMAKE_INSTALL_PREFIX to
 # generate the absolute install paths.
-set(RELATIVE_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Ceres)
-
 set_target_properties (ceres PROPERTIES EXPORT_NAME Ceres)
 
 export (TARGETS ceres NAMESPACE Ceres:: FILE CeresTargets.cmake)
