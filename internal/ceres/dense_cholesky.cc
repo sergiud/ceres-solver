@@ -35,6 +35,8 @@
 #include <string>
 #include <vector>
 
+#include "ceres/internal/config.h"
+
 #ifndef CERES_NO_CUDA
 #include "ceres/context_impl.h"
 #include "cuda_runtime.h"
@@ -205,8 +207,9 @@ bool CUDADenseCholesky::Init(ContextImpl* context, std::string* message) {
   return true;
 }
 
-LinearSolverTerminationType CUDADenseCholesky::Factorize(
-    int num_cols, double* lhs, std::string* message) {
+LinearSolverTerminationType CUDADenseCholesky::Factorize(int num_cols,
+                                                         double* lhs,
+                                                         std::string* message) {
   factorize_result_ = LinearSolverTerminationType::LINEAR_SOLVER_FATAL_ERROR;
   lhs_.Reserve(num_cols * num_cols);
   num_cols_ = num_cols;
@@ -262,8 +265,9 @@ LinearSolverTerminationType CUDADenseCholesky::Factorize(
   return LinearSolverTerminationType::LINEAR_SOLVER_SUCCESS;
 }
 
-LinearSolverTerminationType CUDADenseCholesky::Solve(
-    const double* rhs, double* solution, std::string* message) {
+LinearSolverTerminationType CUDADenseCholesky::Solve(const double* rhs,
+                                                     double* solution,
+                                                     std::string* message) {
   if (factorize_result_ != LinearSolverTerminationType::LINEAR_SOLVER_SUCCESS) {
     *message = "Factorize did not complete succesfully previously.";
     return factorize_result_;

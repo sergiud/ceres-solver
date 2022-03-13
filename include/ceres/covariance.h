@@ -35,6 +35,7 @@
 #include <utility>
 #include <vector>
 
+#include "ceres/internal/config.h"
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
 #include "ceres/types.h"

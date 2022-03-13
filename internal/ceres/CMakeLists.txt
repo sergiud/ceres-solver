@@ -125,14 +125,16 @@ if (CUDA_FOUND)
        ${CUDA_cublas_LIBRARY}
        ${CUDA_cusolver_LIBRARY}
        ${CUDA_cusparse_LIBRARY})
-  add_test(
-      NAME cuda_memcheck_dense_qr_test
-      COMMAND cuda-memcheck --leak-check full
-          ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cuda_dense_qr_test)
-  add_test(
-      NAME cuda_memcheck_dense_cholesky_test
-      COMMAND cuda-memcheck --leak-check full
-          ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/cuda_dense_cholesky_test)
+  if (BUILD_TESTING)
+    add_test(
+        NAME cuda_memcheck_dense_qr_test
+        COMMAND cuda-memcheck --leak-check full
+            $<TARGET_FILE:cuda_dense_qr_test>)
+    add_test(
+        NAME cuda_memcheck_dense_cholesky_test
+        COMMAND cuda-memcheck --leak-check full
+            $<TARGET_FILE:cuda_dense_cholesky_test>)
+  endif (BUILD_TESTING)
 endif (CUDA_FOUND)
 
 if (WITH_TBB AND TBB_FOUND)
@@ -368,19 +370,7 @@ install(TARGETS ceres
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if (BUILD_TESTING AND gflags_FOUND)
-  add_library(gtest gmock_gtest_all.cc gmock_main.cc)
-  if (BUILD_SHARED_LIBS)
-    # Define gtest-specific shared library flags for compilation.
-    #
-    # NOTE: We export the test_srcdir flag not from gflags but from our gtest
-    # target. Therefore, the gflags visibility macro must be overriden by that
-    # of gtest.
-    target_compile_definitions(gtest
-      PRIVATE GTEST_CREATE_SHARED_LIBRARY=1
-              GFLAGS_DLL_DEFINE_FLAG=GTEST_API_
-      INTERFACE GTEST_LINKED_AS_SHARED_LIBRARY=1
-                GFLAGS_DLL_DECLARE_FLAG=GTEST_API_)
-  endif()
+  add_library(gtest STATIC gmock_gtest_all.cc gmock_main.cc)
 
   target_include_directories(gtest PRIVATE ${Ceres_SOURCE_DIR}/internal/ceres)
   target_link_libraries(gtest PRIVATE Ceres::Ceres gflags)
@@ -403,6 +393,14 @@ if (BUILD_TESTING AND gflags_FOUND)
       PRIVATE ${Ceres_SOURCE_DIR}/internal/ceres
               ${CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS})
     target_link_libraries(${NAME}_test PRIVATE gtest test_util ceres_static)
+
+    # covariance_test uses SuiteSparseQR.hpp. However, since SuiteSparse import
+    # targets are private (link only) dependencies not propagated to consumers,
+    # we need to link against the target explicitly here.
+    if (TARGET SuiteSparse::SPQR)
+      target_link_libraries (${NAME}_test PRIVATE SuiteSparse::SPQR)
+    endif (TARGET SuiteSparse::SPQR)
+
     add_test(NAME ${NAME}_test
              COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME}_test
              --test_srcdir

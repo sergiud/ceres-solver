@@ -41,6 +41,7 @@
 #include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/cost_function.h"
 #include "ceres/covariance_impl.h"
+#include "ceres/internal/config.h"
 #include "ceres/local_parameterization.h"
 #include "ceres/manifold.h"
 #include "ceres/map_util.h"
@@ -379,7 +380,6 @@ TEST(CovarianceImpl, ComputeCovarianceSparsityWithFreeParameterBlock) {
 // x_plus_delta = delta * x;
 class PolynomialParameterization : public LocalParameterization {
  public:
-
   bool Plus(const double* x,
             const double* delta,
             double* x_plus_delta) const final {
@@ -401,7 +401,6 @@ class PolynomialParameterization : public LocalParameterization {
 // x_plus_delta = delta * x;
 class PolynomialManifold : public Manifold {
  public:
-
   bool Plus(const double* x,
             const double* delta,
             double* x_plus_delta) const final {
