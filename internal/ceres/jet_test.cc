@@ -28,14 +28,6 @@
 //
 // Author: keir@google.com (Keir Mierle)
 
-// The floating-point environment access and modification is only meaningful
-// with the following pragma.
-#ifdef _MSC_VER
-#pragma fenv_access(on)
-#else
-#pragma STDC FENV_ACCESS ON
-#endif
-
 #include "ceres/jet.h"
 
 #include <Eigen/Dense>
@@ -48,6 +40,18 @@
 #include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+// The floating-point environment access and modification is only meaningful
+// with the following pragma.
+#ifdef _MSC_VER
+#pragma float_control(precise, on, push)
+#pragma fenv_access(on)
+#elif !(defined(__ARM_ARCH) && __ARM_ARCH >= 8)
+// NOTE: FENV_ACCESS cannot be set to ON when targeting arm(v8)
+#pragma STDC FENV_ACCESS ON
+#else
+#define CERES_NO_FENV_ACCESS
+#endif
 
 namespace ceres {
 namespace internal {
@@ -644,7 +648,7 @@ TEST(Jet, Lerp) {
   EXPECT_THAT(lerp(y, y, J{0}), IsAlmostEqualTo(y));
   EXPECT_THAT(lerp(x, y, J{0.5}), IsAlmostEqualTo((x + y) / J{2.0}));
   EXPECT_THAT(lerp(x, y, J{2}), IsAlmostEqualTo(J{2.0} * y - x));
-  EXPECT_THAT(lerp(x, y, J{-2}), IsAlmostEqualTo(J{3.0} * x - J{2} * x));
+  EXPECT_THAT(lerp(x, y, J{-2}), IsAlmostEqualTo(J{3.0} * x - J{2} * y));
 }
 
 TEST(Jet, Midpoint) {
@@ -699,7 +703,9 @@ TEST(Jet, Fmax) {
   EXPECT_THAT(fmax(std::numeric_limits<double>::quiet_NaN(), x),
               IsAlmostEqualTo(x));
 
+#ifndef CERES_NO_FENV_ACCESS
   EXPECT_EQ(std::fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT), 0);
+#endif
 }
 
 TEST(Jet, Fmin) {
@@ -719,7 +725,9 @@ TEST(Jet, Fmin) {
   EXPECT_THAT(fmin(std::numeric_limits<double>::quiet_NaN(), x),
               IsAlmostEqualTo(x));
 
+#ifndef CERES_NO_FENV_ACCESS
   EXPECT_EQ(std::fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT), 0);
+#endif
 }
 
 TEST(Jet, Fdim) {
@@ -744,7 +752,9 @@ TEST(Jet, Fdim) {
   EXPECT_TRUE(isnan(fdim(x, std::numeric_limits<double>::quiet_NaN())));
   EXPECT_TRUE(isnan(fdim(std::numeric_limits<double>::quiet_NaN(), x)));
 
+#ifndef CERES_NO_FENV_ACCESS
   EXPECT_EQ(std::fetestexcept(FE_ALL_EXCEPT & ~FE_INEXACT), 0);
+#endif
 }
 
 TEST(Jet, CopySign) {
@@ -1284,3 +1294,7 @@ TYPED_TEST(JetTest, Nested3XComparison) {
 
 }  // namespace internal
 }  // namespace ceres
+
+#ifdef _MSC_VER
+#pragma float_control(pop)
+#endif
