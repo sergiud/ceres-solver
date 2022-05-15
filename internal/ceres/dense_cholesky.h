@@ -49,8 +49,7 @@
 #include "cusolverDn.h"
 #endif  // CERES_NO_CUDA
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // An interface that abstracts away the internal details of various dense linear
 // algebra libraries and offers a simple API for solving dense symmetric
@@ -171,13 +170,12 @@ class CERES_NO_EXPORT CUDADenseCholesky final : public DenseCholesky {
   // Required for error handling with cuSOLVER.
   CudaBuffer<int> error_;
   // Cache the result of Factorize to ensure that when Solve is called, the
-  // factiorization of lhs is valid.
+  // factorization of lhs is valid.
   LinearSolverTerminationType factorize_result_ = LINEAR_SOLVER_FATAL_ERROR;
 };
 
 #endif  // CERES_NO_CUDA
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_DENSE_CHOLESKY_H_

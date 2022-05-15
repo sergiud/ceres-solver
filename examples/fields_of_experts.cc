@@ -28,7 +28,7 @@
 //
 // Author: strandmark@google.com (Petter Strandmark)
 //
-// Class for loading the data required for descibing a Fields of Experts (FoE)
+// Class for loading the data required for describing a Fields of Experts (FoE)
 // model.
 
 #include "fields_of_experts.h"
@@ -38,8 +38,7 @@
 
 #include "pgm_image.h"
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 
 FieldsOfExpertsCost::FieldsOfExpertsCost(const std::vector<double>& filter)
     : filter_(filter) {
@@ -145,5 +144,4 @@ ceres::LossFunction* FieldsOfExperts::NewLossFunction(int alpha_index) const {
   return new FieldsOfExpertsLoss(alpha_[alpha_index]);
 }
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples

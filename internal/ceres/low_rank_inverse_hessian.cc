@@ -35,8 +35,7 @@
 #include "ceres/internal/eigen.h"
 #include "glog/logging.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 using std::list;
 
@@ -159,7 +158,7 @@ void LowRankInverseHessian::RightMultiply(const double* x_ptr,
     //
     // The original origin of this rescaling trick is somewhat unclear, the
     // earliest reference appears to be Oren [1], however it is widely discussed
-    // without specific attributation in various texts including [2] (p143/178).
+    // without specific attribution in various texts including [2] (p143/178).
     //
     // [1] Oren S.S., Self-scaling variable metric (SSVM) algorithms Part II:
     //     Implementation and experiments, Management Science,
@@ -179,5 +178,4 @@ void LowRankInverseHessian::RightMultiply(const double* x_ptr,
   }
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

@@ -52,8 +52,7 @@
 #include "ceres/types.h"
 #include "glog/logging.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 enum LinearSolverTerminationType {
   // Termination criterion was met.
@@ -329,7 +328,7 @@ class TypedLinearSolver : public LinearSolver {
   ExecutionSummary execution_summary_;
 };
 
-// Linear solvers that depend on acccess to the low level structure of
+// Linear solvers that depend on access to the low level structure of
 // a SparseMatrix.
 // clang-format off
 typedef TypedLinearSolver<BlockSparseMatrix>         BlockSparseMatrixSolver;          // NOLINT
@@ -338,8 +337,7 @@ typedef TypedLinearSolver<DenseSparseMatrix>         DenseSparseMatrixSolver;   
 typedef TypedLinearSolver<TripletSparseMatrix>       TripletSparseMatrixSolver;        // NOLINT
 // clang-format on
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #include "ceres/internal/reenable_warnings.h"
 

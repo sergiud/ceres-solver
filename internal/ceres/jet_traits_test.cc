@@ -34,8 +34,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 using J = Jet<double, 2>;
 // Don't care about the dual part for scalar part categorization and comparison
@@ -43,20 +42,6 @@ using J = Jet<double, 2>;
 template <typename T>
 using J0 = Jet<T, 0>;
 using J0d = J0<double>;
-
-struct NotAJet {};
-
-static_assert(IsJet_v<J0d>, "Jet is not identified as one");
-static_assert(IsJet_v<J0<NotAJet>>, "Jet is not identified as one");
-static_assert(IsJet_v<J0<J0d>>, "nested Jet is not identified as one");
-static_assert(IsJet_v<J0<J0<J0d>>>, "nested Jet is not identified as one");
-
-static_assert(!IsJet_v<double>, "double must not be a Jet");
-static_assert(!IsJet_v<Eigen::VectorXd>, "Eigen::VectorXd must not be a Jet");
-static_assert(!IsJet_v<decltype(std::declval<Eigen::MatrixXd>() *
-                                std::declval<Eigen::MatrixXd>())>,
-              "product of Eigen::MatrixXd must not be a Jet");
-static_assert(!IsJet_v<NotAJet>, "NotAJet must not be a Jet");
 
 // Extract the ranks of given types
 using Ranks001 = Ranks_t<Jet<double, 0>, double, Jet<double, 1>>;
@@ -118,5 +103,4 @@ static_assert(!PromotableJetOperands_v<Eigen::Array<double, 2, 3>, float, int>,
 static_assert(!PromotableJetOperands_v<Eigen::Matrix<double, 3, 2>, float, int>,
               "Eigen::Matrix must not be Jet promotable");
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

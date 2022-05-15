@@ -166,7 +166,7 @@ cases.
       moderately fast algorithm suitable for small to medium sized
       matrices. For best performance we recommend using
       ``SuiteSparseQR`` which is enabled by setting
-      :member:`Covaraince::Options::sparse_linear_algebra_library_type`
+      :member:`Covariance::Options::sparse_linear_algebra_library_type`
       to ``SUITE_SPARSE``.
 
       ``SPARSE_QR`` cannot compute the covariance if the
@@ -185,6 +185,23 @@ cases.
       It is an accurate but slow method and should only be used for
       small to moderate sized problems. It can handle full-rank as
       well as rank deficient Jacobians.
+
+
+.. member:: double Covariance::Options::column_pivot_threshold
+
+   Default: :math:`-1`
+
+    During QR factorization, if a column with Euclidean norm less than
+    ``column_pivot_threshold`` is encountered it is treated as zero.
+
+    If ``column_pivot_threshold < 0``, then an automatic default value
+    of `20*(m+n)*eps*sqrt(max(diag(J’*J)))` is used.  Here `m` and `n`
+    are the number of rows and columns of the Jacobian (`J`)
+    respectively.
+
+    This is an advanced option meant for users who know enough about
+    their Jacobian matrices that they can determine a value better
+    than the default.
 
 
 .. member:: int Covariance::Options::min_reciprocal_condition_number
@@ -221,7 +238,7 @@ cases.
       .. math:: \frac{\sigma_{\text{min}}}{\sigma_{\text{max}}}  < \sqrt{\text{min_reciprocal_condition_number}}
 
       where :math:`\sigma_{\text{min}}` and
-      :math:`\sigma_{\text{max}}` are the minimum and maxiumum
+      :math:`\sigma_{\text{max}}` are the minimum and maximum
       singular values of :math:`J` respectively.
 
    2. ``SPARSE_QR``

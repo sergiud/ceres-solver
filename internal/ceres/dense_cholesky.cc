@@ -59,8 +59,7 @@ extern "C" void dpotrs_(const char* uplo,
                         int* info);
 #endif
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 DenseCholesky::~DenseCholesky() = default;
 
@@ -269,7 +268,7 @@ LinearSolverTerminationType CUDADenseCholesky::Solve(const double* rhs,
                                                      double* solution,
                                                      std::string* message) {
   if (factorize_result_ != LinearSolverTerminationType::LINEAR_SOLVER_SUCCESS) {
-    *message = "Factorize did not complete succesfully previously.";
+    *message = "Factorize did not complete successfully previously.";
     return factorize_result_;
   }
   rhs_.CopyToGpuAsync(rhs, num_cols_, stream_);
@@ -323,5 +322,4 @@ std::unique_ptr<CUDADenseCholesky> CUDADenseCholesky::Create(
 
 #endif  // CERES_NO_CUDA
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

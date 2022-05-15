@@ -32,8 +32,7 @@
 
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class QuadraticTestFunction : public ceres::FirstOrderFunction {
  public:
@@ -77,7 +76,7 @@ TEST(GradientProblem, EvaluationWithoutParameterizationOrGradient) {
   EXPECT_EQ(x * x, cost);
 }
 
-TEST(GradientProblem, EvalutaionWithParameterizationAndNoGradient) {
+TEST(GradientProblem, EvaluationWithParameterizationAndNoGradient) {
   ceres::GradientProblem problem(new QuadraticTestFunction(),
                                  new IdentityParameterization(1));
   double x = 7.0;
@@ -105,7 +104,7 @@ TEST(GradientProblem, EvaluationWithParameterizationAndWithGradient) {
   EXPECT_EQ(2.0 * x, gradient);
 }
 
-TEST(GradientProblem, EvalutaionWithManifoldAndNoGradient) {
+TEST(GradientProblem, EvaluationWithManifoldAndNoGradient) {
   ceres::GradientProblem problem(new QuadraticTestFunction(),
                                  new EuclideanManifold<1>);
   double x = 7.0;
@@ -133,5 +132,4 @@ TEST(GradientProblem, EvaluationWithManifoldAndWithGradient) {
   EXPECT_EQ(2.0 * x, gradient);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

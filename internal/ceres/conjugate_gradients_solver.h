@@ -38,14 +38,13 @@
 #include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class LinearOperator;
 
 // This class implements the now classical Conjugate Gradients
-// algorithm of Hestenes & Stiefel for solving postive semidefinite
-// linear sytems. Optionally it can use a preconditioner also to
+// algorithm of Hestenes & Stiefel for solving positive semidefinite
+// linear systems. Optionally it can use a preconditioner also to
 // reduce the condition number of the linear system and improve the
 // convergence rate. Modern references for Conjugate Gradients are the
 // books by Yousef Saad and Trefethen & Bau. This implementation of CG
@@ -68,8 +67,7 @@ class CERES_NO_EXPORT ConjugateGradientsSolver final : public LinearSolver {
   const LinearSolver::Options options_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #include "ceres/internal/reenable_warnings.h"
 

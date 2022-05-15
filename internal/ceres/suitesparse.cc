@@ -42,8 +42,7 @@
 #include "ceres/triplet_sparse_matrix.h"
 #include "cholmod.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 using std::string;
 using std::vector;
@@ -229,7 +228,7 @@ bool SuiteSparse::BlockAMDOrdering(const cholmod_sparse* A,
   const int num_col_blocks = col_blocks.size();
 
   // Arrays storing the compressed column structure of the matrix
-  // incoding the block sparsity of A.
+  // encoding the block sparsity of A.
   vector<int> block_cols;
   vector<int> block_rows;
 
@@ -337,6 +336,18 @@ bool SuiteSparse::ApproximateMinimumDegreeOrdering(cholmod_sparse* matrix,
   return cholmod_amd(matrix, nullptr, 0, ordering, &cc_);
 }
 
+bool SuiteSparse::NestedDissectionOrdering(cholmod_sparse* matrix,
+                                           int* ordering) {
+#ifdef CERES_NO_METIS
+  return false;
+#else
+  std::vector<int> CParent(matrix->nrow, 0);
+  std::vector<int> CMember(matrix->nrow, 0);
+  return cholmod_nested_dissection(
+      matrix, nullptr, 0, ordering, CParent.data(), CMember.data(), &cc_);
+#endif
+}
+
 bool SuiteSparse::ConstrainedApproximateMinimumDegreeOrdering(
     cholmod_sparse* matrix, int* constraints, int* ordering) {
 #ifndef CERES_NO_CAMD
@@ -425,7 +436,6 @@ LinearSolverTerminationType SuiteSparseCholesky::Solve(const double* rhs,
   return LINEAR_SOLVER_SUCCESS;
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_NO_SUITESPARSE

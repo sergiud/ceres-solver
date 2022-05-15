@@ -55,6 +55,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -119,7 +120,7 @@ DEFINE_double(point_sigma, 0.0, "Standard deviation of the point "
               "perturbation.");
 DEFINE_int32(random_seed, 38401, "Random seed used to set the state "
              "of the pseudo random number generator used to generate "
-             "the pertubations.");
+             "the perturbations.");
 DEFINE_bool(line_search, false, "Use a line search instead of trust region "
             "algorithm.");
 DEFINE_bool(mixed_precision_solves, false, "Use mixed precision solves.");
@@ -130,8 +131,7 @@ DEFINE_string(final_ply, "", "Export the refined BAL file data as a PLY "
 
 // clang-format on
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 namespace {
 
 void SetLinearSolver(Solver::Options* options) {
@@ -168,14 +168,16 @@ void SetOrdering(BALProblem* bal_problem, Solver::Options* options) {
   if (options->use_inner_iterations) {
     if (CERES_GET_FLAG(FLAGS_blocks_for_inner_iterations) == "cameras") {
       LOG(INFO) << "Camera blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
+      options->inner_iteration_ordering =
+          std::make_shared<ParameterBlockOrdering>();
       for (int i = 0; i < num_cameras; ++i) {
         options->inner_iteration_ordering->AddElementToGroup(
             cameras + camera_block_size * i, 0);
       }
     } else if (CERES_GET_FLAG(FLAGS_blocks_for_inner_iterations) == "points") {
       LOG(INFO) << "Point blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
+      options->inner_iteration_ordering =
+          std::make_shared<ParameterBlockOrdering>();
       for (int i = 0; i < num_points; ++i) {
         options->inner_iteration_ordering->AddElementToGroup(
             points + point_block_size * i, 0);
@@ -183,7 +185,8 @@ void SetOrdering(BALProblem* bal_problem, Solver::Options* options) {
     } else if (CERES_GET_FLAG(FLAGS_blocks_for_inner_iterations) ==
                "cameras,points") {
       LOG(INFO) << "Camera followed by point blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
+      options->inner_iteration_ordering =
+          std::make_shared<ParameterBlockOrdering>();
       for (int i = 0; i < num_cameras; ++i) {
         options->inner_iteration_ordering->AddElementToGroup(
             cameras + camera_block_size * i, 0);
@@ -195,7 +198,8 @@ void SetOrdering(BALProblem* bal_problem, Solver::Options* options) {
     } else if (CERES_GET_FLAG(FLAGS_blocks_for_inner_iterations) ==
                "points,cameras") {
       LOG(INFO) << "Point followed by camera blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
+      options->inner_iteration_ordering =
+          std::make_shared<ParameterBlockOrdering>();
       for (int i = 0; i < num_cameras; ++i) {
         options->inner_iteration_ordering->AddElementToGroup(
             cameras + camera_block_size * i, 1);
@@ -294,7 +298,7 @@ void BuildProblem(BALProblem* bal_problem, Problem* problem) {
     LossFunction* loss_function =
         CERES_GET_FLAG(FLAGS_robustify) ? new HuberLoss(1.0) : nullptr;
 
-    // Each observation correponds to a pair of a camera and a point
+    // Each observation corresponds to a pair of a camera and a point
     // which are identified by camera_index()[i] and point_index()[i]
     // respectively.
     double* camera =
@@ -343,8 +347,7 @@ void SolveProblem(const char* filename) {
 }
 
 }  // namespace
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);

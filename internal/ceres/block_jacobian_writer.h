@@ -44,14 +44,13 @@
 #include "ceres/evaluator.h"
 #include "ceres/internal/export.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class BlockEvaluatePreparer;
 class Program;
 class SparseMatrix;
 
-// TODO(sameeragarwal): This class needs documemtation.
+// TODO(sameeragarwal): This class needs documentation.
 class CERES_NO_EXPORT BlockJacobianWriter {
  public:
   BlockJacobianWriter(const Evaluator::Options& options, Program* program);
@@ -80,7 +79,7 @@ class CERES_NO_EXPORT BlockJacobianWriter {
   // Stores the position of each residual / parameter jacobian.
   //
   // The block sparse matrix that this writer writes to is stored as a set of
-  // contiguos dense blocks, one after each other; see BlockSparseMatrix. The
+  // contiguous dense blocks, one after each other; see BlockSparseMatrix. The
   // "double* values_" member of the block sparse matrix contains all of these
   // blocks. Given a pointer to the first element of a block and the size of
   // that block, it's possible to write to it.
@@ -124,7 +123,6 @@ class CERES_NO_EXPORT BlockJacobianWriter {
   std::vector<int> jacobian_layout_storage_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_INTERNAL_BLOCK_JACOBIAN_WRITER_H_

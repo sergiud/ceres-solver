@@ -31,6 +31,7 @@
 #include "ceres/normal_prior.h"
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "ceres/internal/eigen.h"
@@ -39,7 +40,7 @@
 
 namespace ceres {
 
-NormalPrior::NormalPrior(const Matrix& A, const Vector& b) : A_(A), b_(b) {
+NormalPrior::NormalPrior(const Matrix& A, Vector b) : A_(A), b_(std::move(b)) {
   CHECK_GT(b_.rows(), 0);
   CHECK_GT(A_.rows(), 0);
   CHECK_EQ(b_.rows(), A.cols());
@@ -54,7 +55,7 @@ bool NormalPrior::Evaluate(double const* const* parameters,
   VectorRef r(residuals, num_residuals());
   // The following line should read
   // r = A_ * (p - b_);
-  // The extra eval is to get around a bug in the eigen library.
+  // The extra eval is to get around a bug in the Eigen library.
   r = A_ * (p - b_).eval();
   if ((jacobians != nullptr) && (jacobians[0] != nullptr)) {
     MatrixRef(jacobians[0], num_residuals(), parameter_block_sizes()[0]) = A_;

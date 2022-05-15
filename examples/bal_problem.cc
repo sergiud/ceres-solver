@@ -42,8 +42,7 @@
 #include "glog/logging.h"
 #include "random.h"
 
-namespace ceres {
-namespace examples {
+namespace ceres::examples {
 namespace {
 using VectorRef = Eigen::Map<Eigen::VectorXd>;
 using ConstVectorRef = Eigen::Map<const Eigen::VectorXd>;
@@ -79,7 +78,7 @@ BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
     return;
   };
 
-  // This wil die horribly on invalid files. Them's the breaks.
+  // This will die horribly on invalid files. Them's the breaks.
   FscanfOrDie(fptr, "%d", &num_cameras_);
   FscanfOrDie(fptr, "%d", &num_points_);
   FscanfOrDie(fptr, "%d", &num_observations_);
@@ -332,5 +331,4 @@ BALProblem::~BALProblem() {
   delete[] parameters_;
 }
 
-}  // namespace examples
-}  // namespace ceres
+}  // namespace ceres::examples

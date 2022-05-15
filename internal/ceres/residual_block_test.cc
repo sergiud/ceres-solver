@@ -38,8 +38,7 @@
 #include "ceres/sized_cost_function.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 using std::vector;
 
@@ -75,7 +74,7 @@ class TernaryCostFunction : public CostFunction {
   }
 };
 
-TEST(ResidualBlock, EvaluteWithNoLossFunctionOrManifolds) {
+TEST(ResidualBlock, EvaluateWithNoLossFunctionOrManifolds) {
   double scratch[64];
 
   // Prepare the parameter blocks.
@@ -200,7 +199,7 @@ class LocallyParameterizedCostFunction : public SizedCostFunction<3, 2, 3, 4> {
   }
 };
 
-TEST(ResidualBlock, EvaluteWithManifolds) {
+TEST(ResidualBlock, EvaluateWithManifolds) {
   double scratch[64];
 
   // Prepare the parameter blocks.
@@ -324,5 +323,4 @@ TEST(ResidualBlock, EvaluteWithManifolds) {
   EXPECT_EQ(expected_jacobian_rz, jacobian_rz);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
