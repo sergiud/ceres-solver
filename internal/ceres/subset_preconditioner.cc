@@ -51,7 +51,7 @@ SubsetPreconditioner::SubsetPreconditioner(Preconditioner::Options options,
   LinearSolver::Options sparse_cholesky_options;
   sparse_cholesky_options.sparse_linear_algebra_library_type =
       options_.sparse_linear_algebra_library_type;
-  sparse_cholesky_options.use_postordering = options_.use_postordering;
+  sparse_cholesky_options.ordering_type = options_.ordering_type;
   sparse_cholesky_ = SparseCholesky::Create(sparse_cholesky_options);
 }
 
@@ -105,7 +105,7 @@ bool SubsetPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
   const LinearSolverTerminationType termination_type =
       sparse_cholesky_->Factorize(inner_product_computer_->mutable_result(),
                                   &message);
-  if (termination_type != LINEAR_SOLVER_SUCCESS) {
+  if (termination_type != LinearSolverTerminationType::SUCCESS) {
     LOG(ERROR) << "Preconditioner factorization failed: " << message;
     return false;
   }

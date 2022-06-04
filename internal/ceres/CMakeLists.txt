@@ -102,12 +102,6 @@ if (glog_FOUND)
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
 endif (glog_FOUND)
 
-if (CXSparse_FOUND)
-  # Define version information for use in Solver::FullReport.
-  add_definitions(-DCERES_CXSPARSE_VERSION="${CXSparse_VERSION}")
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES CXSparse::CXSparse)
-endif (CXSparse_FOUND)
-
 if (SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
@@ -128,11 +122,11 @@ if (CUDA_FOUND)
   if (BUILD_TESTING)
     add_test(
         NAME cuda_memcheck_dense_qr_test
-        COMMAND cuda-memcheck --leak-check full
+        COMMAND ${CUDA_TOOLKIT_ROOT_DIR}/bin/cuda-memcheck --leak-check full
             $<TARGET_FILE:cuda_dense_qr_test>)
     add_test(
         NAME cuda_memcheck_dense_cholesky_test
-        COMMAND cuda-memcheck --leak-check full
+        COMMAND ${CUDA_TOOLKIT_ROOT_DIR}/bin/cuda-memcheck --leak-check full
             $<TARGET_FILE:cuda_dense_cholesky_test>)
   endif (BUILD_TESTING)
 endif (CUDA_FOUND)
@@ -177,7 +171,6 @@ add_library(ceres_internal OBJECT
     cost_function.cc
     covariance.cc
     covariance_impl.cc
-    cxsparse.cc
     dense_cholesky.cc
     dense_normal_cholesky_solver.cc
     dense_qr.cc
@@ -193,7 +186,6 @@ add_library(ceres_internal OBJECT
     evaluator.cc
     file.cc
     first_order_function.cc
-    float_cxsparse.cc
     float_suitesparse.cc
     function_sample.cc
     gradient_checking_cost_function.cc

@@ -92,10 +92,11 @@ DEFINE_string(visibility_clustering, "canonical_views",
               "single_linkage, canonical_views");
 
 DEFINE_string(sparse_linear_algebra_library, "suite_sparse",
-              "Options are: suite_sparse and cx_sparse.");
+              "Options are: suite_sparse, cx_sparse, accelerate_sparse and eigen_sparse.");
 DEFINE_string(dense_linear_algebra_library, "eigen",
               "Options are: eigen, lapack, and cuda");
-DEFINE_string(ordering, "automatic", "Options are: automatic, user.");
+DEFINE_string(ordering_type, "amd", "Options are: amd, nesdis");
+DEFINE_string(linear_solver_ordering, "automatic", "Options are: automatic and user");
 
 DEFINE_bool(use_quaternions, false, "If true, uses quaternions to represent "
             "rotations. If false, angle axis is used.");
@@ -128,7 +129,6 @@ DEFINE_int32(max_num_refinement_iterations, 0, "Iterative refinement iterations"
 DEFINE_string(initial_ply, "", "Export the BAL file data as a PLY file.");
 DEFINE_string(final_ply, "", "Export the refined BAL file data as a PLY "
               "file.");
-
 // clang-format on
 
 namespace ceres::examples {
@@ -148,6 +148,9 @@ void SetLinearSolver(Solver::Options* options) {
   CHECK(StringToDenseLinearAlgebraLibraryType(
       CERES_GET_FLAG(FLAGS_dense_linear_algebra_library),
       &options->dense_linear_algebra_library_type));
+  CHECK(
+      StringToLinearSolverOrderingType(CERES_GET_FLAG(FLAGS_ordering_type),
+                                       &options->linear_solver_ordering_type));
   options->use_explicit_schur_complement =
       CERES_GET_FLAG(FLAGS_explicit_schur_complement);
   options->use_mixed_precision_solves =
@@ -223,29 +226,25 @@ void SetOrdering(BALProblem* bal_problem, Solver::Options* options) {
   // ITERATIVE_SCHUR solvers make use of this specialized
   // structure.
   //
-  // This can either be done by specifying Options::ordering_type =
-  // ceres::SCHUR, in which case Ceres will automatically determine
-  // the right ParameterBlock ordering, or by manually specifying a
-  // suitable ordering vector and defining
-  // Options::num_eliminate_blocks.
-  if (CERES_GET_FLAG(FLAGS_ordering) == "automatic") {
-    return;
+  // This can either be done by specifying a
+  // Options::linear_solver_ordering or having Ceres figure it out
+  // automatically using a greedy maximum independent set algorithm.
+  if (CERES_GET_FLAG(FLAGS_linear_solver_ordering) == "user") {
+    auto* ordering = new ceres::ParameterBlockOrdering;
+
+    // The points come before the cameras.
+    for (int i = 0; i < num_points; ++i) {
+      ordering->AddElementToGroup(points + point_block_size * i, 0);
+    }
+
+    for (int i = 0; i < num_cameras; ++i) {
+      // When using axis-angle, there is a single parameter block for
+      // the entire camera.
+      ordering->AddElementToGroup(cameras + camera_block_size * i, 1);
+    }
+
+    options->linear_solver_ordering.reset(ordering);
   }
-
-  auto* ordering = new ceres::ParameterBlockOrdering;
-
-  // The points come before the cameras.
-  for (int i = 0; i < num_points; ++i) {
-    ordering->AddElementToGroup(points + point_block_size * i, 0);
-  }
-
-  for (int i = 0; i < num_cameras; ++i) {
-    // When using axis-angle, there is a single parameter block for
-    // the entire camera.
-    ordering->AddElementToGroup(cameras + camera_block_size * i, 1);
-  }
-
-  options->linear_solver_ordering.reset(ordering);
 }
 
 void SetMinimizerOptions(Solver::Options* options) {

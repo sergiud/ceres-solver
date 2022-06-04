@@ -86,7 +86,7 @@ class SparseNormalCholeskySolverTest : public ::testing::Test {
     summary = solver->Solve(
         A_.get(), b_.get(), per_solve_options, actual_solution.data());
 
-    EXPECT_EQ(summary.termination_type, LINEAR_SOLVER_SUCCESS);
+    EXPECT_EQ(summary.termination_type, LinearSolverTerminationType::SUCCESS);
 
     for (int i = 0; i < A_->num_cols(); ++i) {
       EXPECT_NEAR(expected_solution(i), actual_solution(i), 1e-8)
@@ -111,7 +111,7 @@ TEST_F(SparseNormalCholeskySolverTest,
   LinearSolver::Options options;
   options.sparse_linear_algebra_library_type = SUITE_SPARSE;
   options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = false;
+  options.ordering_type = OrderingType::NATURAL;
   ContextImpl context;
   options.context = &context;
   TestSolver(options);
@@ -122,31 +122,7 @@ TEST_F(SparseNormalCholeskySolverTest,
   LinearSolver::Options options;
   options.sparse_linear_algebra_library_type = SUITE_SPARSE;
   options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = true;
-  ContextImpl context;
-  options.context = &context;
-  TestSolver(options);
-}
-#endif
-
-#ifndef CERES_NO_CXSPARSE
-TEST_F(SparseNormalCholeskySolverTest,
-       SparseNormalCholeskyUsingCXSparsePreOrdering) {
-  LinearSolver::Options options;
-  options.sparse_linear_algebra_library_type = CX_SPARSE;
-  options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = false;
-  ContextImpl context;
-  options.context = &context;
-  TestSolver(options);
-}
-
-TEST_F(SparseNormalCholeskySolverTest,
-       SparseNormalCholeskyUsingCXSparsePostOrdering) {
-  LinearSolver::Options options;
-  options.sparse_linear_algebra_library_type = CX_SPARSE;
-  options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = true;
+  options.ordering_type = OrderingType::AMD;
   ContextImpl context;
   options.context = &context;
   TestSolver(options);
@@ -159,7 +135,7 @@ TEST_F(SparseNormalCholeskySolverTest,
   LinearSolver::Options options;
   options.sparse_linear_algebra_library_type = ACCELERATE_SPARSE;
   options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = false;
+  options.ordering_type = OrderingType::NATURAL;
   ContextImpl context;
   options.context = &context;
   TestSolver(options);
@@ -170,7 +146,7 @@ TEST_F(SparseNormalCholeskySolverTest,
   LinearSolver::Options options;
   options.sparse_linear_algebra_library_type = ACCELERATE_SPARSE;
   options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = true;
+  options.ordering_type = OrderingType::AMD;
   ContextImpl context;
   options.context = &context;
   TestSolver(options);
@@ -183,7 +159,7 @@ TEST_F(SparseNormalCholeskySolverTest,
   LinearSolver::Options options;
   options.sparse_linear_algebra_library_type = EIGEN_SPARSE;
   options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = false;
+  options.ordering_type = OrderingType::NATURAL;
   ContextImpl context;
   options.context = &context;
   TestSolver(options);
@@ -194,7 +170,7 @@ TEST_F(SparseNormalCholeskySolverTest,
   LinearSolver::Options options;
   options.sparse_linear_algebra_library_type = EIGEN_SPARSE;
   options.type = SPARSE_NORMAL_CHOLESKY;
-  options.use_postordering = true;
+  options.ordering_type = OrderingType::AMD;
   ContextImpl context;
   options.context = &context;
   TestSolver(options);

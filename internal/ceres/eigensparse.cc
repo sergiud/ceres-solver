@@ -36,6 +36,12 @@
 
 #include <sstream>
 
+#ifndef CERES_NO_METIS
+#include <iostream>  // This is needed because MetisSupport depends on iostream.
+
+#include "Eigen/MetisSupport"
+#endif
+
 #include "Eigen/SparseCholesky"
 #include "Eigen/SparseCore"
 #include "ceres/compressed_row_sparse_matrix.h"
@@ -50,7 +56,7 @@ class EigenSparseCholeskyTemplate final : public SparseCholesky {
  public:
   EigenSparseCholeskyTemplate() = default;
   CompressedRowSparseMatrix::StorageType StorageType() const final {
-    return CompressedRowSparseMatrix::LOWER_TRIANGULAR;
+    return CompressedRowSparseMatrix::StorageType::LOWER_TRIANGULAR;
   }
 
   LinearSolverTerminationType Factorize(
@@ -67,7 +73,7 @@ class EigenSparseCholeskyTemplate final : public SparseCholesky {
 
       if (solver_.info() != Eigen::Success) {
         *message = "Eigen failure. Unable to find symbolic factorization.";
-        return LINEAR_SOLVER_FATAL_ERROR;
+        return LinearSolverTerminationType::FATAL_ERROR;
       }
 
       analyzed_ = true;
@@ -76,9 +82,9 @@ class EigenSparseCholeskyTemplate final : public SparseCholesky {
     solver_.factorize(lhs);
     if (solver_.info() != Eigen::Success) {
       *message = "Eigen failure. Unable to find numeric factorization.";
-      return LINEAR_SOLVER_FAILURE;
+      return LinearSolverTerminationType::FAILURE;
     }
-    return LINEAR_SOLVER_SUCCESS;
+    return LinearSolverTerminationType::SUCCESS;
   }
 
   LinearSolverTerminationType Solve(const double* rhs_ptr,
@@ -100,9 +106,9 @@ class EigenSparseCholeskyTemplate final : public SparseCholesky {
 
     if (solver_.info() != Eigen::Success) {
       *message = "Eigen failure. Unable to do triangular solve.";
-      return LINEAR_SOLVER_FAILURE;
+      return LinearSolverTerminationType::FAILURE;
     }
-    return LINEAR_SOLVER_SUCCESS;
+    return LinearSolverTerminationType::SUCCESS;
   }
 
   LinearSolverTerminationType Factorize(CompressedRowSparseMatrix* lhs,
@@ -149,11 +155,26 @@ std::unique_ptr<SparseCholesky> EigenSparseCholesky::Create(
                             Eigen::Upper,
                             Eigen::NaturalOrdering<int>>;
 
-  if (ordering_type == AMD) {
+  if (ordering_type == OrderingType::AMD) {
     return std::make_unique<EigenSparseCholeskyTemplate<WithAMDOrdering>>();
-  } else {
-    return std::make_unique<EigenSparseCholeskyTemplate<WithNaturalOrdering>>();
+#ifndef CERES_NO_METIS
+  } else if (ordering_type == OrderingType::NESDIS) {
+    using WithMetisOrdering = Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>,
+                                                    Eigen::Upper,
+                                                    Eigen::MetisOrdering<int>>;
+
+    return std::make_unique<EigenSparseCholeskyTemplate<WithMetisOrdering>>();
   }
+#else
+  } else {
+    LOG(FATAL)
+        << "Congratulations you have found a bug in Ceres Solver. Please "
+           "report it to the Ceres Solver developers.";
+    return nullptr;
+  }
+#endif
+
+  return std::make_unique<EigenSparseCholeskyTemplate<WithNaturalOrdering>>();
 }
 
 EigenSparseCholesky::~EigenSparseCholesky() = default;
@@ -167,11 +188,26 @@ std::unique_ptr<SparseCholesky> FloatEigenSparseCholesky::Create(
       Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>,
                             Eigen::Upper,
                             Eigen::NaturalOrdering<int>>;
-  if (ordering_type == AMD) {
+  if (ordering_type == OrderingType::AMD) {
     return std::make_unique<EigenSparseCholeskyTemplate<WithAMDOrdering>>();
-  } else {
-    return std::make_unique<EigenSparseCholeskyTemplate<WithNaturalOrdering>>();
+#ifndef CERES_NO_METIS
+  } else if (ordering_type == OrderingType::NESDIS) {
+    using WithMetisOrdering = Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>,
+                                                    Eigen::Upper,
+                                                    Eigen::MetisOrdering<int>>;
+
+    return std::make_unique<EigenSparseCholeskyTemplate<WithMetisOrdering>>();
   }
+#else
+  } else {
+    LOG(FATAL)
+        << "Congratulations you have found a bug in Ceres Solver. Please "
+           "report it to the Ceres Solver developers.";
+    return nullptr;
+  }
+#endif
+
+  return std::make_unique<EigenSparseCholeskyTemplate<WithNaturalOrdering>>();
 }
 
 FloatEigenSparseCholesky::~FloatEigenSparseCholesky() = default;

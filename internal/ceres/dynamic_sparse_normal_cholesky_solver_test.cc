@@ -83,7 +83,7 @@ class DynamicSparseNormalCholeskySolverTest : public ::testing::Test {
     summary = solver->Solve(
         A_.get(), b_.get(), per_solve_options, actual_solution.data());
 
-    EXPECT_EQ(summary.termination_type, LINEAR_SOLVER_SUCCESS);
+    EXPECT_EQ(summary.termination_type, LinearSolverTerminationType::SUCCESS);
 
     for (int i = 0; i < A_->num_cols(); ++i) {
       EXPECT_NEAR(expected_solution(i), actual_solution(i), 1e-8)
@@ -93,12 +93,14 @@ class DynamicSparseNormalCholeskySolverTest : public ::testing::Test {
   }
 
   void TestSolver(
-      const SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type) {
+      const SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
+      const OrderingType ordering_type) {
     LinearSolver::Options options;
     options.type = SPARSE_NORMAL_CHOLESKY;
     options.dynamic_sparsity = true;
     options.sparse_linear_algebra_library_type =
         sparse_linear_algebra_library_type;
+    options.ordering_type = ordering_type;
     ContextImpl context;
     options.context = &context;
     TestSolver(options, nullptr);
@@ -111,21 +113,27 @@ class DynamicSparseNormalCholeskySolverTest : public ::testing::Test {
 };
 
 #ifndef CERES_NO_SUITESPARSE
-TEST_F(DynamicSparseNormalCholeskySolverTest, SuiteSparse) {
-  TestSolver(SUITE_SPARSE);
+TEST_F(DynamicSparseNormalCholeskySolverTest, SuiteSparseAMD) {
+  TestSolver(SUITE_SPARSE, OrderingType::AMD);
+}
+
+#ifndef CERES_NO_METIS
+TEST_F(DynamicSparseNormalCholeskySolverTest, SuiteSparseNESDIS) {
+  TestSolver(SUITE_SPARSE, OrderingType::NESDIS);
 }
 #endif
-
-#ifndef CERES_NO_CXSPARSE
-TEST_F(DynamicSparseNormalCholeskySolverTest, CXSparse) {
-  TestSolver(CX_SPARSE);
-}
 #endif
 
 #ifdef CERES_USE_EIGEN_SPARSE
-TEST_F(DynamicSparseNormalCholeskySolverTest, Eigen) {
-  TestSolver(EIGEN_SPARSE);
+TEST_F(DynamicSparseNormalCholeskySolverTest, EigenAMD) {
+  TestSolver(EIGEN_SPARSE, OrderingType::AMD);
 }
+
+#ifndef CERES_NO_METIS
+TEST_F(DynamicSparseNormalCholeskySolverTest, EigenNESDIS) {
+  TestSolver(EIGEN_SPARSE, OrderingType::NESDIS);
+}
+#endif
 #endif  // CERES_USE_EIGEN_SPARSE
 
 }  // namespace internal

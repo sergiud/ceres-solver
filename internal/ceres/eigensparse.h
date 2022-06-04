@@ -48,6 +48,17 @@
 
 namespace ceres::internal {
 
+class EigenSparse {
+ public:
+  static constexpr bool IsNestedDissectionAvailable() noexcept {
+#ifdef CERES_NO_METIS
+    return false;
+#else
+    return true;
+#endif
+  }
+};
+
 class CERES_NO_EXPORT EigenSparseCholesky : public SparseCholesky {
  public:
   // Factory
@@ -80,6 +91,17 @@ class CERES_NO_EXPORT FloatEigenSparseCholesky : public SparseCholesky {
   LinearSolverTerminationType Solve(const double* rhs,
                                     double* solution,
                                     std::string* message) override = 0;
+};
+
+}  // namespace ceres::internal
+
+#else
+
+namespace ceres::internal {
+
+class EigenSparse {
+ public:
+  static constexpr bool IsNestedDissectionAvailable() noexcept { return false; }
 };
 
 }  // namespace ceres::internal

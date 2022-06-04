@@ -54,35 +54,78 @@
 
 namespace ceres::internal {
 
-enum LinearSolverTerminationType {
+enum class LinearSolverTerminationType {
   // Termination criterion was met.
-  LINEAR_SOLVER_SUCCESS,
+  SUCCESS,
 
   // Solver ran for max_num_iterations and terminated before the
   // termination tolerance could be satisfied.
-  LINEAR_SOLVER_NO_CONVERGENCE,
+  NO_CONVERGENCE,
 
   // Solver was terminated due to numerical problems, generally due to
   // the linear system being poorly conditioned.
-  LINEAR_SOLVER_FAILURE,
+  FAILURE,
 
   // Solver failed with a fatal error that cannot be recovered from,
   // e.g. CHOLMOD ran out of memory when computing the symbolic or
   // numeric factorization or an underlying library was called with
   // the wrong arguments.
-  LINEAR_SOLVER_FATAL_ERROR
+  FATAL_ERROR
 };
+
+inline std::ostream& operator<<(std::ostream& s,
+                                LinearSolverTerminationType type) {
+  switch (type) {
+    case LinearSolverTerminationType::SUCCESS:
+      s << "LINEAR_SOLVER_SUCCESS";
+      break;
+    case LinearSolverTerminationType::NO_CONVERGENCE:
+      s << "LINEAR_SOLVER_NO_CONVERGENCE";
+      break;
+    case LinearSolverTerminationType::FAILURE:
+      s << "LINEAR_SOLVER_FAILURE";
+      break;
+    case LinearSolverTerminationType::FATAL_ERROR:
+      s << "LINEAR_SOLVER_FATAL_ERROR";
+      break;
+    default:
+      s << "UNKNOWN LinearSolverTerminationType";
+  }
+  return s;
+}
 
 // This enum controls the fill-reducing ordering a sparse linear
 // algebra library should use before computing a sparse factorization
 // (usually Cholesky).
-enum OrderingType {
+//
+// TODO(sameeragarwal): Add support for nested dissection
+enum class OrderingType {
   NATURAL,  // Do not re-order the matrix. This is useful when the
             // matrix has been ordered using a fill-reducing ordering
             // already.
-  AMD       // Use the Approximate Minimum Degree algorithm to re-order
-            // the matrix.
+
+  AMD,  // Use the Approximate Minimum Degree algorithm to re-order
+        // the matrix.
+
+  NESDIS,  // Use the Nested Dissection algorithm to re-order the matrix.
 };
+
+inline std::ostream& operator<<(std::ostream& s, OrderingType type) {
+  switch (type) {
+    case OrderingType::NATURAL:
+      s << "NATURAL";
+      break;
+    case OrderingType::AMD:
+      s << "AMD";
+      break;
+    case OrderingType::NESDIS:
+      s << "NESDIS";
+      break;
+    default:
+      s << "UNKNOWN OrderingType";
+  }
+  return s;
+}
 
 class LinearOperator;
 
@@ -111,9 +154,9 @@ class CERES_NO_EXPORT LinearSolver {
     DenseLinearAlgebraLibraryType dense_linear_algebra_library_type = EIGEN;
     SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type =
         SUITE_SPARSE;
+    OrderingType ordering_type = OrderingType::NATURAL;
 
     // See solver.h for information about these flags.
-    bool use_postordering = false;
     bool dynamic_sparsity = false;
     bool use_explicit_schur_complement = false;
 
@@ -260,7 +303,8 @@ class CERES_NO_EXPORT LinearSolver {
   struct Summary {
     double residual_norm = -1.0;
     int num_iterations = -1;
-    LinearSolverTerminationType termination_type = LINEAR_SOLVER_FAILURE;
+    LinearSolverTerminationType termination_type =
+        LinearSolverTerminationType::FAILURE;
     std::string message;
   };
 

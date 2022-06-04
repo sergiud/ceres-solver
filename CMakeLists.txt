@@ -110,7 +110,6 @@ endif (BUILD_TESTING)
 option(WITH_GFLAGS "Enable Google Flags." ON)
 option(WITH_GLOG "Enable Google Log." ON)
 option(WITH_SUITESPARSE "Enable SuiteSparse." ON)
-option(WITH_CXSPARSE "Enable CXSparse." ON)
 option(WITH_CUDA "Enable use of CUDA linear algebra solvers." ON)
 option(WITH_LAPACK "Enable use of LAPACK." ON)
 # Template specializations for the Schur complement based solvers. If
@@ -148,13 +147,12 @@ endif (NOT WITH_LAPACK)
 find_package (AccelerateSparse)
 find_package (benchmark 1.3)
 find_package (CUDA)
-find_package (CXSparse NO_MODULE)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package (gflags 2.2.1)
 find_package (glog 0.3.5)
 find_package (LAPACK)
 find_package (OpenMP COMPONENTS CXX)
-find_package (SuiteSparse NO_MODULE COMPONENTS CHOLMOD SPQR)
+find_package (SuiteSparse 4.5.6 NO_MODULE COMPONENTS CHOLMOD SPQR)
 
 if (WITH_THREADING_BACKEND STREQUAL "")
   if (OpenMP_CXX_FOUND)
@@ -235,21 +233,6 @@ if (NOT LAPACK_FOUND)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
 endif (NOT LAPACK_FOUND)
 
-# CXSparse.
-if (WITH_CXSPARSE)
-  # Don't search with REQUIRED as we can continue without CXSparse.
-  if (TARGET CXSparse::CXSparse)
-    # Avoid I conflict
-    set_property (DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NCOMPLEX)
-    set (CXSPARSE_DEPENDENCY "find_dependency (CXSparse ${CXSparse_VERSION} NO_MODULE)")
-  else (TARGET CXSparse::CXSparse)
-    # Disable use of CXSparse if it cannot be found and continue.
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
-  endif (TARGET CXSparse::CXSparse)
-else (WITH_CXSPARSE)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CXSPARSE)
-endif (WITH_CXSPARSE)
-
 add_feature_info (AccelerateSparse WITH_ACCELERATESPARSE
   "Apple's Accelerate sparse support")
 
@@ -264,16 +247,6 @@ else()
   mark_as_advanced(FORCE AccelerateSparse_INCLUDE_DIR
                          AccelerateSparse_LIBRARY)
 endif()
-
-# Ensure that the user understands they have disabled all sparse libraries.
-if (NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
-  message("   ===============================================================")
-  message("   Compiling without any sparse library: SuiteSparse, CXSparse ")
-  message("   EigenSparse & Apple's Accelerate are all disabled or unavailable.  ")
-  message("   No sparse linear solvers (SPARSE_NORMAL_CHOLESKY & SPARSE_SCHUR)")
-  message("   will be available when Ceres is used.")
-  message("   ===============================================================")
-endif(NOT WITH_SUITESPARSE AND NOT WITH_CXSPARSE AND NOT WITH_EIGENSPARSE)
 
 if (gflags_FOUND)
   include (DetermineGflagsNamespace)
@@ -517,10 +490,6 @@ set_package_properties (gflags PROPERTIES
 set_package_properties (Eigen3 PROPERTIES
   DESCRIPTION "C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms"
   URL "http://eigen.tuxfamily.org"
-)
-
-set_package_properties (CXSparse PROPERTIES
-  URL "http://faculty.cse.tamu.edu/davis/suitesparse.html"
 )
 
 set_package_properties (SuiteSparse PROPERTIES

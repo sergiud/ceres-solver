@@ -106,14 +106,7 @@ VisibilityBasedPreconditioner::VisibilityBasedPreconditioner(
   LinearSolver::Options sparse_cholesky_options;
   sparse_cholesky_options.sparse_linear_algebra_library_type =
       options_.sparse_linear_algebra_library_type;
-
-  // The preconditioner's sparsity is not available in the
-  // preprocessor, so the columns of the Jacobian have not been
-  // reordered to minimize fill in when computing its sparse Cholesky
-  // factorization. So we must tell the SparseCholesky object to
-  // perform approximate minimum-degree reordering, which is done by
-  // setting use_postordering to true.
-  sparse_cholesky_options.use_postordering = true;
+  sparse_cholesky_options.ordering_type = options_.ordering_type;
   sparse_cholesky_ = SparseCholesky::Create(sparse_cholesky_options);
 
   const time_t init_time = time(nullptr);
@@ -353,7 +346,7 @@ bool VisibilityBasedPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
   // scaling is not needed, which is quite often in our experience.
   LinearSolverTerminationType status = Factorize();
 
-  if (status == LINEAR_SOLVER_FATAL_ERROR) {
+  if (status == LinearSolverTerminationType::FATAL_ERROR) {
     return false;
   }
 
@@ -362,7 +355,8 @@ bool VisibilityBasedPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
   // belong to the edges of the degree-2 forest. In the CLUSTER_JACOBI
   // case, the preconditioner is guaranteed to be positive
   // semidefinite.
-  if (status == LINEAR_SOLVER_FAILURE && options_.type == CLUSTER_TRIDIAGONAL) {
+  if (status == LinearSolverTerminationType::FAILURE &&
+      options_.type == CLUSTER_TRIDIAGONAL) {
     VLOG(1) << "Unscaled factorization failed. Retrying with off-diagonal "
             << "scaling";
     ScaleOffDiagonalCells();
@@ -370,7 +364,7 @@ bool VisibilityBasedPreconditioner::UpdateImpl(const BlockSparseMatrix& A,
   }
 
   VLOG(2) << "Compute time: " << time(nullptr) - start_time;
-  return (status == LINEAR_SOLVER_SUCCESS);
+  return (status == LinearSolverTerminationType::SUCCESS);
 }
 
 // Consider the preconditioner matrix as meta-block matrix, whose
@@ -413,12 +407,15 @@ LinearSolverTerminationType VisibilityBasedPreconditioner::Factorize() {
   std::unique_ptr<CompressedRowSparseMatrix> lhs;
   const CompressedRowSparseMatrix::StorageType storage_type =
       sparse_cholesky_->StorageType();
-  if (storage_type == CompressedRowSparseMatrix::UPPER_TRIANGULAR) {
+  if (storage_type ==
+      CompressedRowSparseMatrix::StorageType::UPPER_TRIANGULAR) {
     lhs = CompressedRowSparseMatrix::FromTripletSparseMatrix(*tsm);
-    lhs->set_storage_type(CompressedRowSparseMatrix::UPPER_TRIANGULAR);
+    lhs->set_storage_type(
+        CompressedRowSparseMatrix::StorageType::UPPER_TRIANGULAR);
   } else {
     lhs = CompressedRowSparseMatrix::FromTripletSparseMatrixTransposed(*tsm);
-    lhs->set_storage_type(CompressedRowSparseMatrix::LOWER_TRIANGULAR);
+    lhs->set_storage_type(
+        CompressedRowSparseMatrix::StorageType::LOWER_TRIANGULAR);
   }
 
   std::string message;
