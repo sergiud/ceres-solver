@@ -28,18 +28,29 @@
 #
 # Author: keir@google.com (Keir Mierle)
 
+# Build the list of dependencies for Ceres based on the current configuration.
+
 # Avoid 'xxx.cc has no symbols' warnings from source files which are 'empty'
 # when their enclosing #ifdefs are disabled.
 if (WITH_CXX_THREADS)
-  set(CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
-  list(APPEND APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
-  set (Threads_DEPENDENCY "find_dependency (Threads)")
+  set (CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
+  find_package (Threads REQUIRED)
+  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
+
+  # Make dependency visible to the parent CMakeLists.txt
+  set (Threads_DEPENDENCY "find_dependency (Threads)" PARENT_SCOPE)
+  list (APPEND APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
 elseif (WITH_OPENMP)
-  set(CERES_PARALLEL_FOR_SRC parallel_for_openmp.cc)
-  list(APPEND APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES OpenMP::OpenMP_CXX)
-else()
-  set(CERES_PARALLEL_FOR_SRC parallel_for_nothreads.cc)
-endif()
+  # OpenMP requires linking to the corresponding library.
+  find_package(OpenMP REQUIRED COMPONENTS CXX)
+
+  set (CERES_PARALLEL_FOR_SRC parallel_for_openmp.cc)
+  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES OpenMP::OpenMP_CXX)
+
+  # Make dependency visible to the parent CMakeLists.txt
+  set (OpenMP_DEPENDENCY "find_dependency (OpenMP ${OpenMP_CXX_VERSION} COMPONENTS CXX)" PARENT_SCOPE)
+  set (CERES_PARALLEL_FOR_SRC parallel_for_nothreads.cc)
+endif (WITH_CXX_THREADS)
 
 # Source files that contain public symbols and live in the ceres namespaces.
 # Such symbols are expected to be marked with CERES_EXPORT and the files below
@@ -96,7 +107,6 @@ elseif(CMAKE_UNITY_BUILD)
   message(FATAL_ERROR "Unity build requires cmake 3.16 or newer.  Please unset CMAKE_UNITY_BUILD.")
 endif()
 
-# Build the list of dependencies for Ceres based on the current configuration.
 if (glog_FOUND)
   # Public export to allow the user to call InitGoogleLogging.
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
@@ -106,10 +116,20 @@ if (SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::CHOLMOD SuiteSparse::SPQR)
+
+  if (SuiteSparse_Partition_FOUND)
+    list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::Partition)
+  endif (SuiteSparse_Partition_FOUND)
 endif (SuiteSparse_FOUND)
 
+if (METIS_FOUND)
+  # Define version information for use in Solver::FullReport.
+  add_definitions (-DCERES_METIS_VERSION="${METIS_VERSION}")
+  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES METIS::METIS)
+endif (METIS_FOUND)
+
 if (LAPACK_FOUND)
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES LAPACK::LAPACK)
+  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES LAPACK::LAPACK)
 endif (LAPACK_FOUND)
 
 if (CUDA_FOUND)

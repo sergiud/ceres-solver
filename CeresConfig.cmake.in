@@ -9,8 +9,9 @@ include (CMakeFindDependencyMacro)
 find_dependency (Eigen3 @Eigen3_VERSION@ NO_MODULE)
 find_dependency (LAPACK @LAPACK_VERSION@)
 @GLOG_DEPENDENCY@
+@METIS_DEPENDENCY@
 @OpenMP_DEPENDENCY@
-@SUITESPARSE_DEPENDENCY@
+@SuiteSparse_DEPENDENCY@
 @TBB_DEPENDENCY@
 @Threads_DEPENDENCY@
 

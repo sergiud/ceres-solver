@@ -98,14 +98,9 @@ set (CPACK_PACKAGE_VERSION_PATCH ${CERES_VERSION_PATCH})
 set (CPACK_PACKAGE_VERSION ${CERES_VERSION})
 
 include (CMakePackageConfigHelpers)
+include (CTest)
 include (CPack)
 include (CheckFunctionExists)
-
-option(BUILD_TESTING "Enable tests" ON)
-
-if (BUILD_TESTING)
-  enable_testing()
-endif (BUILD_TESTING)
 
 option(WITH_GFLAGS "Enable Google Flags." ON)
 option(WITH_GLOG "Enable Google Log." ON)
@@ -144,6 +139,10 @@ if (NOT WITH_LAPACK)
   set (CMAKE_DISABLE_FIND_PACKAGE_LAPACK ON)
 endif (NOT WITH_LAPACK)
 
+if (NOT WITH_EIGENMETIS)
+  set (CMAKE_DISABLE_FIND_PACKAGE_METIS ON)
+endif (NOT WITH_EIGENMETIS)
+
 find_package (AccelerateSparse)
 find_package (benchmark 1.3)
 find_package (CUDA)
@@ -151,8 +150,9 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package (gflags 2.2.1)
 find_package (glog 0.3.5)
 find_package (LAPACK)
+find_package (METIS)
 find_package (OpenMP COMPONENTS CXX)
-find_package (SuiteSparse 4.5.6 NO_MODULE COMPONENTS CHOLMOD SPQR)
+find_package (SuiteSparse 4.5.6 COMPONENTS CHOLMOD SPQR OPTIONAL_COMPONENTS Partition)
 
 if (WITH_THREADING_BACKEND STREQUAL "")
   if (OpenMP_CXX_FOUND)
@@ -180,9 +180,8 @@ endif (WITH_OPENMP)
 
 # Enable the use of Eigen as a sparse linear algebra library for
 # solving the nonlinear least squares problems.
-OPTION(WITH_EIGENSPARSE
-  "Enable Eigen as a sparse linear algebra library, WARNING: results in an LGPL licensed Ceres." OFF)
-
+option(WITH_EIGENSPARSE "Enable Eigen as a sparse linear algebra library." ON)
+cmake_dependent_option(WITH_EIGENMETIS "Enable Eigen METIS support." ON WITH_EIGENSPARSE OFF)
 option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
@@ -223,15 +222,34 @@ set(RELATIVE_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Ceres)
 
 # SuiteSparse.
 IF (SuiteSparse_FOUND)
-  set (SUITESPARSE_DEPENDENCY
+  set (SuiteSparse_DEPENDENCY
     "find_dependency (SuiteSparse ${SuiteSparse_VERSION} NO_MODULE)")
 else (SuiteSparse_FOUND)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
 endif (SuiteSparse_FOUND)
 
 if (NOT LAPACK_FOUND)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
 endif (NOT LAPACK_FOUND)
+
+if (NOT SuiteSparse_Partition_FOUND)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_NO_CHOLMOD_PARTITION)
+endif (NOT SuiteSparse_Partition_FOUND)
+
+if (METIS_FOUND)
+  # Since METIS is a private dependency of Ceres, it requires access to the
+  # link-only METIS::METIS target to avoid undefined linker errors in projects
+  # relying on Ceres. We do not actually need to propagate anything besides
+  # the link libraries (such as include directories.)
+  set (METIS_DEPENDENCY "find_dependency (METIS ${METIS_VERSION})")
+  # METIS find module must be installed unless a package config is being used.
+  if (NOT METIS_DIR)
+    install (FILES ${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake
+             DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+  endif (NOT METIS_DIR)
+else (METIS_FOUND)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_NO_EIGEN_METIS)
+endif (METIS_FOUND)
 
 add_feature_info (AccelerateSparse WITH_ACCELERATESPARSE
   "Apple's Accelerate sparse support")
