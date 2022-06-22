@@ -151,13 +151,6 @@ if (CUDA_FOUND)
   endif (BUILD_TESTING)
 endif (CUDA_FOUND)
 
-if (WITH_TBB AND TBB_FOUND)
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES tbb::tbb)
-  if (NOT MSVC)
-    list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
-  endif (NOT MSVC)
-endif (WITH_TBB AND TBB_FOUND)
-
 # Source files that contain private symbols and live in the ceres::internal
 # namespace. The corresponding symbols (classes, functions, etc.) are expected
 # to be marked with CERES_NO_EXPORT and the files below sorted in

@@ -175,7 +175,7 @@ elseif (WITH_THREADING_BACKEND STREQUAL None)
 endif (WITH_THREADING_BACKEND STREQUAL "")
 
 if (WITH_OPENMP)
-  set (OpenMP_DEPENDENCY "find_dependency (OpenMP ${OpenMP_CXX_VERSION} COMPONENTS CXX)")
+  set (OpenMP_DEPENDENCY "find_dependency (OpenMP ${OpenMP_CXX_VERSION})")
 endif (WITH_OPENMP)
 
 # Enable the use of Eigen as a sparse linear algebra library for
@@ -221,7 +221,7 @@ least squares problems (LGPL licensed Ceres)")
 set(RELATIVE_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Ceres)
 
 # SuiteSparse.
-IF (SuiteSparse_FOUND)
+if (SuiteSparse_FOUND)
   set (SuiteSparse_DEPENDENCY
     "find_dependency (SuiteSparse ${SuiteSparse_VERSION} NO_MODULE)")
 else (SuiteSparse_FOUND)
