@@ -260,6 +260,20 @@ set(CERES_LIBRARY_SOURCE
     ${CERES_PUBLIC_HDRS}
     ${CERES_PUBLIC_INTERNAL_HDRS})
 
+if (METIS_FOUND)
+  set (_METIS_IN ${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake)
+  set (_METIS_OUT ${Ceres_BINARY_DIR}/FindMETIS.cmake)
+
+  add_custom_command (
+    OUTPUT ${_METIS_OUT}
+    COMMAND ${CMAKE_COMMAND} -E create_symlink ${_METIS_IN} ${_METIS_OUT}
+    DEPENDS ${_METIS_IN}
+    COMMENT "Creating FindMETIS.cmake symlink in build directory"
+  )
+
+  list (APPEND CERES_LIBRARY_SOURCE ${_METIS_OUT})
+endif (METIS_FOUND)
+
 # Primarily for Android, but optionally for others, compile the minimal
 # glog implementation into Ceres.
 if (NOT glog_FOUND)
