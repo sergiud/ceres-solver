@@ -7,7 +7,7 @@
 #
 # * Redistributions of source code must retain the above copyright notice,
 #   this list of conditions and the following disclaimer.
-# * Redistributions in binary form must reproduce the above copyright notice,
+# * Redistributions in binary form %Cmust reproduce the above copyright notice,
 #   this list of conditions and the following disclaimer in the documentation
 #   and/or other materials provided with the distribution.
 # * Neither the name of Google Inc. nor the names of its contributors may be
@@ -132,14 +132,14 @@ if (LAPACK_FOUND)
   list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES LAPACK::LAPACK)
 endif (LAPACK_FOUND)
 
-if (CUDA_FOUND)
+if (CMAKE_CUDA_COMPILER_LOADED)
   list(APPEND
        CERES_LIBRARY_PRIVATE_DEPENDENCIES
        ${CUDA_LIBRARIES}
        ${CUDA_cublas_LIBRARY}
        ${CUDA_cusolver_LIBRARY}
        ${CUDA_cusparse_LIBRARY})
-  if (BUILD_TESTING)
+  if (BUILD_TESTING AND GFLAGS)
     add_test(
         NAME cuda_memcheck_dense_qr_test
         COMMAND ${CUDA_TOOLKIT_ROOT_DIR}/bin/cuda-memcheck --leak-check full
@@ -148,8 +148,12 @@ if (CUDA_FOUND)
         NAME cuda_memcheck_dense_cholesky_test
         COMMAND ${CUDA_TOOLKIT_ROOT_DIR}/bin/cuda-memcheck --leak-check full
             $<TARGET_FILE:cuda_dense_cholesky_test>)
-  endif (BUILD_TESTING)
-endif (CUDA_FOUND)
+  endif (BUILD_TESTING AND GFLAGS)
+  set_source_files_properties(ceres_cuda_kernels.cu PROPERTIES LANGUAGE CUDA)
+  add_library(ceres_cuda_kernels ceres_cuda_kernels.cu)
+  target_compile_features(ceres_cuda_kernels PRIVATE cxx_std_14)
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ceres_cuda_kernels)
+endif (CMAKE_CUDA_COMPILER_LOADED)
 
 # Source files that contain private symbols and live in the ceres::internal
 # namespace. The corresponding symbols (classes, functions, etc.) are expected
@@ -366,7 +370,7 @@ target_link_libraries(ceres PUBLIC Eigen3::Eigen)
 set(CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS "")
 set(CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS "")
 
-if (CUDA_FOUND)
+if (CMAKE_CUDA_COMPILER_LOADED)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS
     ${CUDA_INCLUDE_DIRS})
 endif()
@@ -382,11 +386,13 @@ include(GenerateExportHeader)
 generate_export_header(ceres EXPORT_FILE_NAME
   ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/export.h)
 
-install(TARGETS ceres
-        EXPORT  CeresTargets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+set (_Ceres_EXPORT_TARGETS ceres PARENT_SCOPE)
+
+if (CMAKE_CUDA_COMPILER_LOADED)
+  # list (APPEND ...) does not allow to modify the list in the parent scope
+  set (_Ceres_EXPORT_TARGETS ${_Ceres_EXPORT_TARGETS} ceres_cuda_kernels
+    PARENT_SCOPE)
+endif(CMAKE_CUDA_COMPILER_LOADED)
 
 if (BUILD_TESTING AND gflags_FOUND)
   add_library(gtest STATIC gmock_gtest_all.cc gmock_main.cc)

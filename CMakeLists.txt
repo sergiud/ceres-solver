@@ -208,9 +208,13 @@ else (WITH_EIGENSPARSE)
   add_definitions(-DEIGEN_MPL2_ONLY)
 endif (WITH_EIGENSPARSE)
 
-if (NOT CUDA_FOUND)
+if (WITH_CUDA)
+  enable_language(CUDA)
+endif (WITH_CUDA)
+
+if (NOT CMAKE_CUDA_COMPILER_LOADED)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
-endif (NOT CUDA_FOUND)
+endif (NOT CMAKE_CUDA_COMPILER_LOADED)
 
 add_feature_info (EigenSparse WITH_EIGENSPARSE
 "Use Eigen as a sparse linear algebra library for solving the nonlinear \
@@ -465,17 +469,23 @@ add_custom_target(uninstall
 # generate the absolute install paths.
 set_target_properties (ceres PROPERTIES EXPORT_NAME Ceres)
 
-export (TARGETS ceres NAMESPACE Ceres:: FILE CeresTargets.cmake)
+install(TARGETS ${_Ceres_EXPORT_TARGETS}
+        EXPORT  CeresTargets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+export (TARGETS ${_Ceres_EXPORT_TARGETS} NAMESPACE Ceres:: FILE CeresTargets.cmake)
 export (PACKAGE Ceres)
 
 # This "exports" all targets which have been put into the export set
-# "CeresExport". This means that CMake generates a file with the given
+# "CeresTargets". This means that CMake generates a file with the given
 # filename, which can later on be loaded by projects using this package.
 # This file contains ADD_LIBRARY(bar IMPORTED) statements for each target
 # in the export set, so when loaded later on CMake will create "imported"
 # library targets from these, which can be used in many ways in the same way
 # as a normal library target created via a normal ADD_LIBRARY().
-install(EXPORT CeresTargets NAMESPACE  Ceres::
+install(EXPORT CeresTargets NAMESPACE Ceres::
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 
 configure_package_config_file (
