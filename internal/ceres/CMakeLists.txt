@@ -135,10 +135,9 @@ endif (LAPACK_FOUND)
 if (CMAKE_CUDA_COMPILER_LOADED)
   list(APPEND
        CERES_LIBRARY_PRIVATE_DEPENDENCIES
-       ${CUDA_LIBRARIES}
-       ${CUDA_cublas_LIBRARY}
-       ${CUDA_cusolver_LIBRARY}
-       ${CUDA_cusparse_LIBRARY})
+       CUDA::cublas
+       CUDA::cusolver
+       CUDA::cusparse)
   if (BUILD_TESTING AND GFLAGS)
     add_test(
         NAME cuda_memcheck_dense_qr_test
@@ -370,10 +369,6 @@ target_link_libraries(ceres PUBLIC Eigen3::Eigen)
 set(CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS "")
 set(CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS "")
 
-if (CMAKE_CUDA_COMPILER_LOADED)
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS
-    ${CUDA_INCLUDE_DIRS})
-endif()
 # Add include locations for optional dependencies to the Ceres target without
 # duplication.
 list(REMOVE_DUPLICATES CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS)

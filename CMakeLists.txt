@@ -145,7 +145,6 @@ endif (NOT WITH_EIGENMETIS)
 
 find_package (AccelerateSparse)
 find_package (benchmark 1.3)
-find_package (CUDA)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package (gflags 2.2.1)
 find_package (glog 0.3.5)
@@ -212,9 +211,11 @@ if (WITH_CUDA)
   enable_language(CUDA)
 endif (WITH_CUDA)
 
-if (NOT CMAKE_CUDA_COMPILER_LOADED)
+if (CMAKE_CUDA_COMPILER_LOADED)
+  find_package (CUDAToolkit REQUIRED)
+else (CMAKE_CUDA_COMPILER_LOADED)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
-endif (NOT CMAKE_CUDA_COMPILER_LOADED)
+endif (CMAKE_CUDA_COMPILER_LOADED)
 
 add_feature_info (EigenSparse WITH_EIGENSPARSE
 "Use Eigen as a sparse linear algebra library for solving the nonlinear \
