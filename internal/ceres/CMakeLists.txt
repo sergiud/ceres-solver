@@ -381,13 +381,13 @@ include(GenerateExportHeader)
 generate_export_header(ceres EXPORT_FILE_NAME
   ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/export.h)
 
-set (_Ceres_EXPORT_TARGETS ceres PARENT_SCOPE)
+set (_Ceres_EXPORT_TARGETS ceres)
 
 if (CMAKE_CUDA_COMPILER_LOADED)
-  # list (APPEND ...) does not allow to modify the list in the parent scope
-  set (_Ceres_EXPORT_TARGETS ${_Ceres_EXPORT_TARGETS} ceres_cuda_kernels
-    PARENT_SCOPE)
+  list (APPEND _Ceres_EXPORT_TARGETS ceres_cuda_kernels)
 endif(CMAKE_CUDA_COMPILER_LOADED)
+
+set (_Ceres_EXPORT_TARGETS ${_Ceres_EXPORT_TARGETS} PARENT_SCOPE)
 
 if (BUILD_TESTING AND gflags_FOUND)
   add_library(gtest STATIC gmock_gtest_all.cc gmock_main.cc)
