@@ -30,7 +30,7 @@
 #          alexs.mac@gmail.com (Alex Stewart)
 
 cmake_minimum_required(VERSION 3.18)
-project(Ceres LANGUAGES C CXX VERSION 2.0.0)
+project(Ceres LANGUAGES C CXX VERSION 2.1.0)
 
 # NOTE: The following CMake variables must be applied consistently to all
 # targets in project to avoid visibility warnings by placing the variables at
