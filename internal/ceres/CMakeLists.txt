@@ -135,6 +135,7 @@ if (CMAKE_CUDA_COMPILER_LOADED)
   list(APPEND
        CERES_LIBRARY_PRIVATE_DEPENDENCIES
        CUDA::cublas
+       CUDA::cudart
        CUDA::cusolver
        CUDA::cusparse)
   if (BUILD_TESTING AND GFLAGS)
