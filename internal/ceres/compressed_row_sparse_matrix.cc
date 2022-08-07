@@ -37,7 +37,6 @@
 
 #include "ceres/crs_matrix.h"
 #include "ceres/internal/export.h"
-#include "ceres/random.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "glog/logging.h"
 
@@ -118,10 +117,12 @@ void TransposeForCompressedRowSparseStructure(const int num_rows,
   transpose_rows[0] = 0;
 }
 
+template <class NormalFunctor>
 void AddRandomBlock(const int num_rows,
                     const int num_cols,
                     const int row_block_begin,
                     const int col_block_begin,
+                    NormalFunctor&& randn,
                     std::vector<int>* rows,
                     std::vector<int>* cols,
                     std::vector<double>* values) {
@@ -129,19 +130,21 @@ void AddRandomBlock(const int num_rows,
     for (int c = 0; c < num_cols; ++c) {
       rows->push_back(row_block_begin + r);
       cols->push_back(col_block_begin + c);
-      values->push_back(RandNormal());
+      values->push_back(randn());
     }
   }
 }
 
+template <class NormalFunctor>
 void AddSymmetricRandomBlock(const int num_rows,
                              const int row_block_begin,
+                             NormalFunctor&& randn,
                              std::vector<int>* rows,
                              std::vector<int>* cols,
                              std::vector<double>* values) {
   for (int r = 0; r < num_rows; ++r) {
     for (int c = r; c < num_rows; ++c) {
-      const double v = RandNormal();
+      const double v = randn();
       rows->push_back(row_block_begin + r);
       cols->push_back(row_block_begin + c);
       values->push_back(v);
@@ -620,7 +623,8 @@ CompressedRowSparseMatrix::Transpose() const {
 
 std::unique_ptr<CompressedRowSparseMatrix>
 CompressedRowSparseMatrix::CreateRandomMatrix(
-    CompressedRowSparseMatrix::RandomMatrixOptions options) {
+    CompressedRowSparseMatrix::RandomMatrixOptions options,
+    std::mt19937& generator) {
   CHECK_GT(options.num_row_blocks, 0);
   CHECK_GT(options.min_row_block_size, 0);
   CHECK_GT(options.max_row_block_size, 0);
@@ -644,20 +648,23 @@ CompressedRowSparseMatrix::CreateRandomMatrix(
   vector<int> row_blocks;
   vector<int> col_blocks;
 
+  std::uniform_int_distribution<> udist_row{
+      0, options.max_row_block_size - options.min_row_block_size};
+
   // Generate the row block structure.
   for (int i = 0; i < options.num_row_blocks; ++i) {
     // Generate a random integer in [min_row_block_size, max_row_block_size]
-    const int delta_block_size =
-        Uniform(options.max_row_block_size - options.min_row_block_size);
+    const int delta_block_size = udist_row(generator);
     row_blocks.push_back(options.min_row_block_size + delta_block_size);
   }
 
   if (options.storage_type == StorageType::UNSYMMETRIC) {
+    std::uniform_int_distribution<> udist_col{
+        0, options.max_col_block_size - options.min_col_block_size};
     // Generate the col block structure.
     for (int i = 0; i < options.num_col_blocks; ++i) {
       // Generate a random integer in [min_col_block_size, max_col_block_size]
-      const int delta_block_size =
-          Uniform(options.max_col_block_size - options.min_col_block_size);
+      const int delta_block_size = udist_col(generator);
       col_blocks.push_back(options.min_col_block_size + delta_block_size);
     }
   } else {
@@ -668,6 +675,9 @@ CompressedRowSparseMatrix::CreateRandomMatrix(
   vector<int> tsm_rows;
   vector<int> tsm_cols;
   vector<double> tsm_values;
+
+  std::uniform_real_distribution<> uniform01;
+  std::normal_distribution<> standard_normal;
 
   // For ease of construction, we are going to generate the
   // CompressedRowSparseMatrix by generating it as a
@@ -695,7 +705,10 @@ CompressedRowSparseMatrix::CreateRandomMatrix(
         }
 
         // Randomly determine if this block is present or not.
-        if (RandDouble() <= options.block_density) {
+        if (uniform01(generator) <= options.block_density) {
+          auto randn = [&standard_normal, &generator] {
+            return standard_normal(generator);
+          };
           // If the matrix is symmetric, then we take care to generate
           // symmetric diagonal blocks.
           if (options.storage_type == StorageType::UNSYMMETRIC || r != c) {
@@ -703,12 +716,14 @@ CompressedRowSparseMatrix::CreateRandomMatrix(
                            col_blocks[c],
                            row_block_begin,
                            col_block_begin,
+                           randn,
                            &tsm_rows,
                            &tsm_cols,
                            &tsm_values);
           } else {
             AddSymmetricRandomBlock(row_blocks[r],
                                     row_block_begin,
+                                    randn,
                                     &tsm_rows,
                                     &tsm_cols,
                                     &tsm_values);

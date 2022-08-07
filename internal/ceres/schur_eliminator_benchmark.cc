@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,13 +29,13 @@
 // Authors: sameeragarwal@google.com (Sameer Agarwal)
 
 #include <memory>
+#include <random>
 
 #include "Eigen/Dense"
 #include "benchmark/benchmark.h"
 #include "ceres/block_random_access_dense_matrix.h"
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/block_structure.h"
-#include "ceres/random.h"
 #include "ceres/schur_eliminator.h"
 
 namespace ceres::internal {
@@ -91,9 +91,9 @@ class BenchmarkData {
 
     matrix_ = std::make_unique<BlockSparseMatrix>(bs);
     double* values = matrix_->mutable_values();
-    for (int i = 0; i < matrix_->num_nonzeros(); ++i) {
-      values[i] = RandNormal();
-    }
+    std::generate_n(values, matrix_->num_nonzeros(), [this] {
+      return standard_normal(generator);
+    });
 
     b_.resize(matrix_->num_rows());
     b_.setRandom();
@@ -126,6 +126,8 @@ class BenchmarkData {
   Vector diagonal_;
   Vector z_;
   Vector y_;
+  std::mt19937 generator;
+  std::normal_distribution<> standard_normal;
 };
 
 static void BM_SchurEliminatorEliminate(benchmark::State& state) {

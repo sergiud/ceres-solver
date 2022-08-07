@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,6 @@
 #include "ceres/detect_structure.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_least_squares_problems.h"
-#include "ceres/random.h"
 #include "ceres/test_util.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "ceres/types.h"
@@ -281,11 +280,15 @@ TEST(SchurEliminatorForOneFBlock, MatchesSchurEliminator) {
     cell_pos += kEBlockSize * kEBlockSize;
   }
 
+  std::mt19937 generator;
+  std::normal_distribution<> standard_normal;
+
   BlockSparseMatrix matrix(bs);
   double* values = matrix.mutable_values();
-  for (int i = 0; i < matrix.num_nonzeros(); ++i) {
-    values[i] = RandNormal();
-  }
+  std::generate_n(
+      values, matrix.num_nonzeros(), [&generator, &standard_normal] {
+        return standard_normal(generator);
+      });
 
   Vector b(matrix.num_rows());
   b.setRandom();

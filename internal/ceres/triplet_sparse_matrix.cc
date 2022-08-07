@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,6 @@
 #include "ceres/crs_matrix.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "ceres/random.h"
 #include "ceres/types.h"
 #include "glog/logging.h"
 
@@ -308,11 +307,15 @@ TripletSparseMatrix::CreateFromTextFile(FILE* file) {
 }
 
 std::unique_ptr<TripletSparseMatrix> TripletSparseMatrix::CreateRandomMatrix(
-    const TripletSparseMatrix::RandomMatrixOptions& options) {
+    const TripletSparseMatrix::RandomMatrixOptions& options,
+    std::mt19937& generator) {
   CHECK_GT(options.num_rows, 0);
   CHECK_GT(options.num_cols, 0);
   CHECK_GT(options.density, 0.0);
   CHECK_LE(options.density, 1.0);
+
+  std::uniform_real_distribution<> uniform01;
+  std::normal_distribution<> standard_normal;
 
   std::vector<int> rows;
   std::vector<int> cols;
@@ -323,10 +326,10 @@ std::unique_ptr<TripletSparseMatrix> TripletSparseMatrix::CreateRandomMatrix(
     values.clear();
     for (int r = 0; r < options.num_rows; ++r) {
       for (int c = 0; c < options.num_cols; ++c) {
-        if (RandDouble() <= options.density) {
+        if (uniform01(generator) <= options.density) {
           rows.push_back(r);
           cols.push_back(c);
-          values.push_back(RandNormal());
+          values.push_back(standard_normal(generator));
         }
       }
     }

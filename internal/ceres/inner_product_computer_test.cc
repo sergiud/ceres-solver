@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,6 @@
 #include "Eigen/SparseCore"
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/random.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -78,10 +77,12 @@ namespace internal {
 
 TEST(InnerProductComputer, NormalOperation) {
   // "Randomly generated seed."
-  SetRandomState(29823);
+  std::mt19937 generator{29823};
   const int kMaxNumRowBlocks = 10;
   const int kMaxNumColBlocks = 10;
   const int kNumTrials = 10;
+
+  std::uniform_real_distribution<> uniform01;
 
   // Create a random matrix, compute its outer product using Eigen and
   // ComputeOuterProduct. Convert both matrices to dense matrices and
@@ -98,7 +99,7 @@ TEST(InnerProductComputer, NormalOperation) {
         options.max_row_block_size = 5;
         options.min_col_block_size = 1;
         options.max_col_block_size = 10;
-        options.block_density = std::max(0.1, RandDouble());
+        options.block_density = std::max(0.1, uniform01(generator));
 
         VLOG(2) << "num row blocks: " << options.num_row_blocks;
         VLOG(2) << "num col blocks: " << options.num_col_blocks;
@@ -109,7 +110,7 @@ TEST(InnerProductComputer, NormalOperation) {
         VLOG(2) << "block density: " << options.block_density;
 
         std::unique_ptr<BlockSparseMatrix> random_matrix(
-            BlockSparseMatrix::CreateRandomMatrix(options));
+            BlockSparseMatrix::CreateRandomMatrix(options, generator));
 
         TripletSparseMatrix tsm(random_matrix->num_rows(),
                                 random_matrix->num_cols(),
@@ -142,12 +143,12 @@ TEST(InnerProductComputer, NormalOperation) {
 
 TEST(InnerProductComputer, SubMatrix) {
   // "Randomly generated seed."
-  // FIXME Use a seed different from the previous one to allow the test to pass
-  // without a segmentation fault when compiled using 32 bit MinGW.
-  SetRandomState(29824);
+  std::mt19937 generator{29824};
   const int kNumRowBlocks = 10;
   const int kNumColBlocks = 20;
   const int kNumTrials = 5;
+
+  std::uniform_real_distribution<> uniform01;
 
   // Create a random matrix, compute its outer product using Eigen and
   // ComputeInnerProductComputer. Convert both matrices to dense matrices and
@@ -160,7 +161,7 @@ TEST(InnerProductComputer, SubMatrix) {
     options.max_row_block_size = 5;
     options.min_col_block_size = 1;
     options.max_col_block_size = 10;
-    options.block_density = std::max(0.1, RandDouble());
+    options.block_density = std::max(0.1, uniform01(generator));
 
     VLOG(2) << "num row blocks: " << options.num_row_blocks;
     VLOG(2) << "num col blocks: " << options.num_col_blocks;
@@ -171,7 +172,7 @@ TEST(InnerProductComputer, SubMatrix) {
     VLOG(2) << "block density: " << options.block_density;
 
     std::unique_ptr<BlockSparseMatrix> random_matrix(
-        BlockSparseMatrix::CreateRandomMatrix(options));
+        BlockSparseMatrix::CreateRandomMatrix(options, generator));
 
     const std::vector<CompressedRow>& row_blocks =
         random_matrix->block_structure()->rows;

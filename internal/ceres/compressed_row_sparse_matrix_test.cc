@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <memory>
 #include <numeric>
+#include <random>
 #include <string>
 
 #include "Eigen/SparseCore"
@@ -40,7 +41,6 @@
 #include "ceres/crs_matrix.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_least_squares_problems.h"
-#include "ceres/random.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -328,6 +328,7 @@ TEST(CompressedRowSparseMatrix, Transpose) {
 }
 
 TEST(CompressedRowSparseMatrix, FromTripletSparseMatrix) {
+  std::mt19937 generator;
   TripletSparseMatrix::RandomMatrixOptions options;
   options.num_rows = 5;
   options.num_cols = 7;
@@ -336,7 +337,7 @@ TEST(CompressedRowSparseMatrix, FromTripletSparseMatrix) {
   const int kNumTrials = 10;
   for (int i = 0; i < kNumTrials; ++i) {
     std::unique_ptr<TripletSparseMatrix> tsm =
-        TripletSparseMatrix::CreateRandomMatrix(options);
+        TripletSparseMatrix::CreateRandomMatrix(options, generator);
     std::unique_ptr<CompressedRowSparseMatrix> crsm =
         CompressedRowSparseMatrix::FromTripletSparseMatrix(*tsm);
 
@@ -354,6 +355,7 @@ TEST(CompressedRowSparseMatrix, FromTripletSparseMatrix) {
 }
 
 TEST(CompressedRowSparseMatrix, FromTripletSparseMatrixTransposed) {
+  std::mt19937 generator;
   TripletSparseMatrix::RandomMatrixOptions options;
   options.num_rows = 5;
   options.num_cols = 7;
@@ -362,7 +364,7 @@ TEST(CompressedRowSparseMatrix, FromTripletSparseMatrixTransposed) {
   const int kNumTrials = 10;
   for (int i = 0; i < kNumTrials; ++i) {
     std::unique_ptr<TripletSparseMatrix> tsm =
-        TripletSparseMatrix::CreateRandomMatrix(options);
+        TripletSparseMatrix::CreateRandomMatrix(options, generator);
     std::unique_ptr<CompressedRowSparseMatrix> crsm =
         CompressedRowSparseMatrix::FromTripletSparseMatrixTransposed(*tsm);
 
@@ -399,6 +401,8 @@ static std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
 class RightMultiplyTest : public ::testing::TestWithParam<Param> {};
 
 TEST_P(RightMultiplyTest, _) {
+  std::mt19937 generator;
+  std::uniform_real_distribution<> uniform01;
   const int kMinNumBlocks = 1;
   const int kMaxNumBlocks = 10;
   const int kMinBlockSize = 1;
@@ -416,10 +420,10 @@ TEST_P(RightMultiplyTest, _) {
       options.num_row_blocks = 2 * num_blocks;
       options.min_row_block_size = kMinBlockSize;
       options.max_row_block_size = kMaxBlockSize;
-      options.block_density = std::max(0.5, RandDouble());
+      options.block_density = std::max(0.5, uniform01(generator));
       options.storage_type = ::testing::get<0>(param);
       std::unique_ptr<CompressedRowSparseMatrix> matrix =
-          CompressedRowSparseMatrix::CreateRandomMatrix(options);
+          CompressedRowSparseMatrix::CreateRandomMatrix(options, generator);
       const int num_rows = matrix->num_rows();
       const int num_cols = matrix->num_cols();
 
@@ -468,6 +472,8 @@ INSTANTIATE_TEST_SUITE_P(
 class LeftMultiplyTest : public ::testing::TestWithParam<Param> {};
 
 TEST_P(LeftMultiplyTest, _) {
+  std::mt19937 generator;
+  std::uniform_real_distribution<> uniform01;
   const int kMinNumBlocks = 1;
   const int kMaxNumBlocks = 10;
   const int kMinBlockSize = 1;
@@ -485,10 +491,10 @@ TEST_P(LeftMultiplyTest, _) {
       options.num_row_blocks = 2 * num_blocks;
       options.min_row_block_size = kMinBlockSize;
       options.max_row_block_size = kMaxBlockSize;
-      options.block_density = std::max(0.5, RandDouble());
+      options.block_density = std::max(0.5, uniform01(generator));
       options.storage_type = ::testing::get<0>(param);
       std::unique_ptr<CompressedRowSparseMatrix> matrix =
-          CompressedRowSparseMatrix::CreateRandomMatrix(options);
+          CompressedRowSparseMatrix::CreateRandomMatrix(options, generator);
       const int num_rows = matrix->num_rows();
       const int num_cols = matrix->num_cols();
 
@@ -537,6 +543,8 @@ INSTANTIATE_TEST_SUITE_P(
 class SquaredColumnNormTest : public ::testing::TestWithParam<Param> {};
 
 TEST_P(SquaredColumnNormTest, _) {
+  std::mt19937 generator;
+  std::uniform_real_distribution<> uniform01;
   const int kMinNumBlocks = 1;
   const int kMaxNumBlocks = 10;
   const int kMinBlockSize = 1;
@@ -554,10 +562,10 @@ TEST_P(SquaredColumnNormTest, _) {
       options.num_row_blocks = 2 * num_blocks;
       options.min_row_block_size = kMinBlockSize;
       options.max_row_block_size = kMaxBlockSize;
-      options.block_density = std::max(0.5, RandDouble());
+      options.block_density = std::max(0.5, uniform01(generator));
       options.storage_type = ::testing::get<0>(param);
       std::unique_ptr<CompressedRowSparseMatrix> matrix =
-          CompressedRowSparseMatrix::CreateRandomMatrix(options);
+          CompressedRowSparseMatrix::CreateRandomMatrix(options, generator);
       const int num_cols = matrix->num_cols();
 
       Vector actual(num_cols);

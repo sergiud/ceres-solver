@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "ceres/cost_function.h"
@@ -41,7 +42,6 @@
 #include "ceres/parameter_block.h"
 #include "ceres/problem_impl.h"
 #include "ceres/program.h"
-#include "ceres/random.h"
 #include "ceres/residual_block.h"
 #include "ceres/sized_cost_function.h"
 #include "ceres/types.h"
@@ -69,13 +69,15 @@ class TestTerm : public CostFunction {
  public:
   // The constructor of this function needs to know the number
   // of blocks desired, and the size of each block.
-  TestTerm(int arity, int const* dim) : arity_(arity) {
+  template <class RandomUniformFunctor>
+  TestTerm(int arity, int const* dim, RandomUniformFunctor&& randu)
+      : arity_(arity) {
     // Make 'arity' random vectors.
     a_.resize(arity_);
     for (int j = 0; j < arity_; ++j) {
       a_[j].resize(dim[j]);
       for (int u = 0; u < dim[j]; ++u) {
-        a_[j][u] = 2.0 * RandDouble() - 1.0;
+        a_[j][u] = randu();
       }
     }
 
@@ -130,8 +132,11 @@ class TestTerm : public CostFunction {
 };
 
 TEST(GradientCheckingCostFunction, ResidualsAndJacobiansArePreservedTest) {
-  srand(5);
-
+  std::mt19937 generator{5};
+  std::uniform_real_distribution<> uniform_minus_1_to_plus_1{-1, 1};
+  auto randu = [&generator, &uniform_minus_1_to_plus_1] {
+    return uniform_minus_1_to_plus_1(generator);
+  };
   // Test with 3 blocks of size 2, 3 and 4.
   int const arity = 3;
   int const dim[arity] = {2, 3, 4};
@@ -141,7 +146,7 @@ TEST(GradientCheckingCostFunction, ResidualsAndJacobiansArePreservedTest) {
   for (int j = 0; j < arity; ++j) {
     parameters[j] = new double[dim[j]];
     for (int u = 0; u < dim[j]; ++u) {
-      parameters[j][u] = 2.0 * RandDouble() - 1.0;
+      parameters[j][u] = randu();
     }
   }
 
@@ -160,7 +165,7 @@ TEST(GradientCheckingCostFunction, ResidualsAndJacobiansArePreservedTest) {
   const double kRelativeStepSize = 1e-6;
   const double kRelativePrecision = 1e-4;
 
-  TestTerm<-1, -1> term(arity, dim);
+  TestTerm<-1, -1> term(arity, dim, randu);
   GradientCheckingIterationCallback callback;
   auto gradient_checking_cost_function =
       CreateGradientCheckingCostFunction(&term,
@@ -187,7 +192,11 @@ TEST(GradientCheckingCostFunction, ResidualsAndJacobiansArePreservedTest) {
 }
 
 TEST(GradientCheckingCostFunction, SmokeTest) {
-  srand(5);
+  std::mt19937 generator{5};
+  std::uniform_real_distribution<> uniform_minus_1_to_plus_1{-1, 1};
+  auto randu = [&generator, &uniform_minus_1_to_plus_1] {
+    return uniform_minus_1_to_plus_1(generator);
+  };
 
   // Test with 3 blocks of size 2, 3 and 4.
   int const arity = 3;
@@ -198,7 +207,7 @@ TEST(GradientCheckingCostFunction, SmokeTest) {
   for (int j = 0; j < arity; ++j) {
     parameters[j] = new double[dim[j]];
     for (int u = 0; u < dim[j]; ++u) {
-      parameters[j][u] = 2.0 * RandDouble() - 1.0;
+      parameters[j][u] = randu();
     }
   }
 
@@ -216,7 +225,7 @@ TEST(GradientCheckingCostFunction, SmokeTest) {
   // Should have one term that's bad, causing everything to get dumped.
   LOG(INFO) << "Bad gradient";
   {
-    TestTerm<1, 2> term(arity, dim);
+    TestTerm<1, 2> term(arity, dim, randu);
     GradientCheckingIterationCallback callback;
     auto gradient_checking_cost_function =
         CreateGradientCheckingCostFunction(&term,
@@ -236,7 +245,7 @@ TEST(GradientCheckingCostFunction, SmokeTest) {
   // The gradient is correct, so no errors are reported.
   LOG(INFO) << "Good gradient";
   {
-    TestTerm<-1, -1> term(arity, dim);
+    TestTerm<-1, -1> term(arity, dim, randu);
     GradientCheckingIterationCallback callback;
     auto gradient_checking_cost_function =
         CreateGradientCheckingCostFunction(&term,

@@ -32,6 +32,7 @@
 
 #include <memory>
 #include <numeric>
+#include <random>
 #include <vector>
 
 #include "Eigen/Dense"
@@ -42,7 +43,6 @@
 #include "ceres/internal/config.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/iterative_refiner.h"
-#include "ceres/random.h"
 #include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -55,7 +55,8 @@ std::unique_ptr<BlockSparseMatrix> CreateRandomFullRankMatrix(
     const int num_col_blocks,
     const int min_col_block_size,
     const int max_col_block_size,
-    const double block_density) {
+    const double block_density,
+    std::mt19937& generator) {
   // Create a random matrix
   BlockSparseMatrix::RandomMatrixOptions options;
   options.num_col_blocks = num_col_blocks;
@@ -66,7 +67,8 @@ std::unique_ptr<BlockSparseMatrix> CreateRandomFullRankMatrix(
   options.min_row_block_size = 1;
   options.max_row_block_size = max_col_block_size;
   options.block_density = block_density;
-  auto random_matrix = BlockSparseMatrix::CreateRandomMatrix(options);
+  auto random_matrix =
+      BlockSparseMatrix::CreateRandomMatrix(options, generator);
 
   // Add a diagonal block sparse matrix to make it full rank.
   Vector diagonal = Vector::Ones(random_matrix->num_cols());
@@ -110,7 +112,8 @@ void SparseCholeskySolverUnitTest(
     const int num_blocks,
     const int min_block_size,
     const int max_block_size,
-    const double block_density) {
+    const double block_density,
+    std::mt19937& generator) {
   LinearSolver::Options sparse_cholesky_options;
   sparse_cholesky_options.sparse_linear_algebra_library_type =
       sparse_linear_algebra_library_type;
@@ -120,7 +123,7 @@ void SparseCholeskySolverUnitTest(
       sparse_cholesky->StorageType();
 
   auto m = CreateRandomFullRankMatrix(
-      num_blocks, min_block_size, max_block_size, block_density);
+      num_blocks, min_block_size, max_block_size, block_density, generator);
   auto inner_product_computer = InnerProductComputer::Create(*m, storage_type);
   inner_product_computer->Compute();
   CompressedRowSparseMatrix* lhs = inner_product_computer->mutable_result();
@@ -165,7 +168,8 @@ std::string ParamInfoToString(testing::TestParamInfo<Param> info) {
 class SparseCholeskyTest : public ::testing::TestWithParam<Param> {};
 
 TEST_P(SparseCholeskyTest, FactorAndSolve) {
-  SetRandomState(2982);
+  std::mt19937 generator{2982};
+  std::uniform_real_distribution<> uniform01;
   const int kMinNumBlocks = 1;
   const int kMaxNumBlocks = 10;
   const int kNumTrials = 10;
@@ -175,7 +179,7 @@ TEST_P(SparseCholeskyTest, FactorAndSolve) {
   for (int num_blocks = kMinNumBlocks; num_blocks < kMaxNumBlocks;
        ++num_blocks) {
     for (int trial = 0; trial < kNumTrials; ++trial) {
-      const double block_density = std::max(0.1, RandDouble());
+      const double block_density = std::max(0.1, uniform01(generator));
       Param param = GetParam();
       SparseCholeskySolverUnitTest(::testing::get<0>(param),
                                    ::testing::get<1>(param),
@@ -183,7 +187,8 @@ TEST_P(SparseCholeskyTest, FactorAndSolve) {
                                    num_blocks,
                                    kMinBlockSize,
                                    kMaxBlockSize,
-                                   block_density);
+                                   block_density,
+                                   generator);
     }
   }
 }

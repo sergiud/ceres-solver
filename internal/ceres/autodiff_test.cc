@@ -30,7 +30,10 @@
 
 #include "ceres/internal/autodiff.h"
 
-#include "ceres/random.h"
+#include <algorithm>
+#include <iterator>
+#include <random>
+
 #include "gtest/gtest.h"
 
 namespace ceres::internal {
@@ -162,18 +165,20 @@ struct Projective {
 
 // Test projective camera model projector.
 TEST(AutoDiff, ProjectiveCameraModel) {
-  srand(5);
   double const tol = 1e-10;  // floating-point tolerance.
   double const del = 1e-4;   // finite-difference step.
   double const err = 1e-6;   // finite-difference tolerance.
+
+  std::mt19937 generator{5};
+  std::uniform_real_distribution<> uniform01;
 
   Projective b;
 
   // Make random P and X, in a single vector.
   double PX[12 + 4];
-  for (double& PX_i : PX) {
-    PX_i = RandDouble();
-  }
+  std::generate(std::begin(PX), std::end(PX), [&generator, &uniform01] {
+    return uniform01(generator);
+  });
 
   // Handy names for the P and X parts.
   double* P = PX + 0;
@@ -282,16 +287,20 @@ struct Metric {
 
 // This test is similar in structure to the previous one.
 TEST(AutoDiff, Metric) {
-  srand(5);
   double const tol = 1e-10;  // floating-point tolerance.
   double const del = 1e-4;   // finite-difference step.
   double const err = 1e-5;   // finite-difference tolerance.
 
   Metric b;
 
+  std::mt19937 generator{5};
+  std::uniform_real_distribution<> uniform01;
+
   // Make random parameter vector.
   double qcX[4 + 3 + 3];
-  for (double& qcX_i : qcX) qcX_i = RandDouble();
+  std::generate(std::begin(qcX), std::end(qcX), [&generator, &uniform01] {
+    return uniform01(generator);
+  });
 
   // Handy names.
   double* q = qcX;

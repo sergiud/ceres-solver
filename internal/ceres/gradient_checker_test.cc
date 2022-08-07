@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2021 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,13 +33,12 @@
 #include "ceres/gradient_checker.h"
 
 #include <cmath>
-#include <cstdlib>
+#include <random>
 #include <utility>
 #include <vector>
 
 #include "ceres/cost_function.h"
 #include "ceres/problem.h"
-#include "ceres/random.h"
 #include "ceres/solver.h"
 #include "ceres/test_util.h"
 #include "glog/logging.h"
@@ -59,13 +58,15 @@ const double kTolerance = 1e-12;
 // version, they are both block vectors, of course.
 class GoodTestTerm : public CostFunction {
  public:
-  GoodTestTerm(int arity, int const* dim) : arity_(arity), return_value_(true) {
+  template <class RandomUniformFunctor>
+  GoodTestTerm(int arity, int const* dim, RandomUniformFunctor&& randu)
+      : arity_(arity), return_value_(true) {
     // Make 'arity' random vectors.
     a_.resize(arity_);
     for (int j = 0; j < arity_; ++j) {
       a_[j].resize(dim[j]);
       for (int u = 0; u < dim[j]; ++u) {
-        a_[j][u] = 2.0 * RandDouble() - 1.0;
+        a_[j][u] = randu();
       }
     }
 
@@ -118,13 +119,15 @@ class GoodTestTerm : public CostFunction {
 
 class BadTestTerm : public CostFunction {
  public:
-  BadTestTerm(int arity, int const* dim) : arity_(arity) {
+  template <class RandomUniformFunctor>
+  BadTestTerm(int arity, int const* dim, RandomUniformFunctor&& randu)
+      : arity_(arity) {
     // Make 'arity' random vectors.
     a_.resize(arity_);
     for (int j = 0; j < arity_; ++j) {
       a_[j].resize(dim[j]);
       for (int u = 0; u < dim[j]; ++u) {
-        a_[j][u] = 2.0 * RandDouble() - 1.0;
+        a_[j][u] = randu();
       }
     }
 
@@ -194,7 +197,11 @@ static void CheckDimensions(const GradientChecker::ProbeResults& results,
 }
 
 TEST(GradientChecker, SmokeTest) {
-  srand(5);
+  std::mt19937 generator{5};
+  std::uniform_real_distribution<> uniform_minus_1_to_plus_1{-1, 1};
+  auto randu = [&generator, &uniform_minus_1_to_plus_1] {
+    return uniform_minus_1_to_plus_1(generator);
+  };
 
   // Test with 3 blocks of size 2, 3 and 4.
   int const num_parameters = 3;
@@ -208,7 +215,7 @@ TEST(GradientChecker, SmokeTest) {
   for (int j = 0; j < num_parameters; ++j) {
     parameters[j] = new double[parameter_sizes[j]];
     for (int u = 0; u < parameter_sizes[j]; ++u) {
-      parameters[j][u] = 2.0 * RandDouble() - 1.0;
+      parameters[j][u] = randu();
     }
   }
 
@@ -216,7 +223,7 @@ TEST(GradientChecker, SmokeTest) {
   GradientChecker::ProbeResults results;
 
   // Test that Probe returns true for correct Jacobians.
-  GoodTestTerm good_term(num_parameters, parameter_sizes.data());
+  GoodTestTerm good_term(num_parameters, parameter_sizes.data(), randu);
   std::vector<const Manifold*>* manifolds = nullptr;
   GradientChecker good_gradient_checker(
       &good_term, manifolds, numeric_diff_options);
@@ -253,7 +260,7 @@ TEST(GradientChecker, SmokeTest) {
   EXPECT_FALSE(results.error_log.empty());
 
   // Test that Probe returns false for incorrect Jacobians.
-  BadTestTerm bad_term(num_parameters, parameter_sizes.data());
+  BadTestTerm bad_term(num_parameters, parameter_sizes.data(), randu);
   GradientChecker bad_gradient_checker(
       &bad_term, manifolds, numeric_diff_options);
   EXPECT_FALSE(

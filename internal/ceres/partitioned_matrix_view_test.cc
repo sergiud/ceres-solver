@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,13 @@
 #include "ceres/partitioned_matrix_view.h"
 
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "ceres/block_structure.h"
 #include "ceres/casts.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_least_squares_problems.h"
-#include "ceres/random.h"
 #include "ceres/sparse_matrix.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -86,8 +86,11 @@ TEST_F(PartitionedMatrixViewTest, RightMultiplyE) {
   Vector x2(pmv_->num_cols());
   x2.setZero();
 
+  std::mt19937 generator;
+  std::uniform_real_distribution<> uniform01;
+
   for (int i = 0; i < pmv_->num_cols_e(); ++i) {
-    x1(i) = x2(i) = RandDouble();
+    x1(i) = x2(i) = uniform01(generator);
   }
 
   Vector y1 = Vector::Zero(pmv_->num_rows());
@@ -105,8 +108,11 @@ TEST_F(PartitionedMatrixViewTest, RightMultiplyF) {
   Vector x1(pmv_->num_cols_f());
   Vector x2 = Vector::Zero(pmv_->num_cols());
 
+  std::mt19937 generator;
+  std::uniform_real_distribution<> uniform01;
+
   for (int i = 0; i < pmv_->num_cols_f(); ++i) {
-    x1(i) = RandDouble();
+    x1(i) = uniform01(generator);
     x2(i + pmv_->num_cols_e()) = x1(i);
   }
 
@@ -122,9 +128,12 @@ TEST_F(PartitionedMatrixViewTest, RightMultiplyF) {
 }
 
 TEST_F(PartitionedMatrixViewTest, LeftMultiply) {
+  std::mt19937 generator;
+  std::uniform_real_distribution<> uniform01;
+
   Vector x = Vector::Zero(pmv_->num_rows());
   for (int i = 0; i < pmv_->num_rows(); ++i) {
-    x(i) = RandDouble();
+    x(i) = uniform01(generator);
   }
 
   Vector y = Vector::Zero(pmv_->num_cols());

@@ -32,11 +32,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <cstring>
+#include <random>
 
 #include "ceres/internal/eigen.h"
-#include "ceres/random.h"
 #include "gtest/gtest.h"
 
 namespace ceres {
@@ -161,17 +160,20 @@ TEST(Corrector, MultidimensionalGaussNewtonApproximation) {
   Matrix c_hess(2, 2);
   Vector c_grad(2);
 
-  srand(5);
+  std::mt19937 generator{5};
+  std::uniform_real_distribution<> uniform01;
+  std::uniform_real_distribution<> uniform_minus_1_to_plus_1{-1, 1};
   for (int iter = 0; iter < 10000; ++iter) {
     // Initialize the jacobian and residual.
-    for (double& jacobian_entry : jacobian) jacobian_entry = RandDouble();
-    for (double& residual : residuals) residual = RandDouble();
+    for (double& jacobian_entry : jacobian)
+      jacobian_entry = uniform01(generator);
+    for (double& residual : residuals) residual = uniform01(generator);
 
     const double sq_norm = res.dot(res);
 
     rho[0] = sq_norm;
-    rho[1] = RandDouble();
-    rho[2] = 2.0 * RandDouble() - 1.0;
+    rho[1] = uniform01(generator);
+    rho[2] = uniform_minus_1_to_plus_1(generator);
 
     // If rho[2] > 0, then the curvature correction to the correction
     // and the gauss newton approximation will match. Otherwise, we
@@ -227,10 +229,13 @@ TEST(Corrector, MultidimensionalGaussNewtonApproximationZeroResidual) {
   Matrix c_hess(2, 2);
   Vector c_grad(2);
 
-  srand(5);
+  std::mt19937 generator{5};
+  std::uniform_real_distribution<> uniform01;
+  std::uniform_real_distribution<> uniform_minus_1_to_plus_1{-1, 1};
   for (int iter = 0; iter < 10000; ++iter) {
     // Initialize the jacobian.
-    for (double& jacobian_entry : jacobian) jacobian_entry = RandDouble();
+    for (double& jacobian_entry : jacobian)
+      jacobian_entry = uniform01(generator);
 
     // Zero residuals
     res.setZero();
@@ -238,8 +243,8 @@ TEST(Corrector, MultidimensionalGaussNewtonApproximationZeroResidual) {
     const double sq_norm = res.dot(res);
 
     rho[0] = sq_norm;
-    rho[1] = RandDouble();
-    rho[2] = 2 * RandDouble() - 1.0;
+    rho[1] = uniform01(generator);
+    rho[2] = uniform_minus_1_to_plus_1(generator);
 
     // Ground truth values.
     g_res = sqrt(rho[1]) * res;
