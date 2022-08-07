@@ -203,6 +203,10 @@ else (WITH_EIGENSPARSE)
 endif (WITH_EIGENSPARSE)
 
 if (WITH_CUDA)
+  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18")
+    # Support Maxwell, Pascal, Volta, Turing, and Ampere GPUs.
+    set(CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
+  endif()
   enable_language(CUDA)
 endif (WITH_CUDA)
 

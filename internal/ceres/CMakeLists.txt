@@ -316,6 +316,10 @@ else()
   # In a static library build, not additional access layer is necessary as all
   # symbols are visible.
   add_library(ceres_static ALIAS ceres)
+
+  if (CMAKE_CUDA_COMPILER_LOADED)
+    target_link_libraries (ceres INTERFACE $<BUILD_INTERFACE:CUDA::cublas>)
+  endif (CMAKE_CUDA_COMPILER_LOADED)
 endif()
 
 # Create a local alias target that matches the expected installed target.
@@ -451,6 +455,7 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(cubic_interpolation)
   ceres_test(cuda_dense_cholesky)
   ceres_test(cuda_dense_qr)
+  ceres_test(cuda_kernels)
   ceres_test(dense_linear_solver)
   ceres_test(dense_cholesky)
   ceres_test(dense_qr)
