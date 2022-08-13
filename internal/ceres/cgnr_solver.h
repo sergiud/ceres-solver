@@ -64,6 +64,8 @@ class CERES_NO_EXPORT CgnrSolver final : public BlockSparseMatrixSolver {
  private:
   const LinearSolver::Options options_;
   std::unique_ptr<Preconditioner> preconditioner_;
+  Vector cg_solution_;
+  Vector scratch_[4];
 };
 
 }  // namespace ceres::internal

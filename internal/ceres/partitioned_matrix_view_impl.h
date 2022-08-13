@@ -55,7 +55,7 @@ PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
   // in E maybe less than the number of row blocks in the input matrix
   // as some of the row blocks at the bottom may not have any
   // e_blocks. For a definition of what an e_block is, please see
-  // explicit_schur_complement_solver.h
+  // schur_complement_solver.h
   num_row_blocks_e_ = 0;
   for (const auto& row : bs->rows) {
     const std::vector<Cell>& cells = row.cells;
@@ -87,7 +87,7 @@ PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
 void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
-    RightMultiplyE(const double* x, double* y) const {
+    RightMultiplyAndAccumulateE(const double* x, double* y) const {
   const CompressedRowBlockStructure* bs = matrix_.block_structure();
 
   // Iterate over the first num_row_blocks_e_ row blocks, and multiply
@@ -111,7 +111,7 @@ void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
 void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
-    RightMultiplyF(const double* x, double* y) const {
+    RightMultiplyAndAccumulateF(const double* x, double* y) const {
   const CompressedRowBlockStructure* bs = matrix_.block_structure();
 
   // Iterate over row blocks, and if the row block is in E, then
@@ -157,7 +157,7 @@ void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
 void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
-    LeftMultiplyE(const double* x, double* y) const {
+    LeftMultiplyAndAccumulateE(const double* x, double* y) const {
   const CompressedRowBlockStructure* bs = matrix_.block_structure();
 
   // Iterate over the first num_row_blocks_e_ row blocks, and multiply
@@ -181,7 +181,7 @@ void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
 void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
-    LeftMultiplyF(const double* x, double* y) const {
+    LeftMultiplyAndAccumulateF(const double* x, double* y) const {
   const CompressedRowBlockStructure* bs = matrix_.block_structure();
 
   // Iterate over row blocks, and if the row block is in E, then
@@ -228,7 +228,7 @@ void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
 // Given a range of columns blocks of a matrix m, compute the block
 // structure of the block diagonal of the matrix m(:,
 // start_col_block:end_col_block)'m(:, start_col_block:end_col_block)
-// and return a BlockSparseMatrix with the this block structure. The
+// and return a BlockSparseMatrix with this block structure. The
 // caller owns the result.
 template <int kRowBlockSize, int kEBlockSize, int kFBlockSize>
 std::unique_ptr<BlockSparseMatrix>
@@ -289,8 +289,8 @@ PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
   return block_diagonal;
 }
 
-// Similar to the code in RightMultiplyE, except instead of the matrix
-// vector multiply its an outer product.
+// Similar to the code in RightMultiplyAndAccumulateE, except instead of the
+// matrix vector multiply its an outer product.
 //
 //    block_diagonal = block_diagonal(E'E)
 //
@@ -322,8 +322,8 @@ void PartitionedMatrixView<kRowBlockSize, kEBlockSize, kFBlockSize>::
   }
 }
 
-// Similar to the code in RightMultiplyF, except instead of the matrix
-// vector multiply its an outer product.
+// Similar to the code in RightMultiplyAndAccumulateF, except instead of the
+// matrix vector multiply its an outer product.
 //
 //   block_diagonal = block_diagonal(F'F)
 //

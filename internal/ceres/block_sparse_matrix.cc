@@ -33,12 +33,12 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "ceres/block_structure.h"
 #include "ceres/crs_matrix.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/random.h"
 #include "ceres/small_blas.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "glog/logging.h"
@@ -88,7 +88,8 @@ void BlockSparseMatrix::SetZero() {
   std::fill(values_.get(), values_.get() + num_nonzeros_, 0.0);
 }
 
-void BlockSparseMatrix::RightMultiply(const double* x, double* y) const {
+void BlockSparseMatrix::RightMultiplyAndAccumulate(const double* x,
+                                                   double* y) const {
   CHECK(x != nullptr);
   CHECK(y != nullptr);
 
@@ -110,7 +111,8 @@ void BlockSparseMatrix::RightMultiply(const double* x, double* y) const {
   }
 }
 
-void BlockSparseMatrix::LeftMultiply(const double* x, double* y) const {
+void BlockSparseMatrix::LeftMultiplyAndAccumulate(const double* x,
+                                                  double* y) const {
   CHECK(x != nullptr);
   CHECK(y != nullptr);
 
@@ -183,7 +185,6 @@ void BlockSparseMatrix::ToCRSMatrix(CRSMatrix* crs_matrix) const {
   for (const auto& row_block : block_structure_->rows) {
     int row_block_size = row_block.block.size;
     const vector<Cell>& cells = row_block.cells;
-    const int row_start = row_block.block.position;
     for (int r = 0; r < row_block_size; ++r) {
       rows.push_back(values.size());
       for (const auto& cell : cells) {
@@ -374,7 +375,7 @@ void BlockSparseMatrix::DeleteRowBlocks(const int delta_row_blocks) {
 }
 
 std::unique_ptr<BlockSparseMatrix> BlockSparseMatrix::CreateRandomMatrix(
-    const BlockSparseMatrix::RandomMatrixOptions& options) {
+    const BlockSparseMatrix::RandomMatrixOptions& options, std::mt19937& prng) {
   CHECK_GT(options.num_row_blocks, 0);
   CHECK_GT(options.min_row_block_size, 0);
   CHECK_GT(options.max_row_block_size, 0);
@@ -382,6 +383,10 @@ std::unique_ptr<BlockSparseMatrix> BlockSparseMatrix::CreateRandomMatrix(
   CHECK_GT(options.block_density, 0.0);
   CHECK_LE(options.block_density, 1.0);
 
+  std::uniform_int_distribution<int> col_distribution(
+      options.min_col_block_size, options.max_col_block_size);
+  std::uniform_int_distribution<int> row_distribution(
+      options.min_row_block_size, options.max_row_block_size);
   auto* bs = new CompressedRowBlockStructure();
   if (options.col_blocks.empty()) {
     CHECK_GT(options.num_col_blocks, 0);
@@ -392,10 +397,7 @@ std::unique_ptr<BlockSparseMatrix> BlockSparseMatrix::CreateRandomMatrix(
     // Generate the col block structure.
     int col_block_position = 0;
     for (int i = 0; i < options.num_col_blocks; ++i) {
-      // Generate a random integer in [min_col_block_size, max_col_block_size]
-      const int delta_block_size =
-          Uniform(options.max_col_block_size - options.min_col_block_size);
-      const int col_block_size = options.min_col_block_size + delta_block_size;
+      const int col_block_size = col_distribution(prng);
       bs->cols.emplace_back(col_block_size, col_block_position);
       col_block_position += col_block_size;
     }
@@ -404,22 +406,21 @@ std::unique_ptr<BlockSparseMatrix> BlockSparseMatrix::CreateRandomMatrix(
   }
 
   bool matrix_has_blocks = false;
+  std::uniform_real_distribution<double> uniform01(0.0, 1.0);
   while (!matrix_has_blocks) {
     VLOG(1) << "Clearing";
     bs->rows.clear();
     int row_block_position = 0;
     int value_position = 0;
     for (int r = 0; r < options.num_row_blocks; ++r) {
-      const int delta_block_size =
-          Uniform(options.max_row_block_size - options.min_row_block_size);
-      const int row_block_size = options.min_row_block_size + delta_block_size;
+      const int row_block_size = row_distribution(prng);
       bs->rows.emplace_back();
       CompressedRow& row = bs->rows.back();
       row.block.size = row_block_size;
       row.block.position = row_block_position;
       row_block_position += row_block_size;
       for (int c = 0; c < bs->cols.size(); ++c) {
-        if (RandDouble() > options.block_density) continue;
+        if (uniform01(prng) > options.block_density) continue;
 
         row.cells.emplace_back();
         Cell& cell = row.cells.back();
@@ -433,9 +434,11 @@ std::unique_ptr<BlockSparseMatrix> BlockSparseMatrix::CreateRandomMatrix(
 
   auto matrix = std::make_unique<BlockSparseMatrix>(bs);
   double* values = matrix->mutable_values();
-  for (int i = 0; i < matrix->num_nonzeros(); ++i) {
-    values[i] = RandNormal();
-  }
+  std::normal_distribution<double> standard_normal_distribution;
+  std::generate_n(
+      values, matrix->num_nonzeros(), [&standard_normal_distribution, &prng] {
+        return standard_normal_distribution(prng);
+      });
 
   return matrix;
 }

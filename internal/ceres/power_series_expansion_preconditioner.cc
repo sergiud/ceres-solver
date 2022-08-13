@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,47 +26,53 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: sameeragarwal@google.com (Sameer Agarwal)
+// Author: markshachkov@gmail.com (Mark Shachkov)
 
-#include "ceres/preconditioner.h"
-
-#include "glog/logging.h"
+#include "ceres/power_series_expansion_preconditioner.h"
 
 namespace ceres::internal {
 
-Preconditioner::~Preconditioner() = default;
+PowerSeriesExpansionPreconditioner::PowerSeriesExpansionPreconditioner(
+    const ImplicitSchurComplement* isc,
+    const int max_num_spse_iterations,
+    const double spse_tolerance)
+    : isc_(isc),
+      max_num_spse_iterations_(max_num_spse_iterations),
+      spse_tolerance_(spse_tolerance) {}
 
-PreconditionerType Preconditioner::PreconditionerForZeroEBlocks(
-    PreconditionerType preconditioner_type) {
-  if (preconditioner_type == SCHUR_JACOBI ||
-      preconditioner_type == CLUSTER_JACOBI ||
-      preconditioner_type == CLUSTER_TRIDIAGONAL) {
-    return JACOBI;
-  }
-  return preconditioner_type;
-}
-
-SparseMatrixPreconditionerWrapper::SparseMatrixPreconditionerWrapper(
-    const SparseMatrix* matrix)
-    : matrix_(matrix) {
-  CHECK(matrix != nullptr);
-}
-
-SparseMatrixPreconditionerWrapper::~SparseMatrixPreconditionerWrapper() =
+PowerSeriesExpansionPreconditioner::~PowerSeriesExpansionPreconditioner() =
     default;
 
-bool SparseMatrixPreconditionerWrapper::UpdateImpl(const SparseMatrix& A,
-                                                   const double* D) {
+bool PowerSeriesExpansionPreconditioner::Update(const LinearOperator& A,
+                                                const double* D) {
   return true;
 }
 
-void SparseMatrixPreconditionerWrapper::RightMultiplyAndAccumulate(
+void PowerSeriesExpansionPreconditioner::RightMultiplyAndAccumulate(
     const double* x, double* y) const {
-  matrix_->RightMultiplyAndAccumulate(x, y);
+  VectorRef yref(y, num_rows());
+  Vector series_term(num_rows());
+  Vector previous_series_term(num_rows());
+  yref.setZero();
+  isc_->block_diagonal_FtF_inverse()->RightMultiplyAndAccumulate(x, y);
+  previous_series_term = yref;
+
+  const double norm_threshold = spse_tolerance_ * yref.norm();
+
+  for (int i = 1;; i++) {
+    series_term.setZero();
+    isc_->InversePowerSeriesOperatorRightMultiplyAccumulate(
+        previous_series_term.data(), series_term.data());
+    yref += series_term;
+    if (i >= max_num_spse_iterations_ || series_term.norm() < norm_threshold) {
+      break;
+    }
+    std::swap(previous_series_term, series_term);
+  }
 }
 
-int SparseMatrixPreconditionerWrapper::num_rows() const {
-  return matrix_->num_rows();
+int PowerSeriesExpansionPreconditioner::num_rows() const {
+  return isc_->num_rows();
 }
 
 }  // namespace ceres::internal

@@ -31,13 +31,14 @@
 #include "ceres/compressed_row_sparse_matrix.h"
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <numeric>
+#include <random>
 #include <vector>
 
 #include "ceres/crs_matrix.h"
 #include "ceres/internal/export.h"
-#include "ceres/random.h"
 #include "ceres/triplet_sparse_matrix.h"
 #include "glog/logging.h"
 
@@ -118,10 +119,12 @@ void TransposeForCompressedRowSparseStructure(const int num_rows,
   transpose_rows[0] = 0;
 }
 
+template <class RandomNormalFunctor>
 void AddRandomBlock(const int num_rows,
                     const int num_cols,
                     const int row_block_begin,
                     const int col_block_begin,
+                    RandomNormalFunctor&& randn,
                     std::vector<int>* rows,
                     std::vector<int>* cols,
                     std::vector<double>* values) {
@@ -129,19 +132,21 @@ void AddRandomBlock(const int num_rows,
     for (int c = 0; c < num_cols; ++c) {
       rows->push_back(row_block_begin + r);
       cols->push_back(col_block_begin + c);
-      values->push_back(RandNormal());
+      values->push_back(randn());
     }
   }
 }
 
+template <class RandomNormalFunctor>
 void AddSymmetricRandomBlock(const int num_rows,
                              const int row_block_begin,
+                             RandomNormalFunctor&& randn,
                              std::vector<int>* rows,
                              std::vector<int>* cols,
                              std::vector<double>* values) {
   for (int r = 0; r < num_rows; ++r) {
     for (int c = r; c < num_rows; ++c) {
-      const double v = RandNormal();
+      const double v = randn();
       rows->push_back(row_block_begin + r);
       cols->push_back(row_block_begin + c);
       values->push_back(v);
@@ -275,10 +280,10 @@ void CompressedRowSparseMatrix::SetZero() {
   std::fill(values_.begin(), values_.end(), 0);
 }
 
-// TODO(sameeragarwal): Make RightMultiply and LeftMultiply
-// block-aware for higher performance.
-void CompressedRowSparseMatrix::RightMultiply(const double* x,
-                                              double* y) const {
+// TODO(sameeragarwal): Make RightMultiplyAndAccumulate and
+// LeftMultiplyAndAccumulate block-aware for higher performance.
+void CompressedRowSparseMatrix::RightMultiplyAndAccumulate(const double* x,
+                                                           double* y) const {
   CHECK(x != nullptr);
   CHECK(y != nullptr);
 
@@ -339,7 +344,8 @@ void CompressedRowSparseMatrix::RightMultiply(const double* x,
   }
 }
 
-void CompressedRowSparseMatrix::LeftMultiply(const double* x, double* y) const {
+void CompressedRowSparseMatrix::LeftMultiplyAndAccumulate(const double* x,
+                                                          double* y) const {
   CHECK(x != nullptr);
   CHECK(y != nullptr);
 
@@ -350,8 +356,9 @@ void CompressedRowSparseMatrix::LeftMultiply(const double* x, double* y) const {
       }
     }
   } else {
-    // Since the matrix is symmetric, LeftMultiply = RightMultiply.
-    RightMultiply(x, y);
+    // Since the matrix is symmetric, LeftMultiplyAndAccumulate =
+    // RightMultiplyAndAccumulate.
+    RightMultiplyAndAccumulate(x, y);
   }
 }
 
@@ -620,7 +627,8 @@ CompressedRowSparseMatrix::Transpose() const {
 
 std::unique_ptr<CompressedRowSparseMatrix>
 CompressedRowSparseMatrix::CreateRandomMatrix(
-    CompressedRowSparseMatrix::RandomMatrixOptions options) {
+    CompressedRowSparseMatrix::RandomMatrixOptions options,
+    std::mt19937& prng) {
   CHECK_GT(options.num_row_blocks, 0);
   CHECK_GT(options.min_row_block_size, 0);
   CHECK_GT(options.max_row_block_size, 0);
@@ -642,23 +650,29 @@ CompressedRowSparseMatrix::CreateRandomMatrix(
   CHECK_LE(options.block_density, 1.0);
 
   vector<int> row_blocks;
+  row_blocks.reserve(options.num_row_blocks);
   vector<int> col_blocks;
+  col_blocks.reserve(options.num_col_blocks);
+
+  std::uniform_int_distribution<int> col_distribution(
+      options.min_col_block_size, options.max_col_block_size);
+  std::uniform_int_distribution<int> row_distribution(
+      options.min_row_block_size, options.max_row_block_size);
+  std::uniform_real_distribution<double> uniform01(0.0, 1.0);
+  std::normal_distribution<double> standard_normal_distribution;
+  auto values_dist = std::bind(standard_normal_distribution, std::ref(prng));
 
   // Generate the row block structure.
   for (int i = 0; i < options.num_row_blocks; ++i) {
     // Generate a random integer in [min_row_block_size, max_row_block_size]
-    const int delta_block_size =
-        Uniform(options.max_row_block_size - options.min_row_block_size);
-    row_blocks.push_back(options.min_row_block_size + delta_block_size);
+    row_blocks.push_back(row_distribution(prng));
   }
 
   if (options.storage_type == StorageType::UNSYMMETRIC) {
     // Generate the col block structure.
     for (int i = 0; i < options.num_col_blocks; ++i) {
       // Generate a random integer in [min_col_block_size, max_col_block_size]
-      const int delta_block_size =
-          Uniform(options.max_col_block_size - options.min_col_block_size);
-      col_blocks.push_back(options.min_col_block_size + delta_block_size);
+      col_blocks.push_back(col_distribution(prng));
     }
   } else {
     // Symmetric matrices (LOWER_TRIANGULAR or UPPER_TRIANGULAR);
@@ -695,7 +709,10 @@ CompressedRowSparseMatrix::CreateRandomMatrix(
         }
 
         // Randomly determine if this block is present or not.
-        if (RandDouble() <= options.block_density) {
+        if (uniform01(prng) <= options.block_density) {
+          auto randn = [&standard_normal_distribution, &prng] {
+            return standard_normal_distribution(prng);
+          };
           // If the matrix is symmetric, then we take care to generate
           // symmetric diagonal blocks.
           if (options.storage_type == StorageType::UNSYMMETRIC || r != c) {
@@ -703,12 +720,14 @@ CompressedRowSparseMatrix::CreateRandomMatrix(
                            col_blocks[c],
                            row_block_begin,
                            col_block_begin,
+                           randn,
                            &tsm_rows,
                            &tsm_cols,
                            &tsm_values);
           } else {
             AddSymmetricRandomBlock(row_blocks[r],
                                     row_block_begin,
+                                    randn,
                                     &tsm_rows,
                                     &tsm_cols,
                                     &tsm_values);

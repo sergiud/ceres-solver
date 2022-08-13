@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 #define CERES_INTERNAL_COMPRESSED_ROW_SPARSE_MATRIX_H_
 
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "ceres/internal/disable_warnings.h"
@@ -100,8 +101,8 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   // SparseMatrix interface.
   ~CompressedRowSparseMatrix() override;
   void SetZero() final;
-  void RightMultiply(const double* x, double* y) const final;
-  void LeftMultiply(const double* x, double* y) const final;
+  void RightMultiplyAndAccumulate(const double* x, double* y) const final;
+  void LeftMultiplyAndAccumulate(const double* x, double* y) const final;
   void SquaredColumnNorm(double* x) const final;
   void ScaleColumns(const double* scale) final;
   void ToDenseMatrix(Matrix* dense_matrix) const final;
@@ -195,7 +196,7 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   // normally distributed and whose structure is determined by
   // RandomMatrixOptions.
   static std::unique_ptr<CompressedRowSparseMatrix> CreateRandomMatrix(
-      RandomMatrixOptions options);
+      RandomMatrixOptions options, std::mt19937& prng);
 
  private:
   static std::unique_ptr<CompressedRowSparseMatrix> FromTripletSparseMatrix(

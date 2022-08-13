@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,47 +26,43 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: sameeragarwal@google.com (Sameer Agarwal)
+// Author: markshachkov@gmail.com (Mark Shachkov)
 
+#ifndef CERES_INTERNAL_POWER_SERIES_EXPANSION_PRECONDITIONER_H_
+#define CERES_INTERNAL_POWER_SERIES_EXPANSION_PRECONDITIONER_H_
+
+#include "ceres/implicit_schur_complement.h"
+#include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/preconditioner.h"
-
-#include "glog/logging.h"
 
 namespace ceres::internal {
 
-Preconditioner::~Preconditioner() = default;
+// This is a preconditioner via power series expansion of Schur
+// complement inverse based on "Weber et al, Power Bundle Adjustment for
+// Large-Scale 3D Reconstruction".
 
-PreconditionerType Preconditioner::PreconditionerForZeroEBlocks(
-    PreconditionerType preconditioner_type) {
-  if (preconditioner_type == SCHUR_JACOBI ||
-      preconditioner_type == CLUSTER_JACOBI ||
-      preconditioner_type == CLUSTER_TRIDIAGONAL) {
-    return JACOBI;
-  }
-  return preconditioner_type;
-}
+class CERES_NO_EXPORT PowerSeriesExpansionPreconditioner
+    : public Preconditioner {
+ public:
+  PowerSeriesExpansionPreconditioner(const ImplicitSchurComplement* isc,
+                                     const int max_num_spse_iterations,
+                                     const double spse_tolerance);
+  PowerSeriesExpansionPreconditioner(
+      const PowerSeriesExpansionPreconditioner&) = delete;
+  void operator=(const PowerSeriesExpansionPreconditioner&) = delete;
+  ~PowerSeriesExpansionPreconditioner() override;
 
-SparseMatrixPreconditionerWrapper::SparseMatrixPreconditionerWrapper(
-    const SparseMatrix* matrix)
-    : matrix_(matrix) {
-  CHECK(matrix != nullptr);
-}
+  void RightMultiplyAndAccumulate(const double* x, double* y) const final;
+  bool Update(const LinearOperator& A, const double* D) final;
+  int num_rows() const final;
 
-SparseMatrixPreconditionerWrapper::~SparseMatrixPreconditionerWrapper() =
-    default;
-
-bool SparseMatrixPreconditionerWrapper::UpdateImpl(const SparseMatrix& A,
-                                                   const double* D) {
-  return true;
-}
-
-void SparseMatrixPreconditionerWrapper::RightMultiplyAndAccumulate(
-    const double* x, double* y) const {
-  matrix_->RightMultiplyAndAccumulate(x, y);
-}
-
-int SparseMatrixPreconditionerWrapper::num_rows() const {
-  return matrix_->num_rows();
-}
+ private:
+  const ImplicitSchurComplement* isc_;
+  const int max_num_spse_iterations_;
+  const double spse_tolerance_;
+};
 
 }  // namespace ceres::internal
+
+#endif  // CERES_INTERNAL_POWER_SERIES_EXPANSION_PRECONDITIONER_H_

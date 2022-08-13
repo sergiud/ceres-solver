@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,43 +31,27 @@
 #include "ceres/normal_prior.h"
 
 #include <cstddef>
+#include <random>
 
 #include "ceres/internal/eigen.h"
-#include "ceres/random.h"
 #include "gtest/gtest.h"
 
 namespace ceres {
 namespace internal {
 
-namespace {
-
-void RandomVector(Vector* v) {
-  for (int r = 0; r < v->rows(); ++r) (*v)[r] = 2 * RandDouble() - 1;
-}
-
-void RandomMatrix(Matrix* m) {
-  for (int r = 0; r < m->rows(); ++r) {
-    for (int c = 0; c < m->cols(); ++c) {
-      (*m)(r, c) = 2 * RandDouble() - 1;
-    }
-  }
-}
-
-}  // namespace
-
 TEST(NormalPriorTest, ResidualAtRandomPosition) {
-  srand(5);
-
+  std::mt19937 prng;
+  std::uniform_real_distribution<double> distribution(-1.0, 1.0);
+  auto randu = [&distribution, &prng] { return distribution(prng); };
   for (int num_rows = 1; num_rows < 5; ++num_rows) {
     for (int num_cols = 1; num_cols < 5; ++num_cols) {
       Vector b(num_cols);
-      RandomVector(&b);
-
+      b.setRandom();
       Matrix A(num_rows, num_cols);
-      RandomMatrix(&A);
+      A.setRandom();
 
       auto* x = new double[num_cols];
-      for (int i = 0; i < num_cols; ++i) x[i] = 2 * RandDouble() - 1;
+      std::generate_n(x, num_cols, randu);
 
       auto* jacobian = new double[num_rows * num_cols];
       Vector residuals(num_rows);
@@ -92,18 +76,18 @@ TEST(NormalPriorTest, ResidualAtRandomPosition) {
 }
 
 TEST(NormalPriorTest, ResidualAtRandomPositionNullJacobians) {
-  srand(5);
-
+  std::mt19937 prng;
+  std::uniform_real_distribution<double> distribution(-1.0, 1.0);
+  auto randu = [&distribution, &prng] { return distribution(prng); };
   for (int num_rows = 1; num_rows < 5; ++num_rows) {
     for (int num_cols = 1; num_cols < 5; ++num_cols) {
       Vector b(num_cols);
-      RandomVector(&b);
-
+      b.setRandom();
       Matrix A(num_rows, num_cols);
-      RandomMatrix(&A);
+      A.setRandom();
 
       auto* x = new double[num_cols];
-      for (int i = 0; i < num_cols; ++i) x[i] = 2 * RandDouble() - 1;
+      std::generate_n(x, num_cols, randu);
 
       double* jacobians[1];
       jacobians[0] = nullptr;

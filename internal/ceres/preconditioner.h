@@ -130,16 +130,33 @@ class CERES_NO_EXPORT Preconditioner : public LinearOperator {
   virtual bool Update(const LinearOperator& A, const double* D) = 0;
 
   // LinearOperator interface. Since the operator is symmetric,
-  // LeftMultiply and num_cols are just calls to RightMultiply and
-  // num_rows respectively. Update() must be called before
-  // RightMultiply can be called.
-  void RightMultiply(const double* x, double* y) const override = 0;
-  void LeftMultiply(const double* x, double* y) const override {
-    return RightMultiply(x, y);
+  // LeftMultiplyAndAccumulate and num_cols are just calls to
+  // RightMultiplyAndAccumulate and num_rows respectively. Update() must be
+  // called before RightMultiplyAndAccumulate can be called.
+  void RightMultiplyAndAccumulate(const double* x,
+                                  double* y) const override = 0;
+  void LeftMultiplyAndAccumulate(const double* x, double* y) const override {
+    return RightMultiplyAndAccumulate(x, y);
   }
 
   int num_rows() const override = 0;
   int num_cols() const override { return num_rows(); }
+};
+
+class CERES_NO_EXPORT IdentityPreconditioner : public Preconditioner {
+ public:
+  IdentityPreconditioner(int num_rows) : num_rows_(num_rows) {}
+
+  bool Update(const LinearOperator& A, const double* D) final { return true; }
+
+  void RightMultiplyAndAccumulate(const double* x, double* y) const final {
+    VectorRef(y, num_rows_) += ConstVectorRef(x, num_rows_);
+  }
+
+  int num_rows() const final { return num_rows_; }
+
+ private:
+  int num_rows_ = -1;
 };
 
 // This templated subclass of Preconditioner serves as a base class for
@@ -173,7 +190,7 @@ class CERES_NO_EXPORT SparseMatrixPreconditionerWrapper final
   ~SparseMatrixPreconditionerWrapper() override;
 
   // Preconditioner interface
-  void RightMultiply(const double* x, double* y) const override;
+  void RightMultiplyAndAccumulate(const double* x, double* y) const override;
   int num_rows() const override;
 
  private:

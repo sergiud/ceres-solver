@@ -45,7 +45,7 @@ namespace ceres {
 namespace internal {
 
 namespace {
-template<typename T>
+template <typename T>
 void CheckVectorEq(const std::vector<T>& a, const std::vector<T>& b) {
   EXPECT_EQ(a.size(), b.size());
   for (int i = 0; i < a.size(); ++i) {
@@ -62,24 +62,20 @@ std::unique_ptr<BlockSparseMatrix> CreateTestMatrixFromId(int id) {
     // [ 0 0 8 9 10 0 ]
     CompressedRowBlockStructure* bs = new CompressedRowBlockStructure;
     bs->cols = {
-      // Block size 2, position 0.
-      Block(2, 0),
-      // Block size 3, position 2.
-      Block(3, 2),
-      // Block size 1, position 5.
-      Block(1, 5),
+        // Block size 2, position 0.
+        Block(2, 0),
+        // Block size 3, position 2.
+        Block(3, 2),
+        // Block size 1, position 5.
+        Block(1, 5),
     };
-    bs->rows = {
-      CompressedRow(1),
-      CompressedRow(1)
-    };
+    bs->rows = {CompressedRow(1), CompressedRow(1)};
     bs->rows[0].block = Block(2, 0);
-    bs->rows[0].cells = { Cell(0, 0) };
+    bs->rows[0].cells = {Cell(0, 0)};
 
     bs->rows[1].block = Block(2, 2);
-    bs->rows[1].cells = { Cell(1, 4) };
-    std::unique_ptr<BlockSparseMatrix> m =
-        std::make_unique<BlockSparseMatrix>(bs);
+    bs->rows[1].cells = {Cell(1, 4)};
+    auto m = std::make_unique<BlockSparseMatrix>(bs);
     EXPECT_NE(m, nullptr);
     EXPECT_EQ(m->num_rows(), 4);
     EXPECT_EQ(m->num_cols(), 6);
@@ -96,26 +92,22 @@ std::unique_ptr<BlockSparseMatrix> CreateTestMatrixFromId(int id) {
     // [ 0 0 9 0 0 0 ]
     CompressedRowBlockStructure* bs = new CompressedRowBlockStructure;
     bs->cols = {
-      // Block size 2, position 0.
-      Block(2, 0),
-      // Block size 1, position 2.
-      Block(1, 2),
-      // Block size 2, position 3.
-      Block(2, 3),
-      // Block size 1, position 5.
-      Block(1, 5),
+        // Block size 2, position 0.
+        Block(2, 0),
+        // Block size 1, position 2.
+        Block(1, 2),
+        // Block size 2, position 3.
+        Block(2, 3),
+        // Block size 1, position 5.
+        Block(1, 5),
     };
-    bs->rows = {
-      CompressedRow(2),
-      CompressedRow(1)
-    };
+    bs->rows = {CompressedRow(2), CompressedRow(1)};
     bs->rows[0].block = Block(2, 0);
-    bs->rows[0].cells = { Cell(0, 0), Cell(2, 4) };
+    bs->rows[0].cells = {Cell(0, 0), Cell(2, 4)};
 
     bs->rows[1].block = Block(1, 2);
-    bs->rows[1].cells = { Cell(1, 8) };
-    std::unique_ptr<BlockSparseMatrix> m =
-        std::make_unique<BlockSparseMatrix>(bs);
+    bs->rows[1].cells = {Cell(1, 8)};
+    auto m = std::make_unique<BlockSparseMatrix>(bs);
     EXPECT_NE(m, nullptr);
     EXPECT_EQ(m->num_rows(), 3);
     EXPECT_EQ(m->num_cols(), 6);
@@ -156,26 +148,26 @@ TEST_F(BlockSparseMatrixTest, SetZeroTest) {
   EXPECT_EQ(13, A_->num_nonzeros());
 }
 
-TEST_F(BlockSparseMatrixTest, RightMultiplyTest) {
+TEST_F(BlockSparseMatrixTest, RightMultiplyAndAccumulateTest) {
   Vector y_a = Vector::Zero(A_->num_rows());
   Vector y_b = Vector::Zero(A_->num_rows());
   for (int i = 0; i < A_->num_cols(); ++i) {
     Vector x = Vector::Zero(A_->num_cols());
     x[i] = 1.0;
-    A_->RightMultiply(x.data(), y_a.data());
-    B_->RightMultiply(x.data(), y_b.data());
+    A_->RightMultiplyAndAccumulate(x.data(), y_a.data());
+    B_->RightMultiplyAndAccumulate(x.data(), y_b.data());
     EXPECT_LT((y_a - y_b).norm(), 1e-12);
   }
 }
 
-TEST_F(BlockSparseMatrixTest, LeftMultiplyTest) {
+TEST_F(BlockSparseMatrixTest, LeftMultiplyAndAccumulateTest) {
   Vector y_a = Vector::Zero(A_->num_cols());
   Vector y_b = Vector::Zero(A_->num_cols());
   for (int i = 0; i < A_->num_rows(); ++i) {
     Vector x = Vector::Zero(A_->num_rows());
     x[i] = 1.0;
-    A_->LeftMultiply(x.data(), y_a.data());
-    B_->LeftMultiply(x.data(), y_b.data());
+    A_->LeftMultiplyAndAccumulate(x.data(), y_a.data());
+    B_->LeftMultiplyAndAccumulate(x.data(), y_b.data());
     EXPECT_LT((y_a - y_b).norm(), 1e-12);
   }
 }
@@ -218,8 +210,8 @@ TEST_F(BlockSparseMatrixTest, AppendRows) {
     y_a.setZero();
     y_b.setZero();
 
-    A_->RightMultiply(x.data(), y_a.data());
-    B_->RightMultiply(x.data(), y_b.data());
+    A_->RightMultiplyAndAccumulate(x.data(), y_a.data());
+    B_->RightMultiplyAndAccumulate(x.data(), y_b.data());
     EXPECT_LT((y_a - y_b).norm(), 1e-12);
   }
 }
@@ -245,8 +237,8 @@ TEST_F(BlockSparseMatrixTest, AppendAndDeleteBlockDiagonalMatrix) {
     y_a.setZero();
     y_b.setZero();
 
-    A_->RightMultiply(x.data(), y_a.data());
-    B_->RightMultiply(x.data(), y_b.data());
+    A_->RightMultiplyAndAccumulate(x.data(), y_a.data());
+    B_->RightMultiplyAndAccumulate(x.data(), y_b.data());
     EXPECT_LT((y_a.head(B_->num_rows()) - y_b.head(B_->num_rows())).norm(),
               1e-12);
     Vector expected_tail = Vector::Zero(A_->num_cols());
@@ -266,8 +258,8 @@ TEST_F(BlockSparseMatrixTest, AppendAndDeleteBlockDiagonalMatrix) {
     y_a.setZero();
     y_b.setZero();
 
-    A_->RightMultiply(x.data(), y_a.data());
-    B_->RightMultiply(x.data(), y_b.data());
+    A_->RightMultiplyAndAccumulate(x.data(), y_a.data());
+    B_->RightMultiplyAndAccumulate(x.data(), y_b.data());
     EXPECT_LT((y_a - y_b).norm(), 1e-12);
   }
 }
@@ -295,7 +287,7 @@ TEST(BlockSparseMatrix, CreateDiagonalMatrix) {
   EXPECT_EQ(m->num_rows(), m->num_cols());
   Vector x = Vector::Ones(num_cols);
   Vector y = Vector::Zero(num_cols);
-  m->RightMultiply(x.data(), y.data());
+  m->RightMultiplyAndAccumulate(x.data(), y.data());
   for (int i = 0; i < num_cols; ++i) {
     EXPECT_NEAR(y[i], diagonal[i], std::numeric_limits<double>::epsilon());
   }
@@ -309,10 +301,8 @@ TEST(BlockSparseMatrix, ToDenseMatrix) {
     EXPECT_EQ(m_dense.rows(), 4);
     EXPECT_EQ(m_dense.cols(), 6);
     Matrix m_expected(4, 6);
-    m_expected << 1, 2, 0, 0, 0, 0,
-                  3, 4, 0, 0, 0, 0,
-                  0, 0, 5, 6, 7, 0,
-                  0, 0, 8, 9, 10, 0;
+    m_expected << 1, 2, 0, 0, 0, 0, 3, 4, 0, 0, 0, 0, 0, 0, 5, 6, 7, 0, 0, 0, 8,
+        9, 10, 0;
     EXPECT_EQ(m_dense, m_expected);
   }
 
@@ -323,9 +313,7 @@ TEST(BlockSparseMatrix, ToDenseMatrix) {
     EXPECT_EQ(m_dense.rows(), 3);
     EXPECT_EQ(m_dense.cols(), 6);
     Matrix m_expected(3, 6);
-    m_expected << 1, 2, 0, 5, 6, 0,
-                  3, 4, 0, 7, 8, 0,
-                  0, 0, 9, 0, 0, 0;
+    m_expected << 1, 2, 0, 5, 6, 0, 3, 4, 0, 7, 8, 0, 0, 0, 9, 0, 0, 0;
     EXPECT_EQ(m_dense, m_expected);
   }
 }

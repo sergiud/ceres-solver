@@ -179,7 +179,6 @@ add_library(ceres_internal OBJECT
     compressed_row_jacobian_writer.cc
     compressed_row_sparse_matrix.cc
     conditioned_cost_function.cc
-    conjugate_gradients_solver.cc
     context.cc
     context_impl.cc
     coordinate_descent_minimizer.cc
@@ -226,6 +225,7 @@ add_library(ceres_internal OBJECT
     parameter_block_ordering.cc
     partitioned_matrix_view.cc
     polynomial.cc
+    power_series_expansion_preconditioner.cc
     preconditioner.cc
     preprocessor.cc
     problem_impl.cc
@@ -503,6 +503,7 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(parameter_dims)
   ceres_test(partitioned_matrix_view)
   ceres_test(polynomial)
+  ceres_test(power_series_expansion_preconditioner)
   ceres_test(problem)
   ceres_test(program)
   ceres_test(reorder_program)

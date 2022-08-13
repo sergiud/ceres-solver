@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,48 +26,27 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: keir@google.com (Keir Mierle)
-//         sameeragarwal@google.com (Sameer Agarwal)
+// Author: sameeragarwal@google.com (Sameer Agarwal)
 
-#ifndef CERES_INTERNAL_RANDOM_H_
-#define CERES_INTERNAL_RANDOM_H_
+#ifndef CERES_INTERNAL_EIGEN_VECTOR_OPS_H_
+#define CERES_INTERNAL_EIGEN_VECTOR_OPS_H_
 
-#include <cmath>
-#include <cstdlib>
+#include "ceres/internal/eigen.h"
 
-#include "ceres/internal/export.h"
+namespace ceres::internal {
 
-namespace ceres {
-
-inline void SetRandomState(int state) { srand(state); }
-
-inline int Uniform(int n) {
-  if (n) {
-    return rand() % n;
-  } else {
-    return 0;
-  }
+// Blas1 operations on Eigen vectors. These functions are needed as an
+// abstraction layer so that we can use different versions of a vector style
+// object in the conjugate gradients linear solver.
+inline double Norm(const Vector& x) { return x.norm(); }
+inline void SetZero(Vector& x) { x.setZero(); }
+inline void Axpby(
+    double a, const Vector& x, double b, const Vector& y, Vector& z) {
+  z = a * x + b * y;
 }
+inline double Dot(const Vector& x, const Vector& y) { return x.dot(y); }
+inline void Copy(const Vector& from, Vector& to) { to = from; }
 
-inline double RandDouble() {
-  auto r = static_cast<double>(rand());
-  return r / RAND_MAX;
-}
+}  // namespace ceres::internal
 
-// Box-Muller algorithm for normal random number generation.
-// http://en.wikipedia.org/wiki/Box-Muller_transform
-inline double RandNormal() {
-  double x1, x2, w;
-  do {
-    x1 = 2.0 * RandDouble() - 1.0;
-    x2 = 2.0 * RandDouble() - 1.0;
-    w = x1 * x1 + x2 * x2;
-  } while (w >= 1.0 || w == 0.0);
-
-  w = sqrt((-2.0 * log(w)) / w);
-  return x1 * w;
-}
-
-}  // namespace ceres
-
-#endif  // CERES_INTERNAL_RANDOM_H_
+#endif  // CERES_INTERNAL_EIGEN_VECTOR_OPS_H_

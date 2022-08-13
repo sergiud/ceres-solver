@@ -33,6 +33,7 @@
 #ifndef CERES_INTERNAL_LINEAR_OPERATOR_H_
 #define CERES_INTERNAL_LINEAR_OPERATOR_H_
 
+#include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
 #include "ceres/types.h"
 
@@ -45,9 +46,17 @@ class CERES_NO_EXPORT LinearOperator {
   virtual ~LinearOperator();
 
   // y = y + Ax;
-  virtual void RightMultiply(const double* x, double* y) const = 0;
+  virtual void RightMultiplyAndAccumulate(const double* x, double* y) const = 0;
   // y = y + A'x;
-  virtual void LeftMultiply(const double* x, double* y) const = 0;
+  virtual void LeftMultiplyAndAccumulate(const double* x, double* y) const = 0;
+
+  virtual void RightMultiplyAndAccumulate(const Vector& x, Vector& y) const {
+    RightMultiplyAndAccumulate(x.data(), y.data());
+  }
+
+  virtual void LeftMultiplyAndAccumulate(const Vector& x, Vector& y) const {
+    LeftMultiplyAndAccumulate(x.data(), y.data());
+  }
 
   virtual int num_rows() const = 0;
   virtual int num_cols() const = 0;

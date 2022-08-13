@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2022 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,13 @@
 #include "ceres/partitioned_matrix_view.h"
 
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "ceres/block_structure.h"
 #include "ceres/casts.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_least_squares_problems.h"
-#include "ceres/random.h"
 #include "ceres/sparse_matrix.h"
 #include "glog/logging.h"
 #include "gtest/gtest.h"
@@ -50,7 +50,6 @@ const double kEpsilon = 1e-14;
 class PartitionedMatrixViewTest : public ::testing::Test {
  protected:
   void SetUp() final {
-    srand(5);
     std::unique_ptr<LinearLeastSquaresProblem> problem =
         CreateLinearLeastSquaresProblemFromId(2);
     CHECK(problem != nullptr);
@@ -65,11 +64,16 @@ class PartitionedMatrixViewTest : public ::testing::Test {
         options, *down_cast<BlockSparseMatrix*>(A_.get()));
   }
 
+  double RandDouble() { return distribution_(prng_); }
+
   int num_rows_;
   int num_cols_;
   int num_eliminate_blocks_;
   std::unique_ptr<SparseMatrix> A_;
   std::unique_ptr<PartitionedMatrixViewBase> pmv_;
+  std::mt19937 prng_;
+  std::uniform_real_distribution<double> distribution_ =
+      std::uniform_real_distribution<double>(0.0, 1.0);
 };
 
 TEST_F(PartitionedMatrixViewTest, DimensionsTest) {
@@ -81,7 +85,7 @@ TEST_F(PartitionedMatrixViewTest, DimensionsTest) {
   EXPECT_EQ(pmv_->num_rows(), A_->num_rows());
 }
 
-TEST_F(PartitionedMatrixViewTest, RightMultiplyE) {
+TEST_F(PartitionedMatrixViewTest, RightMultiplyAndAccumulateE) {
   Vector x1(pmv_->num_cols_e());
   Vector x2(pmv_->num_cols());
   x2.setZero();
@@ -91,17 +95,17 @@ TEST_F(PartitionedMatrixViewTest, RightMultiplyE) {
   }
 
   Vector y1 = Vector::Zero(pmv_->num_rows());
-  pmv_->RightMultiplyE(x1.data(), y1.data());
+  pmv_->RightMultiplyAndAccumulateE(x1.data(), y1.data());
 
   Vector y2 = Vector::Zero(pmv_->num_rows());
-  A_->RightMultiply(x2.data(), y2.data());
+  A_->RightMultiplyAndAccumulate(x2.data(), y2.data());
 
   for (int i = 0; i < pmv_->num_rows(); ++i) {
     EXPECT_NEAR(y1(i), y2(i), kEpsilon);
   }
 }
 
-TEST_F(PartitionedMatrixViewTest, RightMultiplyF) {
+TEST_F(PartitionedMatrixViewTest, RightMultiplyAndAccumulateF) {
   Vector x1(pmv_->num_cols_f());
   Vector x2 = Vector::Zero(pmv_->num_cols());
 
@@ -111,17 +115,17 @@ TEST_F(PartitionedMatrixViewTest, RightMultiplyF) {
   }
 
   Vector y1 = Vector::Zero(pmv_->num_rows());
-  pmv_->RightMultiplyF(x1.data(), y1.data());
+  pmv_->RightMultiplyAndAccumulateF(x1.data(), y1.data());
 
   Vector y2 = Vector::Zero(pmv_->num_rows());
-  A_->RightMultiply(x2.data(), y2.data());
+  A_->RightMultiplyAndAccumulate(x2.data(), y2.data());
 
   for (int i = 0; i < pmv_->num_rows(); ++i) {
     EXPECT_NEAR(y1(i), y2(i), kEpsilon);
   }
 }
 
-TEST_F(PartitionedMatrixViewTest, LeftMultiply) {
+TEST_F(PartitionedMatrixViewTest, LeftMultiplyAndAccumulate) {
   Vector x = Vector::Zero(pmv_->num_rows());
   for (int i = 0; i < pmv_->num_rows(); ++i) {
     x(i) = RandDouble();
@@ -131,9 +135,9 @@ TEST_F(PartitionedMatrixViewTest, LeftMultiply) {
   Vector y1 = Vector::Zero(pmv_->num_cols_e());
   Vector y2 = Vector::Zero(pmv_->num_cols_f());
 
-  A_->LeftMultiply(x.data(), y.data());
-  pmv_->LeftMultiplyE(x.data(), y1.data());
-  pmv_->LeftMultiplyF(x.data(), y2.data());
+  A_->LeftMultiplyAndAccumulate(x.data(), y.data());
+  pmv_->LeftMultiplyAndAccumulateE(x.data(), y1.data());
+  pmv_->LeftMultiplyAndAccumulateF(x.data(), y2.data());
 
   for (int i = 0; i < pmv_->num_cols(); ++i) {
     EXPECT_NEAR(y(i),
