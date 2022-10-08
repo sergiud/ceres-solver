@@ -28,13 +28,15 @@
 //
 // Author: joydeepb@cs.utexas.edu (Joydeep Biswas)
 
+#include "ceres/cuda_kernels.h"
+
 #include <math.h>
 
 #include <limits>
 #include <string>
 #include <vector>
 
-#include "ceres/ceres_cuda_kernels.h"
+#include "ceres/context_impl.h"
 #include "ceres/cuda_buffer.h"
 #include "ceres/internal/config.h"
 #include "ceres/internal/eigen.h"
@@ -47,13 +49,16 @@ namespace internal {
 #ifndef CERES_NO_CUDA
 
 TEST(CudaFP64ToFP32, SimpleConversions) {
+  ContextImpl context;
+  std::string cuda_error;
+  EXPECT_TRUE(context.InitCuda(&cuda_error)) << cuda_error;
   std::vector<double> fp64_cpu = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
-  CudaBuffer<double> fp64_gpu;
-  fp64_gpu.CopyFromCpuVector(fp64_cpu, cudaStreamDefault);
-  CudaBuffer<float> fp32_gpu;
+  CudaBuffer<double> fp64_gpu(&context);
+  fp64_gpu.CopyFromCpuVector(fp64_cpu);
+  CudaBuffer<float> fp32_gpu(&context);
   fp32_gpu.Reserve(fp64_cpu.size());
   CudaFP64ToFP32(
-      fp64_gpu.data(), fp32_gpu.data(), fp64_cpu.size(), cudaStreamDefault);
+      fp64_gpu.data(), fp32_gpu.data(), fp64_cpu.size(), context.stream_);
   std::vector<float> fp32_cpu(fp64_cpu.size());
   fp32_gpu.CopyToCpu(fp32_cpu.data(), fp32_cpu.size());
   for (int i = 0; i < fp32_cpu.size(); ++i) {
@@ -62,6 +67,9 @@ TEST(CudaFP64ToFP32, SimpleConversions) {
 }
 
 TEST(CudaFP64ToFP32, NumericallyExtremeValues) {
+  ContextImpl context;
+  std::string cuda_error;
+  EXPECT_TRUE(context.InitCuda(&cuda_error)) << cuda_error;
   std::vector<double> fp64_cpu = {
       DBL_MIN, 10.0 * DBL_MIN, DBL_MAX, 0.1 * DBL_MAX};
   // First just make sure that the compiler has represented these values
@@ -70,12 +78,12 @@ TEST(CudaFP64ToFP32, NumericallyExtremeValues) {
   EXPECT_GT(fp64_cpu[1], 0.0);
   EXPECT_TRUE(std::isfinite(fp64_cpu[2]));
   EXPECT_TRUE(std::isfinite(fp64_cpu[3]));
-  CudaBuffer<double> fp64_gpu;
-  fp64_gpu.CopyFromCpuVector(fp64_cpu, cudaStreamDefault);
-  CudaBuffer<float> fp32_gpu;
+  CudaBuffer<double> fp64_gpu(&context);
+  fp64_gpu.CopyFromCpuVector(fp64_cpu);
+  CudaBuffer<float> fp32_gpu(&context);
   fp32_gpu.Reserve(fp64_cpu.size());
   CudaFP64ToFP32(
-      fp64_gpu.data(), fp32_gpu.data(), fp64_cpu.size(), cudaStreamDefault);
+      fp64_gpu.data(), fp32_gpu.data(), fp64_cpu.size(), context.stream_);
   std::vector<float> fp32_cpu(fp64_cpu.size());
   fp32_gpu.CopyToCpu(fp32_cpu.data(), fp32_cpu.size());
   EXPECT_EQ(fp32_cpu[0], 0.0f);
@@ -85,13 +93,16 @@ TEST(CudaFP64ToFP32, NumericallyExtremeValues) {
 }
 
 TEST(CudaFP32ToFP64, SimpleConversions) {
+  ContextImpl context;
+  std::string cuda_error;
+  EXPECT_TRUE(context.InitCuda(&cuda_error)) << cuda_error;
   std::vector<float> fp32_cpu = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
-  CudaBuffer<float> fp32_gpu;
-  fp32_gpu.CopyFromCpuVector(fp32_cpu, cudaStreamDefault);
-  CudaBuffer<double> fp64_gpu;
+  CudaBuffer<float> fp32_gpu(&context);
+  fp32_gpu.CopyFromCpuVector(fp32_cpu);
+  CudaBuffer<double> fp64_gpu(&context);
   fp64_gpu.Reserve(fp32_cpu.size());
   CudaFP32ToFP64(
-      fp32_gpu.data(), fp64_gpu.data(), fp32_cpu.size(), cudaStreamDefault);
+      fp32_gpu.data(), fp64_gpu.data(), fp32_cpu.size(), context.stream_);
   std::vector<double> fp64_cpu(fp32_cpu.size());
   fp64_gpu.CopyToCpu(fp64_cpu.data(), fp64_cpu.size());
   for (int i = 0; i < fp64_cpu.size(); ++i) {
@@ -100,10 +111,13 @@ TEST(CudaFP32ToFP64, SimpleConversions) {
 }
 
 TEST(CudaSetZeroFP32, NonZeroInput) {
+  ContextImpl context;
+  std::string cuda_error;
+  EXPECT_TRUE(context.InitCuda(&cuda_error)) << cuda_error;
   std::vector<float> fp32_cpu = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
-  CudaBuffer<float> fp32_gpu;
-  fp32_gpu.CopyFromCpuVector(fp32_cpu, cudaStreamDefault);
-  CudaSetZeroFP32(fp32_gpu.data(), fp32_cpu.size(), cudaStreamDefault);
+  CudaBuffer<float> fp32_gpu(&context);
+  fp32_gpu.CopyFromCpuVector(fp32_cpu);
+  CudaSetZeroFP32(fp32_gpu.data(), fp32_cpu.size(), context.stream_);
   std::vector<float> fp32_cpu_zero(fp32_cpu.size());
   fp32_gpu.CopyToCpu(fp32_cpu_zero.data(), fp32_cpu_zero.size());
   for (int i = 0; i < fp32_cpu_zero.size(); ++i) {
@@ -112,10 +126,13 @@ TEST(CudaSetZeroFP32, NonZeroInput) {
 }
 
 TEST(CudaSetZeroFP64, NonZeroInput) {
+  ContextImpl context;
+  std::string cuda_error;
+  EXPECT_TRUE(context.InitCuda(&cuda_error)) << cuda_error;
   std::vector<double> fp64_cpu = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
-  CudaBuffer<double> fp64_gpu;
-  fp64_gpu.CopyFromCpuVector(fp64_cpu, cudaStreamDefault);
-  CudaSetZeroFP64(fp64_gpu.data(), fp64_cpu.size(), cudaStreamDefault);
+  CudaBuffer<double> fp64_gpu(&context);
+  fp64_gpu.CopyFromCpuVector(fp64_cpu);
+  CudaSetZeroFP64(fp64_gpu.data(), fp64_cpu.size(), context.stream_);
   std::vector<double> fp64_cpu_zero(fp64_cpu.size());
   fp64_gpu.CopyToCpu(fp64_cpu_zero.data(), fp64_cpu_zero.size());
   for (int i = 0; i < fp64_cpu_zero.size(); ++i) {
@@ -124,17 +141,20 @@ TEST(CudaSetZeroFP64, NonZeroInput) {
 }
 
 TEST(CudaDsxpy, DoubleValues) {
+  ContextImpl context;
+  std::string cuda_error;
+  EXPECT_TRUE(context.InitCuda(&cuda_error)) << cuda_error;
   std::vector<float> fp32_cpu_a = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
   std::vector<double> fp64_cpu_b = {
       1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
-  CudaBuffer<float> fp32_gpu_a;
-  fp32_gpu_a.CopyFromCpuVector(fp32_cpu_a, cudaStreamDefault);
-  CudaBuffer<double> fp64_gpu_b;
-  fp64_gpu_b.CopyFromCpuVector(fp64_cpu_b, cudaStreamDefault);
+  CudaBuffer<float> fp32_gpu_a(&context);
+  fp32_gpu_a.CopyFromCpuVector(fp32_cpu_a);
+  CudaBuffer<double> fp64_gpu_b(&context);
+  fp64_gpu_b.CopyFromCpuVector(fp64_cpu_b);
   CudaDsxpy(fp64_gpu_b.data(),
             fp32_gpu_a.data(),
             fp32_gpu_a.size(),
-            cudaStreamDefault);
+            context.stream_);
   fp64_gpu_b.CopyToCpu(fp64_cpu_b.data(), fp64_cpu_b.size());
   for (int i = 0; i < fp64_cpu_b.size(); ++i) {
     EXPECT_DOUBLE_EQ(fp64_cpu_b[i], 2.0 * fp32_cpu_a[i]);
@@ -142,20 +162,23 @@ TEST(CudaDsxpy, DoubleValues) {
 }
 
 TEST(CudaDtDxpy, ComputeFourItems) {
+  ContextImpl context;
+  std::string cuda_error;
+  EXPECT_TRUE(context.InitCuda(&cuda_error)) << cuda_error;
   std::vector<double> x_cpu = {1, 2, 3, 4};
   std::vector<double> y_cpu = {4, 3, 2, 1};
   std::vector<double> d_cpu = {10, 20, 30, 40};
-  CudaBuffer<double> x_gpu;
-  x_gpu.CopyFromCpuVector(x_cpu, cudaStreamDefault);
-  CudaBuffer<double> y_gpu;
-  y_gpu.CopyFromCpuVector(y_cpu, cudaStreamDefault);
-  CudaBuffer<double> d_gpu;
-  d_gpu.CopyFromCpuVector(d_cpu, cudaStreamDefault);
+  CudaBuffer<double> x_gpu(&context);
+  x_gpu.CopyFromCpuVector(x_cpu);
+  CudaBuffer<double> y_gpu(&context);
+  y_gpu.CopyFromCpuVector(y_cpu);
+  CudaBuffer<double> d_gpu(&context);
+  d_gpu.CopyFromCpuVector(d_cpu);
   CudaDtDxpy(y_gpu.data(),
              d_gpu.data(),
              x_gpu.data(),
              y_gpu.size(),
-             cudaStreamDefault);
+             context.stream_);
   y_gpu.CopyToCpu(y_cpu.data(), y_cpu.size());
   EXPECT_DOUBLE_EQ(y_cpu[0], 4.0 + 10.0 * 10.0 * 1.0);
   EXPECT_DOUBLE_EQ(y_cpu[1], 3.0 + 20.0 * 20.0 * 2.0);

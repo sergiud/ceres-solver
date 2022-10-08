@@ -34,8 +34,6 @@
 #if defined(CERES_USE_OPENMP)
 
 #include "ceres/parallel_for.h"
-#include "ceres/scoped_thread_token.h"
-#include "ceres/thread_token_provider.h"
 #include "glog/logging.h"
 #include "omp.h"
 
@@ -43,41 +41,6 @@ namespace ceres {
 namespace internal {
 
 int MaxNumThreadsAvailable() { return omp_get_max_threads(); }
-
-void ParallelFor(ContextImpl* context,
-                 int start,
-                 int end,
-                 int num_threads,
-                 const std::function<void(int)>& function) {
-  CHECK_GT(num_threads, 0);
-  CHECK(context != nullptr);
-  if (end <= start) {
-    return;
-  }
-
-#ifdef CERES_USE_OPENMP
-#pragma omp parallel for num_threads(num_threads) \
-    schedule(dynamic) if (num_threads > 1)
-#endif  // CERES_USE_OPENMP
-  for (int i = start; i < end; ++i) {
-    function(i);
-  }
-}
-
-void ParallelFor(ContextImpl* context,
-                 int start,
-                 int end,
-                 int num_threads,
-                 const std::function<void(int thread_id, int i)>& function) {
-  CHECK(context != nullptr);
-
-  ThreadTokenProvider thread_token_provider(num_threads);
-  ParallelFor(context, start, end, num_threads, [&](int i) {
-    const ScopedThreadToken scoped_thread_token(&thread_token_provider);
-    const int thread_id = scoped_thread_token.token();
-    function(thread_id, i);
-  });
-}
 
 }  // namespace internal
 }  // namespace ceres

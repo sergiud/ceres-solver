@@ -148,8 +148,8 @@ if (CMAKE_CUDA_COMPILER_LOADED)
         COMMAND ${CUDA_TOOLKIT_ROOT_DIR}/bin/cuda-memcheck --leak-check full
             $<TARGET_FILE:cuda_dense_cholesky_test>)
   endif (BUILD_TESTING AND GFLAGS)
-  set_source_files_properties(ceres_cuda_kernels.cu PROPERTIES LANGUAGE CUDA)
-  add_library(ceres_cuda_kernels ceres_cuda_kernels.cu)
+  set_source_files_properties(cuda_kernels.cu.cc PROPERTIES LANGUAGE CUDA)
+  add_library(ceres_cuda_kernels cuda_kernels.cu.cc)
   target_compile_features(ceres_cuda_kernels PRIVATE cxx_std_14)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ceres_cuda_kernels)
 endif (CMAKE_CUDA_COMPILER_LOADED)
@@ -186,6 +186,8 @@ add_library(ceres_internal OBJECT
     cost_function.cc
     covariance.cc
     covariance_impl.cc
+    cuda_sparse_matrix.cc
+    cuda_vector.cc
     dense_cholesky.cc
     dense_normal_cholesky_solver.cc
     dense_qr.cc
@@ -199,6 +201,7 @@ add_library(ceres_internal OBJECT
     eigensparse.cc
     evaluation_callback.cc
     evaluator.cc
+    fake_bundle_adjustment_jacobian.cc
     file.cc
     first_order_function.cc
     float_suitesparse.cc
@@ -456,6 +459,8 @@ if (BUILD_TESTING AND gflags_FOUND)
   ceres_test(cuda_dense_cholesky)
   ceres_test(cuda_dense_qr)
   ceres_test(cuda_kernels)
+  ceres_test(cuda_sparse_matrix)
+  ceres_test(cuda_vector)
   ceres_test(dense_linear_solver)
   ceres_test(dense_cholesky)
   ceres_test(dense_qr)
@@ -541,6 +546,9 @@ macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
 endmacro()
 
 if (benchmark_FOUND)
+  add_executable(evaluation_benchmark evaluation_benchmark.cc)
+  add_dependencies_to_benchmark(evaluation_benchmark)
+
   add_executable(small_blas_gemv_benchmark small_blas_gemv_benchmark.cc)
   add_dependencies_to_benchmark(small_blas_gemv_benchmark)
 
@@ -558,6 +566,16 @@ if (benchmark_FOUND)
 
   add_executable(dense_linear_solver_benchmark dense_linear_solver_benchmark.cc)
   add_dependencies_to_benchmark(dense_linear_solver_benchmark)
+
+  add_executable(spmv_benchmark spmv_benchmark.cc)
+  add_dependencies_to_benchmark(spmv_benchmark)
+
+  add_executable(partitioned_matrix_view_benchmark partitioned_matrix_view_benchmark.cc)
+  add_dependencies_to_benchmark(partitioned_matrix_view_benchmark)
+
+  add_executable(block_jacobi_preconditioner_benchmark
+    block_jacobi_preconditioner_benchmark.cc)
+  add_dependencies_to_benchmark(block_jacobi_preconditioner_benchmark)
 
   add_subdirectory(autodiff_benchmarks)
 endif (benchmark_FOUND)

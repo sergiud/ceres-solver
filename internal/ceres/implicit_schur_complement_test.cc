@@ -56,8 +56,7 @@ const double kEpsilon = 1e-14;
 class ImplicitSchurComplementTest : public ::testing::Test {
  protected:
   void SetUp() final {
-    std::unique_ptr<LinearLeastSquaresProblem> problem =
-        CreateLinearLeastSquaresProblemFromId(2);
+    auto problem = CreateLinearLeastSquaresProblemFromId(2);
 
     CHECK(problem != nullptr);
     A_.reset(down_cast<BlockSparseMatrix*>(problem->A.release()));
@@ -75,11 +74,7 @@ class ImplicitSchurComplementTest : public ::testing::Test {
                                       Vector* solution) {
     const CompressedRowBlockStructure* bs = A_->block_structure();
     const int num_col_blocks = bs->cols.size();
-    std::vector<int> blocks(num_col_blocks - num_eliminate_blocks_, 0);
-    for (int i = num_eliminate_blocks_; i < num_col_blocks; ++i) {
-      blocks[i - num_eliminate_blocks_] = bs->cols[i].size;
-    }
-
+    auto blocks = Tail(bs->cols, num_col_blocks - num_eliminate_blocks_);
     BlockRandomAccessDenseMatrix blhs(blocks);
     const int num_schur_rows = blhs.num_rows();
 
@@ -155,8 +150,8 @@ class ImplicitSchurComplementTest : public ::testing::Test {
     // Here, assuming that block_diagonal(F'F) == diagonal(F'F)
     Matrix Z_reference =
         (F.transpose() * F + DF).diagonal().asDiagonal().inverse() *
-        F.transpose() * E * (E.transpose() * E + DE).inverse() *
-        E.transpose() * F;
+        F.transpose() * E * (E.transpose() * E + DE).inverse() * E.transpose() *
+        F;
 
     for (int i = 0; i < num_f_cols; ++i) {
       Vector x(num_f_cols);
@@ -165,7 +160,6 @@ class ImplicitSchurComplementTest : public ::testing::Test {
 
       Vector y(num_f_cols);
       y = lhs * x;
-
 
       Vector z(num_f_cols);
       isc.RightMultiplyAndAccumulate(x.data(), z.data());

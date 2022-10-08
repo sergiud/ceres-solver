@@ -28,8 +28,10 @@
 //
 // Authors: sameeragarwal@google.com (Sameer Agarwal)
 
+#include <algorithm>
 #include <memory>
 #include <random>
+#include <vector>
 
 #include "Eigen/Dense"
 #include "benchmark/benchmark.h"
@@ -92,13 +94,14 @@ class BenchmarkData {
     matrix_ = std::make_unique<BlockSparseMatrix>(bs);
     double* values = matrix_->mutable_values();
     std::generate_n(values, matrix_->num_nonzeros(), [this] {
-      return standard_normal(prng);
+      return standard_normal_(prng_);
     });
 
     b_.resize(matrix_->num_rows());
     b_.setRandom();
 
-    std::vector<int> blocks(1, kFBlockSize);
+    std::vector<Block> blocks;
+    blocks.emplace_back(kFBlockSize, 0);
     lhs_ = std::make_unique<BlockRandomAccessDenseMatrix>(blocks);
     diagonal_.resize(matrix_->num_cols());
     diagonal_.setOnes();
@@ -126,8 +129,8 @@ class BenchmarkData {
   Vector diagonal_;
   Vector z_;
   Vector y_;
-  std::mt19937 prng;
-  std::normal_distribution<> standard_normal;
+  std::mt19937 prng_;
+  std::normal_distribution<> standard_normal_;
 };
 
 static void BM_SchurEliminatorEliminate(benchmark::State& state) {

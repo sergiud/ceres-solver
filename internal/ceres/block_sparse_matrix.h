@@ -38,7 +38,8 @@
 #include <random>
 
 #include "ceres/block_structure.h"
-#include "ceres/crs_matrix.h"
+#include "ceres/compressed_row_sparse_matrix.h"
+#include "ceres/context_impl.h"
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
@@ -66,17 +67,20 @@ class CERES_NO_EXPORT BlockSparseMatrix final : public SparseMatrix {
   // CompressedRowBlockStructure objects.
   explicit BlockSparseMatrix(CompressedRowBlockStructure* block_structure);
 
-  BlockSparseMatrix();
   BlockSparseMatrix(const BlockSparseMatrix&) = delete;
   void operator=(const BlockSparseMatrix&) = delete;
 
   // Implementation of SparseMatrix interface.
   void SetZero() final;
   void RightMultiplyAndAccumulate(const double* x, double* y) const final;
+  void RightMultiplyAndAccumulate(const double* x,
+                                  double* y,
+                                  ContextImpl* context,
+                                  int num_threads) const final;
   void LeftMultiplyAndAccumulate(const double* x, double* y) const final;
   void SquaredColumnNorm(double* x) const final;
   void ScaleColumns(const double* scale) final;
-  void ToCRSMatrix(CRSMatrix* matrix) const;
+  void ToCompressedRowSparseMatrix(CompressedRowSparseMatrix* matrix) const;
   void ToDenseMatrix(Matrix* dense_matrix) const final;
   void ToTextFile(FILE* file) const final;
 

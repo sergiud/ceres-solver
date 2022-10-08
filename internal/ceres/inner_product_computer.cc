@@ -51,16 +51,9 @@ InnerProductComputer::CreateResultMatrix(
   auto matrix = std::make_unique<CompressedRowSparseMatrix>(
       m_.num_cols(), m_.num_cols(), num_nonzeros);
   matrix->set_storage_type(storage_type);
-
   const CompressedRowBlockStructure* bs = m_.block_structure();
-  const std::vector<Block>& blocks = bs->cols;
-  matrix->mutable_row_blocks()->resize(blocks.size());
-  matrix->mutable_col_blocks()->resize(blocks.size());
-  for (int i = 0; i < blocks.size(); ++i) {
-    (*(matrix->mutable_row_blocks()))[i] = blocks[i].size;
-    (*(matrix->mutable_col_blocks()))[i] = blocks[i].size;
-  }
-
+  *matrix->mutable_row_blocks() = bs->cols;
+  *matrix->mutable_col_blocks() = bs->cols;
   return matrix;
 }
 
@@ -255,7 +248,7 @@ void InnerProductComputer::ComputeOffsetsAndCreateResultMatrix(
   int nnz = 0;
 
   // Process the first term.
-  const InnerProductComputer::ProductTerm* current = &product_terms[0];
+  const InnerProductComputer::ProductTerm* current = product_terms.data();
   FILL_CRSM_COL_BLOCK;
 
   // Process the rest of the terms.

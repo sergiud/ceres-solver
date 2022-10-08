@@ -94,7 +94,7 @@ void BuildJacobianLayout(const Program& program,
   jacobian_layout_storage->resize(num_jacobian_blocks);
 
   int e_block_pos = 0;
-  int* jacobian_pos = &(*jacobian_layout_storage)[0];
+  int* jacobian_pos = jacobian_layout_storage->data();
   for (int i = 0; i < residual_blocks.size(); ++i) {
     const ResidualBlock* residual_block = residual_blocks[i];
     const int num_residuals = residual_block->NumResiduals();
@@ -138,13 +138,14 @@ BlockJacobianWriter::BlockJacobianWriter(const Evaluator::Options& options,
 // Create evaluate prepareres that point directly into the final jacobian. This
 // makes the final Write() a nop.
 std::unique_ptr<BlockEvaluatePreparer[]>
-BlockJacobianWriter::CreateEvaluatePreparers(int num_threads) {
+BlockJacobianWriter::CreateEvaluatePreparers(unsigned num_threads) {
   int max_derivatives_per_residual_block =
       program_->MaxDerivativesPerResidualBlock();
 
   auto preparers = std::make_unique<BlockEvaluatePreparer[]>(num_threads);
-  for (int i = 0; i < num_threads; i++) {
-    preparers[i].Init(&jacobian_layout_[0], max_derivatives_per_residual_block);
+  for (unsigned i = 0; i < num_threads; i++) {
+    preparers[i].Init(jacobian_layout_.data(),
+                      max_derivatives_per_residual_block);
   }
   return preparers;
 }

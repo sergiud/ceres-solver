@@ -30,8 +30,10 @@
 
 #include "ceres/schur_eliminator.h"
 
+#include <algorithm>
 #include <memory>
 #include <random>
+#include <vector>
 
 #include "Eigen/Dense"
 #include "ceres/block_random_access_dense_matrix.h"
@@ -56,8 +58,7 @@ namespace ceres::internal {
 class SchurEliminatorTest : public ::testing::Test {
  protected:
   void SetUpFromId(int id) {
-    std::unique_ptr<LinearLeastSquaresProblem> problem =
-        CreateLinearLeastSquaresProblemFromId(id);
+    auto problem = CreateLinearLeastSquaresProblemFromId(id);
     CHECK(problem != nullptr);
     SetupHelper(problem.get());
   }
@@ -125,11 +126,7 @@ class SchurEliminatorTest : public ::testing::Test {
                                 const double relative_tolerance) {
     const CompressedRowBlockStructure* bs = A->block_structure();
     const int num_col_blocks = bs->cols.size();
-    std::vector<int> blocks(num_col_blocks - num_eliminate_blocks, 0);
-    for (int i = num_eliminate_blocks; i < num_col_blocks; ++i) {
-      blocks[i - num_eliminate_blocks] = bs->cols[i].size;
-    }
-
+    auto blocks = Tail(bs->cols, num_col_blocks - num_eliminate_blocks);
     BlockRandomAccessDenseMatrix lhs(blocks);
 
     const int num_cols = A->num_cols();
@@ -295,7 +292,8 @@ TEST(SchurEliminatorForOneFBlock, MatchesSchurEliminator) {
   Vector diagonal(matrix.num_cols());
   diagonal.setOnes();
 
-  std::vector<int> blocks(1, kFBlockSize);
+  std::vector<Block> blocks;
+  blocks.emplace_back(kFBlockSize, 0);
   BlockRandomAccessDenseMatrix actual_lhs(blocks);
   BlockRandomAccessDenseMatrix expected_lhs(blocks);
   Vector actual_rhs(kFBlockSize);

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2018 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,49 +26,45 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
-// Author: joydeepb@cs.utexas.edu (Joydeep Biswas)
+// Authors: vitus@google.com (Michael Vitus),
+//          dmitriy.korchemkin@gmail.com (Dmitriy Korchemkin)
+
+// This include must come before any #ifndef check on Ceres compile options.
+#ifndef CERES_INTERNAL_PARALLEL_FOR_OPENMP_H_
+#define CERES_INTERNAL_PARALLEL_FOR_OPENMP_H_
 
 #include "ceres/internal/config.h"
 
-#ifndef CERES_NO_CUDA
+#if defined(CERES_USE_OPENMP)
 
-#include "cuda_runtime.h"
+#include "ceres/parallel_for.h"
+#include "ceres/scoped_thread_token.h"
+#include "ceres/thread_token_provider.h"
+#include "glog/logging.h"
+#include "omp.h"
 
 namespace ceres::internal {
 
-// Convert an array of double (FP64) values to float (FP32). Both arrays must
-// already be on GPU memory.
-void CudaFP64ToFP32(const double* input,
-                    float* output,
-                    const int size,
-                    cudaStream_t stream);
-
-// Convert an array of float (FP32) values to double (FP64). Both arrays must
-// already be on GPU memory.
-void CudaFP32ToFP64(const float* input,
-                    double* output,
-                    const int size,
-                    cudaStream_t stream);
-
-// Set all elements of the array to the FP32 value 0. The array must be in GPU
-// memory.
-void CudaSetZeroFP32(float* output, const int size, cudaStream_t stream);
-
-// Set all elements of the array to the FP64 value 0. The array must be in GPU
-// memory.
-void CudaSetZeroFP64(double* output, const int size, cudaStream_t stream);
-
-// Compute x = x + double(y). Input array is float (FP32), output array is
-// double (FP64). Both arrays must already be on GPU memory.
-void CudaDsxpy(double* x, float* y, const int size, cudaStream_t stream);
-
-// Compute y[i] = y[i] + d[i]^2 x[i]. All arrays must already be on GPU memory.
-void CudaDtDxpy(double* y,
-                const double* D,
-                const double* x,
-                const int size,
-                cudaStream_t stream);
+template <typename F>
+void ParallelInvoke(ContextImpl* context,
+                    int start,
+                    int end,
+                    int num_threads,
+                    const F& function) {
+  using namespace parallel_for_details;
+  ThreadTokenProvider token_provider(num_threads);
+#pragma omp parallel num_threads(num_threads)
+  {
+    const ScopedThreadToken scoped_thread_token(&token_provider);
+    const int thread_id = scoped_thread_token.token();
+#pragma omp for schedule(guided)
+    for (int i = start; i < end; ++i) {
+      Invoke<F>(thread_id, i, function);
+    }
+  }
+}
 
 }  // namespace ceres::internal
 
-#endif  // CERES_NO_CUDA
+#endif
+#endif

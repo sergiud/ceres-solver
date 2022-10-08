@@ -45,13 +45,6 @@ namespace ceres {
 namespace internal {
 
 namespace {
-template <typename T>
-void CheckVectorEq(const std::vector<T>& a, const std::vector<T>& b) {
-  EXPECT_EQ(a.size(), b.size());
-  for (int i = 0; i < a.size(); ++i) {
-    EXPECT_EQ(a[i], b[i]);
-  }
-}
 
 std::unique_ptr<BlockSparseMatrix> CreateTestMatrixFromId(int id) {
   if (id == 0) {
@@ -122,6 +115,8 @@ std::unique_ptr<BlockSparseMatrix> CreateTestMatrixFromId(int id) {
 }
 }  // namespace
 
+const int kNumThreads = 4;
+
 class BlockSparseMatrixTest : public ::testing::Test {
  protected:
   void SetUp() final {
@@ -137,10 +132,12 @@ class BlockSparseMatrixTest : public ::testing::Test {
     CHECK_EQ(A_->num_rows(), B_->num_rows());
     CHECK_EQ(A_->num_cols(), B_->num_cols());
     CHECK_EQ(A_->num_nonzeros(), B_->num_nonzeros());
+    context_.EnsureMinimumThreads(kNumThreads);
   }
 
   std::unique_ptr<BlockSparseMatrix> A_;
   std::unique_ptr<TripletSparseMatrix> B_;
+  ContextImpl context_;
 };
 
 TEST_F(BlockSparseMatrixTest, SetZeroTest) {
@@ -158,6 +155,20 @@ TEST_F(BlockSparseMatrixTest, RightMultiplyAndAccumulateTest) {
     B_->RightMultiplyAndAccumulate(x.data(), y_b.data());
     EXPECT_LT((y_a - y_b).norm(), 1e-12);
   }
+}
+
+TEST_F(BlockSparseMatrixTest, RightMultiplyAndAccumulateParallelTest) {
+  Vector y_0 = Vector::Random(A_->num_rows());
+  Vector y_s = y_0;
+  Vector y_p = y_0;
+
+  Vector x = Vector::Random(A_->num_cols());
+  A_->RightMultiplyAndAccumulate(x.data(), y_s.data());
+
+  A_->RightMultiplyAndAccumulate(x.data(), y_p.data(), &context_, kNumThreads);
+
+  // Current parallel implementation is expected to be bit-exact
+  EXPECT_EQ((y_s - y_p).norm(), 0.);
 }
 
 TEST_F(BlockSparseMatrixTest, LeftMultiplyAndAccumulateTest) {
@@ -321,25 +332,39 @@ TEST(BlockSparseMatrix, ToDenseMatrix) {
 TEST(BlockSparseMatrix, ToCRSMatrix) {
   {
     std::unique_ptr<BlockSparseMatrix> m = CreateTestMatrixFromId(0);
-    CRSMatrix m_crs;
-    m->ToCRSMatrix(&m_crs);
+    CompressedRowSparseMatrix m_crs(
+        m->num_rows(), m->num_cols(), m->num_nonzeros());
+    m->ToCompressedRowSparseMatrix(&m_crs);
     std::vector<int> rows_expected = {0, 2, 4, 7, 10};
     std::vector<int> cols_expected = {0, 1, 0, 1, 2, 3, 4, 2, 3, 4};
     std::vector<double> values_expected = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    CheckVectorEq(rows_expected, m_crs.rows);
-    CheckVectorEq(cols_expected, m_crs.cols);
-    CheckVectorEq(values_expected, m_crs.values);
+    for (int i = 0; i < rows_expected.size(); ++i) {
+      EXPECT_EQ(m_crs.rows()[i], rows_expected[i]);
+    }
+    for (int i = 0; i < cols_expected.size(); ++i) {
+      EXPECT_EQ(m_crs.cols()[i], cols_expected[i]);
+    }
+    for (int i = 0; i < values_expected.size(); ++i) {
+      EXPECT_EQ(m_crs.values()[i], values_expected[i]);
+    }
   }
   {
     std::unique_ptr<BlockSparseMatrix> m = CreateTestMatrixFromId(1);
-    CRSMatrix m_crs;
-    m->ToCRSMatrix(&m_crs);
+    CompressedRowSparseMatrix m_crs(
+        m->num_rows(), m->num_cols(), m->num_nonzeros());
+    m->ToCompressedRowSparseMatrix(&m_crs);
     std::vector<int> rows_expected = {0, 4, 8, 9};
     std::vector<int> cols_expected = {0, 1, 3, 4, 0, 1, 3, 4, 2};
     std::vector<double> values_expected = {1, 2, 5, 6, 3, 4, 7, 8, 9};
-    CheckVectorEq(rows_expected, m_crs.rows);
-    CheckVectorEq(cols_expected, m_crs.cols);
-    CheckVectorEq(values_expected, m_crs.values);
+    for (int i = 0; i < rows_expected.size(); ++i) {
+      EXPECT_EQ(m_crs.rows()[i], rows_expected[i]);
+    }
+    for (int i = 0; i < cols_expected.size(); ++i) {
+      EXPECT_EQ(m_crs.cols()[i], cols_expected[i]);
+    }
+    for (int i = 0; i < values_expected.size(); ++i) {
+      EXPECT_EQ(m_crs.values()[i], values_expected[i]);
+    }
   }
 }
 

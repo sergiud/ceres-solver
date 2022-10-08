@@ -35,6 +35,7 @@
 #include <random>
 #include <vector>
 
+#include "ceres/block_structure.h"
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
 #include "ceres/sparse_matrix.h"
@@ -47,6 +48,7 @@ struct CRSMatrix;
 
 namespace internal {
 
+class ContextImpl;
 class TripletSparseMatrix;
 
 class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
@@ -102,6 +104,10 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   ~CompressedRowSparseMatrix() override;
   void SetZero() final;
   void RightMultiplyAndAccumulate(const double* x, double* y) const final;
+  void RightMultiplyAndAccumulate(const double* x,
+                                  double* y,
+                                  ContextImpl* context,
+                                  int num_threads) const final;
   void LeftMultiplyAndAccumulate(const double* x, double* y) const final;
   void SquaredColumnNorm(double* x) const final;
   void ScaleColumns(const double* scale) final;
@@ -110,8 +116,8 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   int num_rows() const final { return num_rows_; }
   int num_cols() const final { return num_cols_; }
   int num_nonzeros() const final { return rows_[num_rows_]; }
-  const double* values() const final { return &values_[0]; }
-  double* mutable_values() final { return &values_[0]; }
+  const double* values() const final { return values_.data(); }
+  double* mutable_values() final { return values_.data(); }
 
   // Delete the bottom delta_rows.
   // num_rows -= delta_rows
@@ -133,28 +139,28 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   void set_num_cols(const int num_cols) { num_cols_ = num_cols; }
 
   // Low level access methods that expose the structure of the matrix.
-  const int* cols() const { return &cols_[0]; }
-  int* mutable_cols() { return &cols_[0]; }
+  const int* cols() const { return cols_.data(); }
+  int* mutable_cols() { return cols_.data(); }
 
-  const int* rows() const { return &rows_[0]; }
-  int* mutable_rows() { return &rows_[0]; }
+  const int* rows() const { return rows_.data(); }
+  int* mutable_rows() { return rows_.data(); }
 
   StorageType storage_type() const { return storage_type_; }
   void set_storage_type(const StorageType storage_type) {
     storage_type_ = storage_type;
   }
 
-  const std::vector<int>& row_blocks() const { return row_blocks_; }
-  std::vector<int>* mutable_row_blocks() { return &row_blocks_; }
+  const std::vector<Block>& row_blocks() const { return row_blocks_; }
+  std::vector<Block>* mutable_row_blocks() { return &row_blocks_; }
 
-  const std::vector<int>& col_blocks() const { return col_blocks_; }
-  std::vector<int>* mutable_col_blocks() { return &col_blocks_; }
+  const std::vector<Block>& col_blocks() const { return col_blocks_; }
+  std::vector<Block>* mutable_col_blocks() { return &col_blocks_; }
 
   // Create a block diagonal CompressedRowSparseMatrix with the given
   // block structure. The individual blocks are assumed to be laid out
   // contiguously in the diagonal array, one block at a time.
   static std::unique_ptr<CompressedRowSparseMatrix> CreateBlockDiagonalMatrix(
-      const double* diagonal, const std::vector<int>& blocks);
+      const double* diagonal, const std::vector<Block>& blocks);
 
   // Options struct to control the generation of random block sparse
   // matrices in compressed row sparse format.
@@ -214,8 +220,8 @@ class CERES_NO_EXPORT CompressedRowSparseMatrix : public SparseMatrix {
   // optional information for use by algorithms operating on the
   // matrix. The class itself does not make use of this information in
   // any way.
-  std::vector<int> row_blocks_;
-  std::vector<int> col_blocks_;
+  std::vector<Block> row_blocks_;
+  std::vector<Block> col_blocks_;
 };
 
 inline std::ostream& operator<<(std::ostream& s,
