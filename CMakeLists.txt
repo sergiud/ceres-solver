@@ -105,7 +105,7 @@ include (CheckFunctionExists)
 option(WITH_GFLAGS "Enable Google Flags." ON)
 option(WITH_GLOG "Enable Google Log." ON)
 option(WITH_SUITESPARSE "Enable SuiteSparse." ON)
-option(WITH_CUDA "Enable use of CUDA linear algebra solvers." ON)
+cmake_dependent_option (WITH_CUDA "Enable CUDA support" ON CMAKE_CUDA_COMPILER OFF)
 option(WITH_LAPACK "Enable use of LAPACK." ON)
 # Template specializations for the Schur complement based solvers. If
 # compile time, binary size or compiler performance is an issue, you
