@@ -400,6 +400,11 @@ if (BUILD_TESTING AND gflags_FOUND)
   add_library(gtest STATIC gmock_gtest_all.cc gmock_main.cc)
 
   target_include_directories(gtest PRIVATE ${Ceres_SOURCE_DIR}/internal/ceres)
+
+  if (CMAKE_SYSTEM_NAME MATCHES "QNX")
+    target_link_libraries (gtest PUBLIC regex)
+  endif (CMAKE_SYSTEM_NAME MATCHES "QNX")
+
   target_link_libraries(gtest PRIVATE Ceres::Ceres gflags)
 
   add_library(test_util STATIC
