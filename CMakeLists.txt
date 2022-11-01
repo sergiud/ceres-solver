@@ -102,18 +102,24 @@ include (CTest)
 include (CPack)
 include (CheckFunctionExists)
 
-option(WITH_GFLAGS "Enable Google Flags." ON)
-option(WITH_GLOG "Enable Google Log." ON)
-option(WITH_SUITESPARSE "Enable SuiteSparse." ON)
-cmake_dependent_option (WITH_CUDA "Enable CUDA support" ON CMAKE_CUDA_COMPILER OFF)
-option(WITH_LAPACK "Enable use of LAPACK." ON)
+option (BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
+option (BUILD_EXAMPLES "Build examples" ON)
+option (BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
+option (WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
+option (WITH_CUSTOM_BLAS "Use handcoded BLAS routines (usually faster) instead of Eigen." ON)
+# Enable the use of Eigen as a sparse linear algebra library for
+# solving the nonlinear least squares problems.
+option (WITH_EIGENSPARSE "Enable Eigen as a sparse linear algebra library." ON)
+option (WITH_GFLAGS "Enable Google Flags." ON)
+option (WITH_GLOG "Enable Google Log." ON)
+option (WITH_LAPACK "Enable use of LAPACK." ON)
 # Template specializations for the Schur complement based solvers. If
 # compile time, binary size or compiler performance is an issue, you
 # may consider disabling this.
-option(WITH_SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
-option(WITH_CUSTOM_BLAS
-       "Use handcoded BLAS routines (usually faster) instead of Eigen."
-       ON)
+option (WITH_SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
+option (WITH_SUITESPARSE "Enable SuiteSparse." ON)
+cmake_dependent_option (WITH_CUDA "Enable CUDA support" ON CMAKE_CUDA_COMPILER OFF)
+cmake_dependent_option (WITH_EIGENMETIS "Enable Eigen METIS support." ON WITH_EIGENSPARSE OFF)
 
 set (WITH_THREADING_BACKEND "Threads" CACHE STRING
   "Enable threaded solving using the specified backend")
@@ -177,14 +183,6 @@ if (WITH_OPENMP)
   set (OpenMP_DEPENDENCY "find_dependency (OpenMP ${OpenMP_CXX_VERSION})")
 endif (WITH_OPENMP)
 
-# Enable the use of Eigen as a sparse linear algebra library for
-# solving the nonlinear least squares problems.
-option(WITH_EIGENSPARSE "Enable Eigen as a sparse linear algebra library." ON)
-cmake_dependent_option(WITH_EIGENMETIS "Enable Eigen METIS support." ON WITH_EIGENSPARSE OFF)
-option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
-option(BUILD_EXAMPLES "Build examples" ON)
-option(WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
-option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
 # library for iOS.
 if (IOS)
