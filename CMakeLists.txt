@@ -121,12 +121,6 @@ option (WITH_SUITESPARSE "Enable SuiteSparse." ON)
 cmake_dependent_option (WITH_CUDA "Enable CUDA support" ON CMAKE_CUDA_COMPILER OFF)
 cmake_dependent_option (WITH_EIGENMETIS "Enable Eigen METIS support." ON WITH_EIGENSPARSE OFF)
 
-set (WITH_THREADING_BACKEND "Threads" CACHE STRING
-  "Enable threaded solving using the specified backend")
-
-set_property (CACHE WITH_THREADING_BACKEND PROPERTY STRINGS
-  Threads;OpenMP;None)
-
 if (NOT WITH_BENCHMARK)
   set (CMAKE_DISABLE_FIND_PACKAGE_benchmark ON)
 endif (NOT WITH_BENCHMARK)
@@ -156,32 +150,8 @@ find_package (gflags 2.2.1)
 find_package (glog 0.3.5)
 find_package (LAPACK)
 find_package (METIS)
-find_package (OpenMP COMPONENTS CXX)
+find_package (Threads REQUIRED)
 find_package (SuiteSparse 4.5.6 COMPONENTS CHOLMOD SPQR OPTIONAL_COMPONENTS Partition)
-
-if (WITH_THREADING_BACKEND STREQUAL "")
-  if (OpenMP_CXX_FOUND)
-    set (WITH_THREADING_BACKEND OpenMP CACHE STRING "" FORCE)
-  else (OpenMP_CXX_FOUND)
-    set (WITH_THREADING_BACKEND Threads CACHE STRING "" FORCE)
-  endif (OpenMP_CXX_FOUND)
-endif (WITH_THREADING_BACKEND STREQUAL "")
-
-if (WITH_THREADING_BACKEND STREQUAL "")
-  set (WITH_OPENMP TRUE)
-elseif (WITH_THREADING_BACKEND STREQUAL OpenMP)
-  set (WITH_OPENMP TRUE)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_USE_OPENMP)
-elseif (WITH_THREADING_BACKEND STREQUAL Threads)
-  set (WITH_CXX_THREADS TRUE)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_USE_CXX_THREADS)
-elseif (WITH_THREADING_BACKEND STREQUAL None)
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_THREADS)
-endif (WITH_THREADING_BACKEND STREQUAL "")
-
-if (WITH_OPENMP)
-  set (OpenMP_DEPENDENCY "find_dependency (OpenMP ${OpenMP_CXX_VERSION})")
-endif (WITH_OPENMP)
 
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
 # library for iOS.

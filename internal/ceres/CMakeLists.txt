@@ -32,25 +32,9 @@
 
 # Avoid 'xxx.cc has no symbols' warnings from source files which are 'empty'
 # when their enclosing #ifdefs are disabled.
-if (WITH_CXX_THREADS)
-  set (CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
-  find_package (Threads REQUIRED)
-  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
-
-  # Make dependency visible to the parent CMakeLists.txt
-  set (Threads_DEPENDENCY "find_dependency (Threads)" PARENT_SCOPE)
-  list (APPEND APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
-elseif (WITH_OPENMP)
-  # OpenMP requires linking to the corresponding library.
-  find_package(OpenMP REQUIRED COMPONENTS CXX)
-
-  set (CERES_PARALLEL_FOR_SRC parallel_for_openmp.cc)
-  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES OpenMP::OpenMP_CXX)
-
-  # Make dependency visible to the parent CMakeLists.txt
-  set (OpenMP_DEPENDENCY "find_dependency (OpenMP ${OpenMP_CXX_VERSION} COMPONENTS CXX)" PARENT_SCOPE)
-  set (CERES_PARALLEL_FOR_SRC parallel_for_nothreads.cc)
-endif (WITH_CXX_THREADS)
+set (CERES_PARALLEL_FOR_SRC parallel_for_cxx.cc thread_pool.cc)
+find_package (Threads REQUIRED)
+list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
 
 # Source files that contain public symbols and live in the ceres namespaces.
 # Such symbols are expected to be marked with CERES_EXPORT and the files below
@@ -159,7 +143,6 @@ endif (CMAKE_CUDA_COMPILER_LOADED)
 # lexicographical order.
 add_library(ceres_internal OBJECT
     ${CERES_INTERNAL_SCHUR_FILES}
-    ${CERES_PARALLEL_FOR_SRC}
     accelerate_sparse.cc
     array_utils.cc
     block_evaluate_preparer.cc
@@ -223,6 +206,7 @@ add_library(ceres_internal OBJECT
     linear_solver.cc
     low_rank_inverse_hessian.cc
     minimizer.cc
+    parallel_for_cxx.cc
     parallel_utils.cc
     parameter_block_ordering.cc
     partitioned_matrix_view.cc
@@ -248,6 +232,7 @@ add_library(ceres_internal OBJECT
     stringprintf.cc
     subset_preconditioner.cc
     suitesparse.cc
+    thread_pool.cc
     thread_token_provider.cc
     triplet_sparse_matrix.cc
     trust_region_minimizer.cc
@@ -580,9 +565,6 @@ if (benchmark_FOUND)
 
   add_executable(spmv_benchmark spmv_benchmark.cc)
   add_dependencies_to_benchmark(spmv_benchmark)
-
-  add_executable(partitioned_matrix_view_benchmark partitioned_matrix_view_benchmark.cc)
-  add_dependencies_to_benchmark(partitioned_matrix_view_benchmark)
 
   add_executable(block_jacobi_preconditioner_benchmark
     block_jacobi_preconditioner_benchmark.cc)

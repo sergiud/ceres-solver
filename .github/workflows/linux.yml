@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: ${{matrix.os}}-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.threading_model}}
+    name: ${{matrix.os}}-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}
     runs-on: ${{matrix.os}}
     defaults:
       run:
@@ -24,10 +24,9 @@ jobs:
         lib:
           - shared
           - static
-        threading_model:
-          - CXX_THREADS
-          - NO_THREADS
-          - OPENMP
+        gpu:
+          - cuda
+          - no-cuda
 
     steps:
       - uses: actions/checkout@v2
@@ -49,13 +48,21 @@ jobs:
             libsuitesparse-dev \
             ninja-build
 
+      - name: Setup CUDA toolkit
+        if: matrix.gpu == 'cuda'
+        run: |
+          apt-get install -y \
+            nvidia-cuda-dev \
+            nvidia-cuda-toolkit
+
+
       - name: Cache Build
         id: cache-build
         uses: actions/cache@v2
         with:
           path: ${{env.CCACHE_DIR}}
-          key: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.threading_model}}-${{github.run_id}}
-          restore-keys: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.threading_model}}-
+          key: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}-${{github.run_id}}
+          restore-keys: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}-
 
       - name: Setup Environment
         if: matrix.build_type == 'Release'
@@ -66,7 +73,7 @@ jobs:
         run: |
           cmake -S . -B build_${{matrix.build_type}} \
                 -DBUILD_SHARED_LIBS=${{matrix.lib == 'shared'}} \
-                -DCERES_THREADING_MODEL=${{matrix.threading_model}} \
+                -DUSE_CUDA=${{matrix.gpu == 'cuda'}} \
                 -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
                 -DCMAKE_C_COMPILER_LAUNCHER=$(which ccache) \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache) \
@@ -78,6 +85,7 @@ jobs:
                 --config ${{matrix.build_type}}
 
       - name: Test
+        if: matrix.gpu == 'no-cuda'
         run: |
           cd build_${{matrix.build_type}}/
           ctest --config ${{matrix.build_type}} \
