@@ -28,11 +28,13 @@
 //
 // Author: vitus@google.com (Michael Vitus)
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <tuple>
 
 #include "ceres/internal/config.h"
 #include "ceres/parallel_for.h"
@@ -73,5 +75,19 @@ ThreadPoolState::ThreadPoolState(int start,
       block_until_finished(num_work_blocks) {}
 
 int MaxNumThreadsAvailable() { return ThreadPool::MaxNumThreadsAvailable(); }
+
+void ParallelSetZero(ContextImpl* context,
+                     int num_threads,
+                     double* values,
+                     int num_values) {
+  ParallelFor(context,
+              0,
+              num_values,
+              num_threads,
+              [values](std::tuple<int, int> range) {
+                auto [start, end] = range;
+                std::fill(values + start, values + end, 0.);
+              });
+}
 
 }  // namespace ceres::internal

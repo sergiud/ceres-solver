@@ -34,4 +34,20 @@ namespace ceres::internal {
 
 SparseMatrix::~SparseMatrix() = default;
 
+void SparseMatrix::SquaredColumnNorm(double* x,
+                                     ContextImpl* context,
+                                     int num_threads) const {
+  (void)context;
+  (void)num_threads;
+  SquaredColumnNorm(x);
+}
+
+void SparseMatrix::ScaleColumns(const double* scale,
+                                ContextImpl* context,
+                                int num_threads) {
+  (void)context;
+  (void)num_threads;
+  ScaleColumns(scale);
+}
+
 }  // namespace ceres::internal
