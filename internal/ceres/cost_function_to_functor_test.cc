@@ -32,6 +32,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include "ceres/autodiff_cost_function.h"
 #include "ceres/dynamic_autodiff_cost_function.h"
@@ -40,7 +41,6 @@
 
 namespace ceres::internal {
 
-using std::vector;
 const double kTolerance = 1e-18;
 
 static void ExpectCostFunctionsAreEqual(
@@ -49,9 +49,9 @@ static void ExpectCostFunctionsAreEqual(
   EXPECT_EQ(cost_function.num_residuals(),
             actual_cost_function.num_residuals());
   const int num_residuals = cost_function.num_residuals();
-  const vector<int32_t>& parameter_block_sizes =
+  const std::vector<int32_t>& parameter_block_sizes =
       cost_function.parameter_block_sizes();
-  const vector<int32_t>& actual_parameter_block_sizes =
+  const std::vector<int32_t>& actual_parameter_block_sizes =
       actual_cost_function.parameter_block_sizes();
   EXPECT_EQ(parameter_block_sizes.size(), actual_parameter_block_sizes.size());
 
@@ -301,11 +301,11 @@ class DynamicTwoParameterBlockFunctor {
 // Check that AutoDiff(Functor1) == AutoDiff(CostToFunctor(AutoDiff(Functor1)))
 #define TEST_BODY(Functor1)                                                    \
   TEST(CostFunctionToFunctor, Functor1) {                                      \
-    typedef AutoDiffCostFunction<Functor1, 2, PARAMETER_BLOCK_SIZES>           \
-        CostFunction1;                                                         \
-    typedef CostFunctionToFunctor<2, PARAMETER_BLOCK_SIZES> FunctionToFunctor; \
-    typedef AutoDiffCostFunction<FunctionToFunctor, 2, PARAMETER_BLOCK_SIZES>  \
-        CostFunction2;                                                         \
+    using CostFunction1 =                                                      \
+        AutoDiffCostFunction<Functor1, 2, PARAMETER_BLOCK_SIZES>;              \
+    using FunctionToFunctor = CostFunctionToFunctor<2, PARAMETER_BLOCK_SIZES>; \
+    using CostFunction2 =                                                      \
+        AutoDiffCostFunction<FunctionToFunctor, 2, PARAMETER_BLOCK_SIZES>;     \
                                                                                \
     std::unique_ptr<CostFunction> cost_function(new CostFunction2(             \
         new FunctionToFunctor(new CostFunction1(new Functor1))));              \

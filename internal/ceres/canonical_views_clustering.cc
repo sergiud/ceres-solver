@@ -33,6 +33,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "ceres/graph.h"
 #include "ceres/internal/export.h"
@@ -40,8 +41,6 @@
 #include "glog/logging.h"
 
 namespace ceres::internal {
-
-using std::vector;
 
 using IntMap = std::unordered_map<int, int>;
 using IntSet = std::unordered_set<int>;
@@ -58,15 +57,15 @@ class CERES_NO_EXPORT CanonicalViewsClustering {
   // are assigned to a cluster with id = kInvalidClusterId.
   void ComputeClustering(const CanonicalViewsClusteringOptions& options,
                          const WeightedGraph<int>& graph,
-                         vector<int>* centers,
+                         std::vector<int>* centers,
                          IntMap* membership);
 
  private:
   void FindValidViews(IntSet* valid_views) const;
-  double ComputeClusteringQualityDifference(const int candidate,
-                                            const vector<int>& centers) const;
+  double ComputeClusteringQualityDifference(
+      int candidate, const std::vector<int>& centers) const;
   void UpdateCanonicalViewAssignments(const int canonical_view);
-  void ComputeClusterMembership(const vector<int>& centers,
+  void ComputeClusterMembership(const std::vector<int>& centers,
                                 IntMap* membership) const;
 
   CanonicalViewsClusteringOptions options_;
@@ -81,7 +80,7 @@ class CERES_NO_EXPORT CanonicalViewsClustering {
 void ComputeCanonicalViewsClustering(
     const CanonicalViewsClusteringOptions& options,
     const WeightedGraph<int>& graph,
-    vector<int>* centers,
+    std::vector<int>* centers,
     IntMap* membership) {
   time_t start_time = time(nullptr);
   CanonicalViewsClustering cv;
@@ -94,7 +93,7 @@ void ComputeCanonicalViewsClustering(
 void CanonicalViewsClustering::ComputeClustering(
     const CanonicalViewsClusteringOptions& options,
     const WeightedGraph<int>& graph,
-    vector<int>* centers,
+    std::vector<int>* centers,
     IntMap* membership) {
   options_ = options;
   CHECK(centers != nullptr);
@@ -150,7 +149,7 @@ void CanonicalViewsClustering::FindValidViews(IntSet* valid_views) const {
 // Computes the difference in the quality score if 'candidate' were
 // added to the set of canonical views.
 double CanonicalViewsClustering::ComputeClusteringQualityDifference(
-    const int candidate, const vector<int>& centers) const {
+    const int candidate, const std::vector<int>& centers) const {
   // View score.
   double difference =
       options_.view_score_weight * graph_->VertexWeight(candidate);
@@ -197,7 +196,7 @@ void CanonicalViewsClustering::UpdateCanonicalViewAssignments(
 
 // Assign a cluster id to each view.
 void CanonicalViewsClustering::ComputeClusterMembership(
-    const vector<int>& centers, IntMap* membership) const {
+    const std::vector<int>& centers, IntMap* membership) const {
   CHECK(membership != nullptr);
   membership->clear();
 

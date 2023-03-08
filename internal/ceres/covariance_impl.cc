@@ -59,8 +59,6 @@
 
 namespace ceres::internal {
 
-using std::swap;
-
 using CovarianceBlocks = std::vector<std::pair<const double*, const double*>>;
 
 CovarianceImpl::CovarianceImpl(const Covariance::Options& options)
@@ -166,7 +164,7 @@ bool CovarianceImpl::GetCovarianceBlockInTangentOrAmbientSpace(
   const double* parameter_block2 = original_parameter_block2;
   const bool transpose = parameter_block1 > parameter_block2;
   if (transpose) {
-    swap(parameter_block1, parameter_block2);
+    std::swap(parameter_block1, parameter_block2);
   }
 
   // Find where in the covariance matrix the block is located.
@@ -470,17 +468,12 @@ bool CovarianceImpl::ComputeCovarianceSparsity(
     // Iterate over the covariance blocks contained in this row block
     // and count the number of columns in this row block.
     int num_col_blocks = 0;
-
-    // TODO(sameeragarwal): num_columns is being computed but not
-    // being used.
-    int num_columns = 0;
     for (int j = i; j < covariance_blocks.size(); ++j, ++num_col_blocks) {
       const std::pair<const double*, const double*>& block_pair =
           covariance_blocks[j];
       if (block_pair.first != row_block) {
         break;
       }
-      num_columns += problem->ParameterBlockTangentSize(block_pair.second);
     }
 
     // Fill out all the compressed rows for this parameter block.

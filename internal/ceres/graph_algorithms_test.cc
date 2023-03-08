@@ -33,14 +33,13 @@
 #include <algorithm>
 #include <memory>
 #include <unordered_set>
+#include <vector>
 
 #include "ceres/graph.h"
 #include "ceres/internal/export.h"
 #include "gtest/gtest.h"
 
 namespace ceres::internal {
-
-using std::vector;
 
 TEST(IndependentSetOrdering, Chain) {
   Graph<int> graph;
@@ -57,7 +56,7 @@ TEST(IndependentSetOrdering, Chain) {
 
   // 0-1-2-3-4
   // 0, 2, 4 should be in the independent set.
-  vector<int> ordering;
+  std::vector<int> ordering;
   int independent_set_size = IndependentSetOrdering(graph, &ordering);
 
   sort(ordering.begin(), ordering.begin() + 3);
@@ -91,7 +90,7 @@ TEST(IndependentSetOrdering, Star) {
   //      |
   //      3
   // 1, 2, 3, 4 should be in the independent set.
-  vector<int> ordering;
+  std::vector<int> ordering;
   int independent_set_size = IndependentSetOrdering(graph, &ordering);
   EXPECT_EQ(independent_set_size, 4);
   EXPECT_EQ(ordering.size(), 5);
@@ -219,7 +218,7 @@ TEST(StableIndependentSet, BreakTies) {
   // guarantees that it will always be the first vertex in the
   // ordering vector.
   {
-    vector<int> ordering;
+    std::vector<int> ordering;
     ordering.push_back(0);
     ordering.push_back(1);
     ordering.push_back(2);
@@ -231,7 +230,7 @@ TEST(StableIndependentSet, BreakTies) {
   }
 
   {
-    vector<int> ordering;
+    std::vector<int> ordering;
     ordering.push_back(1);
     ordering.push_back(0);
     ordering.push_back(2);
