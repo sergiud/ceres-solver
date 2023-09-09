@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2022 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -91,17 +91,9 @@ elseif(CMAKE_UNITY_BUILD)
   message(FATAL_ERROR "Unity build requires cmake 3.16 or newer.  Please unset CMAKE_UNITY_BUILD.")
 endif()
 
-if (NOT MINIGLOG AND GLOG_FOUND)
-  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${GLOG_LIBRARIES})
-  if (gflags_FOUND)
-    # If glog & gflags are both found, we assume that glog was built with
-    # gflags, as it is awkward to perform a try_compile() to verify this
-    # when gflags is an imported target (as it is in newer versions).
-    # As glog #includes gflags/gflags.h in glog/logging.h if compiled with
-    # gflags, it is thus a public dependency for Ceres in this case.
-    list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES gflags)
-  endif()
-endif (NOT MINIGLOG AND GLOG_FOUND)
+if (NOT MINIGLOG AND glog_FOUND)
+  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
+endif (NOT MINIGLOG AND glog_FOUND)
 
 if (SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
@@ -377,11 +369,6 @@ if (MINIGLOG)
   target_include_directories(ceres BEFORE PUBLIC
     $<BUILD_INTERFACE:${Ceres_SOURCE_DIR}/internal/ceres/miniglog>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/miniglog>)
-elseif (NOT FOUND_INSTALLED_GLOG_CMAKE_CONFIGURATION)
-  # Only append glog include directories if the glog found was not a CMake
-  # exported target that already includes them.
-  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS
-    ${GLOG_INCLUDE_DIRS})
 endif()
 if (ACCELERATESPARSE)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS

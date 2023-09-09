@@ -443,36 +443,16 @@ if (MINIGLOG)
   add_definitions("-DMAX_LOG_LEVEL=${MINIGLOG_MAX_LOG_LEVEL}")
   message("-- Using minimal glog substitute (include): ${GLOG_INCLUDE_DIRS}")
   message("-- Max log level for minimal glog substitute: ${MINIGLOG_MAX_LOG_LEVEL}")
-
-  # Mark as advanced (remove from default GUI view) the glog search
-  # variables in case user disables MINIGLOG, FindGlog did not find it, so
-  # made search variables visible in GUI for user to set, but then user enables
-  # MINIGLOG instead of setting them.
-  mark_as_advanced(FORCE GLOG_INCLUDE_DIR
-                         GLOG_LIBRARY)
 else (MINIGLOG)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
   # Don't search with REQUIRED so that configuration continues if not found and
   # we can output an error messages explaining MINIGLOG option.
-  find_package(Glog)
-  if (NOT GLOG_FOUND)
+  find_package(glog NO_MODULE)
+  if (NOT glog_FOUND)
     message(FATAL_ERROR "Can't find Google Log (glog). Please set either: "
-      "glog_DIR (newer CMake built versions of glog) or GLOG_INCLUDE_DIR & "
-      "GLOG_LIBRARY or enable MINIGLOG option to use minimal glog "
+      "glog_DIR or enable MINIGLOG option to use minimal glog "
       "implementation.")
-  endif(NOT GLOG_FOUND)
-  # By default, assume gflags was found, updating the message if it was not.
-  set(GLOG_GFLAGS_DEPENDENCY_MESSAGE
-    " Assuming glog was built with gflags support as gflags was found. "
-    "This will make gflags a public dependency of Ceres.")
-  if (NOT gflags_FOUND)
-    set(GLOG_GFLAGS_DEPENDENCY_MESSAGE
-      " Assuming glog was NOT built with gflags support as gflags was "
-      "not found.  If glog was built with gflags, please set the "
-      "gflags search locations such that it can be found by Ceres.  "
-      "Otherwise, Ceres may fail to link due to missing gflags symbols.")
-  endif(NOT gflags_FOUND)
-  message("-- Found Google Log (glog)." ${GLOG_GFLAGS_DEPENDENCY_MESSAGE})
+  endif(NOT glog_FOUND)
 endif (MINIGLOG)
 
 if (NOT SCHUR_SPECIALIZATIONS)
@@ -785,12 +765,6 @@ install(FILES "${Ceres_BINARY_DIR}/CeresConfig-install.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 install(FILES "${Ceres_BINARY_DIR}/CeresConfigVersion.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-if (GLOG_FOUND AND NOT FOUND_INSTALLED_GLOG_CMAKE_CONFIGURATION)
-  # Version of glog detected was not built with CMake, install our glog module
-  # file to enable detection in CeresConfig.
-  install(FILES "${Ceres_SOURCE_DIR}/cmake/FindGlog.cmake"
-          DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-endif()
 
 if (PROVIDE_UNINSTALL_TARGET)
   # Create an uninstall target to remove all installed files.
