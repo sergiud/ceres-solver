@@ -114,6 +114,8 @@ if (Sphinx_BUILD_EXECUTABLE)
     endforeach (component)
 
     unset (theme_component)
+  else (Python_Interpreter_FOUND)
+    set (_MORE_FPHSA_ARGS FAIL_MESSAGE "Python interpreter is missing")
   endif (Python_Interpreter_FOUND)
 endif (Sphinx_BUILD_EXECUTABLE)
 
@@ -121,4 +123,5 @@ find_package_handle_standard_args (Sphinx
   REQUIRED_VARS Sphinx_BUILD_EXECUTABLE
   VERSION_VAR Sphinx_VERSION
   HANDLE_COMPONENTS
+  ${_MORE_FPHSA_ARGS}
 )

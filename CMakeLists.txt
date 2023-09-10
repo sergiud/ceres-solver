@@ -51,7 +51,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
   endif()
 endif()
 
-project(Ceres C CXX)
+project (Ceres
+  LANGUAGES C CXX
+  DESCRIPTION "A Large Scale Non-linear Optimization Library"
+)
 
 # NOTE: The following CMake variables must be applied consistently to all
 # targets in project to avoid visibility warnings by placing the variables at
@@ -81,21 +84,31 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 # append rather than set in case the user has passed their own
 # additional paths via -D.
 list(APPEND CMAKE_MODULE_PATH "${Ceres_SOURCE_DIR}/cmake")
+
 include(AddCompileFlagsIfSupported)
+include(AddGerritCommitHook)
+include(CeresCompileOptionsToComponents)
 include(CheckCXXCompilerFlag)
+include(CheckLanguage)
 include(CheckLibraryExists)
+include(CMakeDependentOption)
+include(CMakePackageConfigHelpers)
+include(CreateCeresConfig)
+include(DetectBrokenStackCheckMacOSXcodePairing)
+include(EnableSanitizer)
+include(FeatureSummary)
+include(GenerateExportHeader)
 include(GNUInstallDirs)
+include(PrettyPrintCMakeList)
+include(ReadCeresVersionFromSource)
 include(UpdateCacheVariable)
 
 check_cxx_compiler_flag(/bigobj HAVE_BIGOBJ)
 check_library_exists(m pow "" HAVE_LIBM)
 
 # Xcode 11.0-1 with macOS 10.15 (Catalina) broke alignment.
-include(DetectBrokenStackCheckMacOSXcodePairing)
 detect_broken_stack_check_macos_xcode_pairing()
-
 # Set up the git hook to make Gerrit Change-Id: lines in commit messages.
-include(AddGerritCommitHook)
 add_gerrit_commit_hook(${Ceres_SOURCE_DIR} ${Ceres_BINARY_DIR})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/bin)
@@ -107,51 +120,53 @@ set(CMAKE_DEBUG_POSTFIX "-debug")
 
 # Read the Ceres version from the source, such that we only ever have a single
 # definition of the Ceres version.
-include(ReadCeresVersionFromSource)
 read_ceres_version_from_source(${Ceres_SOURCE_DIR})
 
-enable_testing()
+option (BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)
+option (BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
+option (BUILD_EXAMPLES "Build examples" ON)
+option (BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
+option (BUILD_TESTING "Enable tests" ON)
 
-include(CMakeDependentOption)
-include(PrettyPrintCMakeList)
-
-option(MINIGLOG "Use a stripped down version of glog." OFF)
-option(GFLAGS "Enable Google Flags." ON)
-option(SUITESPARSE "Enable SuiteSparse." ON)
-if (APPLE)
-  option(ACCELERATESPARSE
-    "Enable use of sparse solvers in Apple's Accelerate framework." ON)
-  option(ENABLE_BITCODE
-    "Enable bitcode for iOS builds (disables inline optimizations for Eigen)." OFF)
-endif()
-# We can't have an option called 'CUDA' since that is a reserved word -- a
-# language definition.
-option(USE_CUDA "Enable use of CUDA linear algebra solvers." ON)
-option(LAPACK "Enable use of LAPACK directly within Ceres." ON)
-# Template specializations for the Schur complement based solvers. If
-# compile time, binary size or compiler performance is an issue, you
-# may consider disabling this.
-option(SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
-option(CUSTOM_BLAS
+option (WITH_CUDA "Enable use of CUDA linear algebra solvers." ON)
+option (WITH_CUSTOM_BLAS
        "Use handcoded BLAS routines (usually faster) instead of Eigen."
        ON)
 # Enable the use of Eigen as a sparse linear algebra library for
 # solving the nonlinear least squares problems.
-option(EIGENSPARSE "Enable Eigen as a sparse linear algebra library." ON)
-cmake_dependent_option(EIGENMETIS "Enable Eigen METIS support." ON EIGENSPARSE OFF)
-option(EXPORT_BUILD_DIR
-  "Export build directory using CMake (enables external use without install)." OFF)
-option(BUILD_TESTING "Enable tests" ON)
-option(BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
-option(BUILD_EXAMPLES "Build examples" ON)
-option(BUILD_BENCHMARKS "Build Ceres benchmarking suite" ON)
-option(BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
-option(PROVIDE_UNINSTALL_TARGET "Add a custom target to ease removal of installed targets" ON)
-set(SANITIZERS "" CACHE STRING "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
-include(EnableSanitizer)
-enable_sanitizer(${SANITIZERS})
+option (WITH_EIGENSPARSE "Enable Eigen as a sparse linear algebra library." ON)
+option (WITH_LAPACK "Enable use of LAPACK directly within Ceres." ON)
+option (WITH_MINIGLOG "Use a stripped down version of glog." OFF)
+# Template specializations for the Schur complement based solvers. If
+# compile time, binary size or compiler performance is an issue, you
+# may consider disabling this.
+option (WITH_SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
+option (WITH_SUITESPARSE "Enable SuiteSparse." ON)
+option (WITH_UNINSTALL_TARGET "Add a custom target to ease removal of installed targets" ON)
+
+cmake_dependent_option (WITH_ACCELERATESPARSE
+  "Enable use of sparse solvers in Apple's Accelerate framework." ON
+  APPLE OFF
+)
+cmake_dependent_option (WITH_BITCODE
+  "Enable bitcode for iOS builds (disables inline optimizations for Eigen)." OFF
+  APPLE OFF
+)
+cmake_dependent_option (WITH_EIGENMETIS "Enable Eigen METIS support." ON
+  WITH_EIGENSPARSE OFF
+)
+set (WITH_SANITIZERS "" CACHE STRING
+  "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
+
+enable_sanitizer (${WITH_SANITIZERS})
+
+if (BUILD_TESTING)
+  enable_testing ()
+endif (BUILD_TESTING)
+
+
 if (ANDROID)
-  option(ANDROID_STRIP_DEBUG_SYMBOLS "Strip debug symbols from Android builds (reduces file sizes)" ON)
+  option(WITH_STRIPPED_DEBUG_SYMBOLS "Strip debug symbols from Android builds (reduces file sizes)" ON)
 endif()
 
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
@@ -165,13 +180,13 @@ if (IOS)
       "requires at least iOS version 7.0")
   endif()
 
-  update_cache_variable(MINIGLOG ON)
+  update_cache_variable(WITH_MINIGLOG ON)
   message(STATUS "Building for iOS: Forcing use of miniglog instead of glog.")
 
   # Apple claims that the BLAS call dsyrk_ is a private API, and will not allow
   # you to submit to the Apple Store if the symbol is present.
-  update_cache_variable(LAPACK OFF)
-  message(STATUS "Building for iOS: SuiteSparse, LAPACK, gflags "
+  update_cache_variable(WITH_LAPACK OFF)
+  message(STATUS "Building for iOS: SuiteSparse, WITH_LAPACK, gflags "
     "are not available.")
 
   update_cache_variable(BUILD_EXAMPLES OFF)
@@ -180,191 +195,163 @@ endif (IOS)
 
 unset(CERES_COMPILE_OPTIONS)
 
-# Eigen.
+if (CMAKE_VERSION VERSION_LESS 3.17)
+  set (CUDAPackage CUDA)
+else (CMAKE_VERSION VERSION_LESS 3.17)
+  set (CUDAPackage CUDAToolkit)
+endif (CMAKE_VERSION VERSION_LESS 3.17)
+
+if (WITH_CUDA)
+  check_language (CUDA)
+else (WITH_CUDA)
+  set (CMAKE_DISABLE_FIND_PACKAGE_${CUDAPackage} ON)
+endif (WITH_CUDA)
+
+if (NOT WITH_ACCELERATESPARSE)
+  set (CMAKE_DISABLE_FIND_PACKAGE_AccelerateSparse ON)
+endif (NOT WITH_ACCELERATESPARSE)
+
+if (NOT BUILD_BENCHMARKS)
+  set (CMAKE_DISABLE_FIND_PACKAGE_benchmark ON)
+endif (NOT BUILD_BENCHMARKS)
+
+if (NOT BUILD_DOCUMENTATION)
+  set (CMAKE_DISABLE_FIND_PACKAGE_Sphinx ON)
+endif (NOT BUILD_DOCUMENTATION)
+
+if (NOT WITH_EIGENMETIS)
+  set (CMAKE_DISABLE_FIND_PACKAGE_METIS ON)
+endif (NOT WITH_EIGENMETIS)
+
+if (NOT WITH_LAPACK)
+  set (CMAKE_DISABLE_FIND_PACKAGE_LAPACK ON)
+endif (NOT WITH_LAPACK)
+
+if (NOT WITH_SUITESPARSE)
+  set (CMAKE_DISABLE_FIND_PACKAGE_SuiteSparse ON)
+endif (NOT WITH_SUITESPARSE)
+
+find_package (AccelerateSparse)
+# Version 1.3 was first to provide import targets
+find_package (benchmark 1.3 NO_MODULE)
 # Eigen delivers Eigen3Config.cmake since v3.3.3
-find_package(Eigen3 3.3 REQUIRED)
-if (Eigen3_FOUND)
-  message("-- Found Eigen version ${Eigen3_VERSION}: ${Eigen3_DIR}")
-  if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)" AND
-      Eigen3_VERSION VERSION_LESS 3.3.4)
-    # As per issue #289: https://github.com/ceres-solver/ceres-solver/issues/289
-    # the bundle_adjustment_test will fail for Eigen < 3.3.4 on aarch64.
-    message(FATAL_ERROR "-- Ceres requires Eigen version >= 3.3.4 on aarch64. "
-      "Detected version of Eigen is: ${Eigen3_VERSION}.")
+find_package (Eigen3 3.3.4 REQUIRED NO_MODULE)
+find_package (gflags 2.2.0 NO_MODULE)
+find_package (Glog)
+find_package (LAPACK)
+find_package (METIS)
+find_package (Sphinx COMPONENTS sphinx_rtd_theme)
+find_package (SuiteSparse 4.5.6 COMPONENTS CHOLMOD SPQR OPTIONAL_COMPONENTS Partition)
+find_package (Threads REQUIRED)
+
+# On older versions of CMake (20.04 default is 3.16) FindCUDAToolkit was
+# not available, but FindCUDA was deprecated. To avoid special-case handling
+# elsewhere, emulate the effects of FindCUDAToolkit locally in terms of the
+# expected CMake imported targets and defined variables. This can be removed
+# from as soon as the min CMake version is >= 3.17.
+find_package (${CUDAPackage})
+
+if (WITH_EIGENSPARSE)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
+else (WITH_EIGENSPARSE)
+  add_definitions (-DEIGEN_MPL2_ONLY)
+endif (WITH_EIGENSPARSE)
+
+if (NOT LAPACK_FOUND)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
+endif (NOT LAPACK_FOUND)
+
+if (${CUDAPackage}_FOUND)
+  enable_language (CUDA)
+endif (${CUDAPackage}_FOUND)
+
+if (CUDA_FOUND)
+  message(STATUS "Found CUDA version ${CUDA_VERSION} installed in: "
+    "${CUDA_TOOLKIT_ROOT_DIR} via legacy (< 3.17) CMake module. "
+    "Using the legacy CMake module means that any installation of "
+    "Ceres will require that the CUDA libraries be installed in a "
+    "location included in the LD_LIBRARY_PATH.")
+
+  macro(DECLARE_IMPORTED_CUDA_TARGET COMPONENT)
+    add_library(CUDA::${COMPONENT} INTERFACE IMPORTED)
+    target_include_directories(
+      CUDA::${COMPONENT} INTERFACE ${CUDA_INCLUDE_DIRS})
+    target_link_libraries(
+      CUDA::${COMPONENT} INTERFACE ${CUDA_${COMPONENT}_LIBRARY} ${ARGN})
+  endmacro()
+
+  declare_imported_cuda_target(cublas)
+  declare_imported_cuda_target(cusolver)
+  declare_imported_cuda_target(cusparse)
+  declare_imported_cuda_target(cudart ${CUDA_LIBRARIES})
+
+  set(CUDAToolkit_BIN_DIR ${CUDA_TOOLKIT_ROOT_DIR}/bin)
+elseif (CUDAToolkit_FOUND)
+  set(CUDAToolkit_DEPENDENCY
+    "find_dependency(CUDAToolkit ${CUDAToolkit_VERSION})")
+  if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.18")
+    # Support Maxwell, Pascal, Volta, Turing, and Ampere GPUs.
+    set(CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
+    message(STATUS "Setting CUDA Architecture to ${CMAKE_CUDA_ARCHITECTURES}")
   endif()
+  list(APPEND CERES_CUDA_LIBRARIES
+    CUDA::cublas
+    CUDA::cudart
+    CUDA::cusolver
+    CUDA::cusparse)
+  set(CMAKE_CUDA_RUNTIME_LIBRARY NONE)
+endif (CUDA_FOUND)
 
-  if (EIGENSPARSE)
-    message("-- Enabling use of Eigen as a sparse linear algebra library.")
-    list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
-  else (EIGENSPARSE)
-    message("-- Disabling use of Eigen as a sparse linear algebra library.")
-    message("   This does not affect the covariance estimation algorithm ")
-    message("   which can still use the EIGEN_SPARSE_QR algorithm.")
-    add_definitions(-DEIGEN_MPL2_ONLY)
-  endif (EIGENSPARSE)
-endif (Eigen3_FOUND)
-
-if (USE_CUDA)
-  if (CMAKE_VERSION VERSION_LESS 3.17)
-    # On older versions of CMake (20.04 default is 3.16) FindCUDAToolkit was
-    # not available, but FindCUDA was deprecated. To avoid special-case handling
-    # elsewhere, emulate the effects of FindCUDAToolkit locally in terms of the
-    # expected CMake imported targets and defined variables. This can be removed
-    # from as soon as the min CMake version is >= 3.17.
-    find_package(CUDA QUIET)
-    if (CUDA_FOUND)
-      message("-- Found CUDA version ${CUDA_VERSION} installed in: "
-        "${CUDA_TOOLKIT_ROOT_DIR} via legacy (< 3.17) CMake module. "
-        "Using the legacy CMake module means that any installation of "
-        "Ceres will require that the CUDA libraries be installed in a "
-        "location included in the LD_LIBRARY_PATH.")
-      enable_language(CUDA)
-
-      macro(DECLARE_IMPORTED_CUDA_TARGET COMPONENT)
-        add_library(CUDA::${COMPONENT} INTERFACE IMPORTED)
-        target_include_directories(
-          CUDA::${COMPONENT} INTERFACE ${CUDA_INCLUDE_DIRS})
-        target_link_libraries(
-          CUDA::${COMPONENT} INTERFACE ${CUDA_${COMPONENT}_LIBRARY} ${ARGN})
-      endmacro()
-
-      declare_imported_cuda_target(cublas)
-      declare_imported_cuda_target(cusolver)
-      declare_imported_cuda_target(cusparse)
-      declare_imported_cuda_target(cudart ${CUDA_LIBRARIES})
-
-      set(CUDAToolkit_BIN_DIR ${CUDA_TOOLKIT_ROOT_DIR}/bin)
-
-    else (CUDA_FOUND)
-      message("-- Did not find CUDA, disabling CUDA support.")
-      update_cache_variable(USE_CUDA OFF)
-    endif (CUDA_FOUND)
-  else (CMAKE_VERSION VERSION_LESS 3.17)
-    find_package(CUDAToolkit QUIET)
-    if (CUDAToolkit_FOUND)
-      message("-- Found CUDA version ${CUDAToolkit_VERSION} installed in: "
-        "${CUDAToolkit_TARGET_DIR}")
-      set(CUDAToolkit_DEPENDENCY
-        "find_dependency(CUDAToolkit ${CUDAToolkit_VERSION})")
-      enable_language(CUDA)
-      if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.18")
-        # Support Maxwell, Pascal, Volta, Turing, and Ampere GPUs.
-        set(CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
-        message("-- Setting CUDA Architecture to ${CMAKE_CUDA_ARCHITECTURES}")
-      endif()
-      list(APPEND CERES_CUDA_LIBRARIES
-        CUDA::cublas
-        CUDA::cudart
-        CUDA::cusolver
-        CUDA::cusparse)
-      set(CMAKE_CUDA_RUNTIME_LIBRARY NONE)
-    else (CUDAToolkit_FOUND)
-      message("-- Did not find CUDA, disabling CUDA support.")
-      update_cache_variable(USE_CUDA OFF)
-    endif (CUDAToolkit_FOUND)
-  endif (CMAKE_VERSION VERSION_LESS 3.17)
-endif (USE_CUDA)
-if (NOT USE_CUDA)
-  message("-- Building without CUDA.")
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
-endif (NOT USE_CUDA)
-
-if (LAPACK)
-  find_package(LAPACK QUIET)
-  if (LAPACK_FOUND)
-    message("-- Found LAPACK library: ${LAPACK_LIBRARIES}")
-  else (LAPACK_FOUND)
-    message("-- Did not find LAPACK library, disabling LAPACK support.")
-    update_cache_variable(LAPACK OFF)
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
-  endif (LAPACK_FOUND)
-else (LAPACK)
-  message("-- Building without LAPACK.")
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
-endif (LAPACK)
+if (NOT CMAKE_CUDA_COMPILER OR NOT ${CUDAPackage}_FOUND)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
+endif (NOT CMAKE_CUDA_COMPILER OR NOT ${CUDAPackage}_FOUND)
 
 # Set the install path for the installed CeresConfig.cmake configuration file
 # relative to CMAKE_INSTALL_PREFIX.
 set(RELATIVE_CMAKECONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/Ceres)
 
-if (SUITESPARSE)
+if (SuiteSparse_FOUND)
   # By default, if SuiteSparse and all dependencies are found, Ceres is
   # built with SuiteSparse support.
 
   # Check for SuiteSparse and dependencies.
-  find_package(SuiteSparse 4.5.6 COMPONENTS CHOLMOD SPQR
-    OPTIONAL_COMPONENTS Partition)
-  if (SuiteSparse_FOUND)
-    set(SuiteSparse_DEPENDENCY "find_dependency(SuiteSparse ${SuiteSparse_VERSION})")
-    # By default, if all of SuiteSparse's dependencies are found, Ceres is
-    # built with SuiteSparse support.
-    message("-- Found SuiteSparse ${SuiteSparse_VERSION}, "
-            "building with SuiteSparse.")
-
-    if (SuiteSparse_NO_CMAKE OR NOT SuiteSparse_DIR)
-      install(FILES ${Ceres_SOURCE_DIR}/cmake/FindSuiteSparse.cmake
-                    ${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake
-              DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-    endif (SuiteSparse_NO_CMAKE OR NOT SuiteSparse_DIR)
-  else (SuiteSparse_FOUND)
-    # Disable use of SuiteSparse if it cannot be found and continue.
-    message("-- Did not find all SuiteSparse dependencies, disabling "
-      "SuiteSparse support.")
-    update_cache_variable(SUITESPARSE OFF)
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
-  endif (SuiteSparse_FOUND)
-else (SUITESPARSE)
-  message("-- Building without SuiteSparse.")
+  set(SuiteSparse_DEPENDENCY "find_dependency(SuiteSparse ${SuiteSparse_VERSION})")
+  # By default, if all of SuiteSparse's dependencies are found, Ceres is
+  # built with SuiteSparse support.
+  if (SuiteSparse_NO_CMAKE OR NOT SuiteSparse_DIR)
+    install(FILES ${Ceres_SOURCE_DIR}/cmake/FindSuiteSparse.cmake
+                  ${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake
+            DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+  endif (SuiteSparse_NO_CMAKE OR NOT SuiteSparse_DIR)
+else (SuiteSparse_FOUND)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_SUITESPARSE)
-endif (SUITESPARSE)
+endif (SuiteSparse_FOUND)
 
 if (NOT SuiteSparse_Partition_FOUND)
   list (APPEND CERES_COMPILE_OPTIONS CERES_NO_CHOLMOD_PARTITION)
 endif (NOT SuiteSparse_Partition_FOUND)
 
-if (EIGENMETIS)
-  find_package (METIS)
-  if (METIS_FOUND)
-    # Since METIS is a private dependency of Ceres, it requires access to the
-    # link-only METIS::METIS target to avoid undefined linker errors in projects
-    # relying on Ceres. We do not actually need to propagate anything besides
-    # the link libraries (such as include directories.)
-    set(METIS_DEPENDENCY "find_dependency(METIS ${METIS_VERSION})")
-    # METIS find module must be installed unless a package config is being used.
-    if (NOT METIS_DIR)
-      install(FILES ${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake
-              DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
-    endif (NOT METIS_DIR)
-  else (METIS_FOUND)
-    message("-- Did not find METIS, disabling Eigen METIS support.")
-    update_cache_variable(EIGENMETIS OFF)
-    list (APPEND CERES_COMPILE_OPTIONS CERES_NO_EIGEN_METIS)
-  endif (METIS_FOUND)
-else (EIGENMETIS)
-  message("-- Building without Eigen METIS support.")
+if (METIS_FOUND)
+  # Since METIS is a private dependency of Ceres, it requires access to the
+  # link-only METIS::METIS target to avoid undefined linker errors in projects
+  # relying on Ceres. We do not actually need to propagate anything besides
+  # the link libraries (such as include directories.)
+  set(METIS_DEPENDENCY "find_dependency(METIS ${METIS_VERSION})")
+  # METIS find module must be installed unless a package config is being used.
+  if (NOT METIS_DIR)
+    install(FILES ${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake
+            DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
+  endif (NOT METIS_DIR)
+else (METIS_FOUND)
   list (APPEND CERES_COMPILE_OPTIONS CERES_NO_EIGEN_METIS)
-endif (EIGENMETIS)
+endif (METIS_FOUND)
 
-if (ACCELERATESPARSE)
-  find_package(AccelerateSparse)
-  if (AccelerateSparse_FOUND)
-    message("-- Found Apple's Accelerate framework with sparse solvers, "
-      "building with Accelerate sparse support.")
-  else()
-    message("-- Failed to find Apple's Accelerate framework with sparse solvers, "
-      "building without Accelerate sparse support.")
-    update_cache_variable(ACCELERATESPARSE OFF)
-    list(APPEND CERES_COMPILE_OPTIONS CERES_NO_ACCELERATE_SPARSE)
-  endif()
-else()
-  message("-- Building without Apple's Accelerate sparse support.")
-  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_ACCELERATE_SPARSE)
-  mark_as_advanced(FORCE AccelerateSparse_INCLUDE_DIR
-                         AccelerateSparse_LIBRARY)
-endif()
+if (NOT AccelerateSparse_FOUND)
+  list (APPEND CERES_COMPILE_OPTIONS CERES_NO_ACCELERATE_SPARSE)
+endif (NOT AccelerateSparse_FOUND)
 
 # Ensure that the user understands they have disabled all sparse libraries.
-if (NOT SUITESPARSE AND NOT EIGENSPARSE AND NOT ACCELERATESPARSE)
+if (NOT SuiteSparse_FOUND AND NOT WITH_EIGENSPARSE AND NOT AccelerateSparse_FOUND)
   message("   ===============================================================")
   message("   Compiling without any sparse library: SuiteSparse, ")
   message("   EigenSparse & Apple's Accelerate are all disabled or unavailable.  ")
@@ -376,7 +363,7 @@ endif()
 # ANDROID define is set by the Android CMake toolchain file.
 if (ANDROID)
   message("  ================================================================")
-  if (ANDROID_STRIP_DEBUG_SYMBOLS)
+  if (WITH_STRIPPED_DEBUG_SYMBOLS)
     # Strip debug information unconditionally to avoid +200MB library file sizes.
     set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -s" )
     set( CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} -s" )
@@ -388,56 +375,31 @@ if (ANDROID)
   endif()
   message("")
   message("  You can control whether debug information is stripped via the ")
-  message("  ANDROID_STRIP_DEBUG_SYMBOLS CMake option when configuring Ceres.")
+  message("  WITH_STRIPPED_DEBUG_SYMBOLS CMake option when configuring Ceres.")
   message("  ================================================================")
 endif()
 
-# GFlags.
-if (GFLAGS)
-  # Don't search with REQUIRED as we can continue without gflags.
-  find_package(gflags 2.2.0)
-  if (gflags_FOUND)
-    if (TARGET gflags)
-      message("-- Found Google Flags (gflags) version ${gflags_VERSION}: ${gflags_DIR}")
-    else()
-      message("-- Detected version of gflags: ${gflags_VERSION} does not define "
-        "expected gflags CMake target which should be exported by gflags 2.2+. "
-        "Building without gflags.")
-      update_cache_variable(GFLAGS OFF)
-    endif()
-  else (gflags_FOUND)
-    message("-- Did not find Google Flags (gflags), Building without gflags.")
-    update_cache_variable(GFLAGS OFF)
-  endif (gflags_FOUND)
-endif()
-if (NOT GFLAGS)
-  message("-- Use of gflags disabled - no tests or tools will be built!")
-endif()
-
 # MiniGLog.
-if (MINIGLOG)
-  message("-- Compiling minimal glog substitute into Ceres.")
+if (WITH_MINIGLOG)
   set(GLOG_INCLUDE_DIRS internal/ceres/miniglog)
   set(MINIGLOG_MAX_LOG_LEVEL 2 CACHE STRING "The maximum message severity level to be logged")
   add_definitions("-DMAX_LOG_LEVEL=${MINIGLOG_MAX_LOG_LEVEL}")
-  message("-- Using minimal glog substitute (include): ${GLOG_INCLUDE_DIRS}")
-  message("-- Max log level for minimal glog substitute: ${MINIGLOG_MAX_LOG_LEVEL}")
+  message(STATUS "Max log level for minimal glog substitute: ${MINIGLOG_MAX_LOG_LEVEL}")
 
   # Mark as advanced (remove from default GUI view) the glog search
-  # variables in case user disables MINIGLOG, FindGlog did not find it, so
+  # variables in case user disables WITH_MINIGLOG, FindGlog did not find it, so
   # made search variables visible in GUI for user to set, but then user enables
-  # MINIGLOG instead of setting them.
+  # WITH_MINIGLOG instead of setting them.
   mark_as_advanced(FORCE GLOG_INCLUDE_DIR
                          GLOG_LIBRARY)
-else (MINIGLOG)
+else (WITH_MINIGLOG)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
   # Don't search with REQUIRED so that configuration continues if not found and
-  # we can output an error messages explaining MINIGLOG option.
-  find_package(Glog)
+  # we can output an error messages explaining WITH_MINIGLOG option.
   if (NOT GLOG_FOUND)
     message(FATAL_ERROR "Can't find Google Log (glog). Please set either: "
       "glog_DIR (newer CMake built versions of glog) or GLOG_INCLUDE_DIR & "
-      "GLOG_LIBRARY or enable MINIGLOG option to use minimal glog "
+      "GLOG_LIBRARY or enable WITH_MINIGLOG option to use minimal glog "
       "implementation.")
   endif(NOT GLOG_FOUND)
   # By default, assume gflags was found, updating the message if it was not.
@@ -451,37 +413,16 @@ else (MINIGLOG)
       "gflags search locations such that it can be found by Ceres.  "
       "Otherwise, Ceres may fail to link due to missing gflags symbols.")
   endif(NOT gflags_FOUND)
-  message("-- Found Google Log (glog)." ${GLOG_GFLAGS_DEPENDENCY_MESSAGE})
-endif (MINIGLOG)
+  message(STATUS "Found Google Log (glog)." ${GLOG_GFLAGS_DEPENDENCY_MESSAGE})
+endif (WITH_MINIGLOG)
 
-if (NOT SCHUR_SPECIALIZATIONS)
+if (NOT WITH_SCHUR_SPECIALIZATIONS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_RESTRICT_SCHUR_SPECIALIZATION)
-  message("-- Disabling Schur specializations (faster compiles)")
-endif (NOT SCHUR_SPECIALIZATIONS)
+endif (NOT WITH_SCHUR_SPECIALIZATIONS)
 
-if (NOT CUSTOM_BLAS)
+if (NOT WITH_CUSTOM_BLAS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CUSTOM_BLAS)
-  message("-- Disabling custom blas")
-endif (NOT CUSTOM_BLAS)
-
-if (BUILD_BENCHMARKS)
-  # Version 1.3 was first to provide import targets
-  find_package(benchmark 1.3 QUIET)
-  if (benchmark_FOUND)
-     message("-- Found Google benchmark library. Building Ceres benchmarks.")
-  else()
-     message("-- Failed to find Google benchmark library, disabling build of benchmarks.")
-     update_cache_variable(BUILD_BENCHMARKS OFF)
-  endif()
-  mark_as_advanced(benchmark_DIR)
-endif()
-
-# TODO Report features using the FeatureSummary CMake module
-if (BUILD_SHARED_LIBS)
-  message("-- Building Ceres as a shared library.")
-else (BUILD_SHARED_LIBS)
-  message("-- Building Ceres as a static library.")
-endif (BUILD_SHARED_LIBS)
+endif (NOT WITH_CUSTOM_BLAS)
 
 # Change the default build type from Debug to Release, while still
 # supporting overriding the build type.
@@ -489,7 +430,7 @@ endif (BUILD_SHARED_LIBS)
 # The CACHE STRING logic here and elsewhere is needed to force CMake
 # to pay attention to the value of these variables.
 if (NOT CMAKE_BUILD_TYPE)
-  message("-- No build type specified; defaulting to CMAKE_BUILD_TYPE=Release.")
+  message(STATUS "No build type specified; defaulting to CMAKE_BUILD_TYPE=Release.")
   set(CMAKE_BUILD_TYPE Release CACHE STRING
     "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
     FORCE)
@@ -497,7 +438,7 @@ else (NOT CMAKE_BUILD_TYPE)
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("\n=================================================================================")
     message("\n-- Build type: Debug. Performance will be terrible!")
-    message("-- Add -DCMAKE_BUILD_TYPE=Release to the CMake command line to get an optimized build.")
+    message(STATUS "Add -DCMAKE_BUILD_TYPE=Release to the CMake command line to get an optimized build.")
     message("\n=================================================================================")
   endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif (NOT CMAKE_BUILD_TYPE)
@@ -508,7 +449,7 @@ if (MINGW)
   # which works.
   #
   # [1] http://eigen.tuxfamily.org/bz/show_bug.cgi?id=556
-  message("-- MinGW detected, forcing -O2 instead of -O3 in Release for Eigen due "
+  message(STATUS "MinGW detected, forcing -O2 instead of -O3 in Release for Eigen due "
           "to a MinGW bug: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=556")
   string(REPLACE "-O3" "-O2" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
   update_cache_variable(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
@@ -574,7 +515,7 @@ endif (UNIX)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang") # Matches Clang & AppleClang.
   # Optimize for Eigen OR enable bitcode; you cannot do both since bitcode is an
   # intermediate representation.
-  if (ENABLE_BITCODE)
+  if (WITH_BITCODE)
     set(CMAKE_CXX_FLAGS
       "${CMAKE_CXX_FLAGS} -fembed-bitcode")
   else ()
@@ -603,30 +544,23 @@ add_compile_definitions($<$<BOOL:${WIN32}>:NOMINMAX>)
 # built against this configured header, it needs to have the same relative
 # include path as it would if it were in the source tree (or installed).
 list(REMOVE_DUPLICATES CERES_COMPILE_OPTIONS)
-include(CreateCeresConfig)
 create_ceres_config("${CERES_COMPILE_OPTIONS}"
   ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
 
 add_subdirectory(internal/ceres)
 
 if (BUILD_DOCUMENTATION)
-  find_package (Sphinx REQUIRED COMPONENTS sphinx_rtd_theme)
   if (NOT Sphinx_FOUND)
-    message("-- Failed to find Sphinx and/or its dependencies, disabling build of documentation.")
     update_cache_variable(BUILD_DOCUMENTATION OFF)
   else()
     # Generate the User's Guide (html).
     # The corresponding target is ceres_docs, but is included in ALL.
-    message("-- Build the HTML documentation.")
     add_subdirectory(docs)
   endif()
 endif (BUILD_DOCUMENTATION)
 
 if (BUILD_EXAMPLES)
-  message("-- Build the examples.")
   add_subdirectory(examples)
-else (BUILD_EXAMPLES)
-  message("-- Do not build any example.")
 endif (BUILD_EXAMPLES)
 
 # Setup installation of Ceres public headers.
@@ -642,12 +576,12 @@ install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
 install(DIRECTORY ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if (MINIGLOG)
+if (WITH_MINIGLOG)
   # Install miniglog header if being used as logging #includes appear in
   # installed public Ceres headers.
   install(FILES ${Ceres_SOURCE_DIR}/internal/ceres/miniglog/glog/logging.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/miniglog/glog)
-endif (MINIGLOG)
+endif (WITH_MINIGLOG)
 
 # Ceres supports two mechanisms by which it can be detected & imported into
 # client code which uses CMake via find_package(Ceres):
@@ -672,11 +606,9 @@ endif (MINIGLOG)
 
 # Build the list of Ceres components for CeresConfig.cmake from the current set
 # of compile options.
-include(CeresCompileOptionsToComponents)
 ceres_compile_options_to_components("${CERES_COMPILE_OPTIONS}"
   CERES_COMPILED_COMPONENTS)
 
-include(CMakePackageConfigHelpers)
 
 # Create a CeresConfigVersion.cmake file containing the version information,
 # used by both export() & install().
@@ -729,7 +661,7 @@ if (GLOG_FOUND AND NOT FOUND_INSTALLED_GLOG_CMAKE_CONFIGURATION)
           DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 endif()
 
-if (PROVIDE_UNINSTALL_TARGET)
+if (WITH_UNINSTALL_TARGET)
   # Create an uninstall target to remove all installed files.
   configure_file("${Ceres_SOURCE_DIR}/cmake/uninstall.cmake.in"
                  "${Ceres_BINARY_DIR}/cmake/uninstall.cmake"
@@ -743,35 +675,125 @@ endif()
 # Optionally export the Ceres build directory into the local CMake package
 # registry (~/.cmake/packages on *nix & OS X).  This allows the detection &
 # use of Ceres without requiring that it be installed.
-if (EXPORT_BUILD_DIR)
-  message("-- Export Ceres build directory to local CMake package registry.")
 
-  # Save the relative path from the build directory to the source directory.
-  file(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
-    ${Ceres_BINARY_DIR}
-    ${Ceres_SOURCE_DIR})
+# Save the relative path from the build directory to the source directory.
+file(RELATIVE_PATH INSTALL_ROOT_REL_CONFIG_INSTALL_DIR
+  ${Ceres_BINARY_DIR}
+  ${Ceres_SOURCE_DIR})
 
-  set (Ceres_EXPORT_TARGETS ceres)
+set (Ceres_EXPORT_TARGETS ceres)
 
-  if (TARGET ceres_cuda_kernels)
-    # The target ceres depends on ceres_cuda_kernels requiring the latter to be
-    # exported as part of the same export set.
-    list (APPEND Ceres_EXPORT_TARGETS ceres_cuda_kernels)
-  endif (TARGET ceres_cuda_kernels)
+if (TARGET ceres_cuda_kernels)
+  # The target ceres depends on ceres_cuda_kernels requiring the latter to be
+  # exported as part of the same export set.
+  list (APPEND Ceres_EXPORT_TARGETS ceres_cuda_kernels)
+endif (TARGET ceres_cuda_kernels)
 
-  # Analogously to install(EXPORT ...), export the Ceres target from the build
-  # directory as a package called Ceres into the local CMake package registry.
-  export(TARGETS ${Ceres_EXPORT_TARGETS}
-         NAMESPACE Ceres::
-         FILE ${Ceres_BINARY_DIR}/CeresTargets.cmake)
-  export(PACKAGE ${CMAKE_PROJECT_NAME})
+# Analogously to install(EXPORT ...), export the Ceres target from the build
+# directory as a package called Ceres into the local CMake package registry.
+export(TARGETS ${Ceres_EXPORT_TARGETS}
+       NAMESPACE Ceres::
+       FILE ${Ceres_BINARY_DIR}/CeresTargets.cmake)
+export(PACKAGE ${CMAKE_PROJECT_NAME})
 
-  unset (Ceres_EXPORT_TARGETS)
+unset (Ceres_EXPORT_TARGETS)
 
+if (NOT CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
   # Configure a CeresConfig.cmake file for the export of the Ceres build
   # directory from the template, reflecting the current build options.
   set(SETUP_CERES_CONFIG_FOR_INSTALLATION FALSE)
   configure_file("${Ceres_SOURCE_DIR}/cmake/CeresConfig.cmake.in"
     "${Ceres_BINARY_DIR}/CeresConfig.cmake" @ONLY)
+endif (NOT CMAKE_EXPORT_NO_PACKAGE_REGISTRY)
 
-endif (EXPORT_BUILD_DIR)
+add_feature_info ("Apple Accelerate Sparse" WITH_ACCELERATESPARSE "Support for sparse solvers in Apple's Accelerate framework")
+add_feature_info ("CUDA Acceleration" WITH_CUDA "NVIDIA® CUDA® accelerated solvers")
+add_feature_info ("Custom BLAS" WITH_CUSTOM_BLAS "Use of a custom BLAS implementation")
+add_feature_info (Documentation BUILD_DOCUMENTATION
+  "Ceres HTML documentation built using Sphinx documentation generator")
+add_feature_info ("Eigen METIS" WITH_EIGENMETIS "Eigen METIS support")
+add_feature_info ("Eigen Sparse" WITH_EIGENSPARSE
+"Eigen sparse linear algebra library support. \
+This does not affect the covariance estimation algorithm which can still use the EIGEN_SPARSE_QR algorithm.")
+add_feature_info (Examples BUILD_EXAMPLES "Ceres usage examples")
+add_feature_info ("Mini glog" WITH_MINIGLOG "Stripped down version of glog")
+add_feature_info ("Shared library" BUILD_SHARED_LIBS "Build Ceres as a shared library")
+add_feature_info ("Schur specializations" WITH_SCHUR_SPECIALIZATIONS "Fixed-size Schur specializations")
+add_feature_info (Tests BUILD_TESTING "Ceres unit testing")
+
+set_package_properties (AccelerateSparse PROPERTIES
+  DESCRIPTION "Apple's Accelerate framework with sparse solvers"
+)
+
+set_package_properties (benchmark PROPERTIES
+  DESCRIPTION "A microbenchmark support library"
+  URL "https://github.com/google/benchmark"
+  PURPOSE "Bechmarking of core library"
+)
+
+set_package_properties (BLAS PROPERTIES
+  DESCRIPTION "Basic Linear Algebra Subprograms"
+  PURPOSE "LAPACK dependency"
+)
+
+set_package_properties (${CUDAPackage} PROPERTIES
+  DESCRIPTION "High performance GPU-acceleration"
+  URL "https://developer.nvidia.com/cuda-toolkit"
+  PURPOSE "Solver acceleration using NVIDIA® CUDA®"
+)
+
+set_package_properties (Glog PROPERTIES
+  DESCRIPTION "C++ implementation of the Google logging module"
+  TYPE RECOMMENDED
+  URL "https://github.com/google/glog"
+  PURPOSE "Logging support"
+)
+
+set_package_properties (gflags PROPERTIES
+  DESCRIPTION "C++ library from commandline flags processing"
+  URL "https://github.com/gflags/gflags"
+  PURPOSE "glog dependecy, and testing and tools support"
+)
+
+set_package_properties (Eigen3 PROPERTIES
+  DESCRIPTION "C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms"
+  URL "http://eigen.tuxfamily.org"
+)
+
+set_package_properties (LAPACK PROPERTIES
+  DESCRIPTION "Linear Algebra PACKage"
+  TYPE RECOMMENDED
+)
+
+set_package_properties (METIS PROPERTIES
+  DESCRIPTION "Serial graph partitioning and fill-reducing matrix ordering"
+  TYPE RECOMMENDED
+)
+
+set_package_properties (Sphinx PROPERTIES
+  DESCRIPTION "Documentation generator"
+  URL "https://www.sphinx-doc.org"
+)
+
+set_package_properties (SuiteSparse PROPERTIES
+  DESCRIPTION "A suite of sparse matrix algorithms"
+  TYPE RECOMMENDED
+  URL "http://faculty.cse.tamu.edu/davis/suitesparse.html"
+)
+
+set_package_properties (TBB PROPERTIES
+  DESCRIPTION "Threading Building Blocks"
+  PURPOSE "SuiteSparseQR dependency"
+)
+
+set_package_properties (Threads PROPERTIES
+  DESCRIPTION "Native threading implementation"
+  PURPOSE "Multithreading support"
+)
+
+set_package_properties (OpenMP PROPERTIES
+  DESCRIPTION "Multiprocessing API support"
+  PURPOSE "Used for the implementation of the OpenMP multithreading backend"
+)
+
+feature_summary (WHAT ALL)

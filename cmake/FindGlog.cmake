@@ -232,7 +232,6 @@ if (GLOG_PREFER_EXPORTED_GLOG_CMAKE_CONFIGURATION)
   set(FOUND_INSTALLED_GLOG_CMAKE_CONFIGURATION ${glog_FOUND})
 
   if (FOUND_INSTALLED_GLOG_CMAKE_CONFIGURATION)
-    glog_message(STATUS "Detected glog version: ${glog_VERSION}")
     set(GLOG_FOUND ${glog_FOUND})
     # glog wraps the include directories into the exported glog::glog target.
     set(GLOG_INCLUDE_DIR "")

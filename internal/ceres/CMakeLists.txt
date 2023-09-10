@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2022 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@
 
 # Avoid 'xxx.cc has no symbols' warnings from source files which are 'empty'
 # when their enclosing #ifdefs are disabled.
-find_package(Threads REQUIRED)
 list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
 # Make dependency visible to the parent CMakeLists.txt
 set(Threads_DEPENDENCY "find_dependency (Threads)" PARENT_SCOPE)
@@ -54,7 +53,7 @@ set(CERES_EXPORTED_SRCS
 
 # Also depend on the header files so that they appear in IDEs.
 file(GLOB CERES_INTERNAL_HDRS *.h)
-if (MINIGLOG)
+if (WITH_MINIGLOG)
   file(GLOB MINIGLOG_HDRS miniglog/glog/*.h)
   list(APPEND CERES_INTERNAL_HDRS ${MINIGLOG_HDRS})
   if (ANDROID)
@@ -69,12 +68,12 @@ file(GLOB CERES_PUBLIC_INTERNAL_HDRS
   ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/*.h)
 
 # Include the specialized schur solvers.
-if (SCHUR_SPECIALIZATIONS)
+if (WITH_SCHUR_SPECIALIZATIONS)
   file(GLOB CERES_INTERNAL_SCHUR_FILES generated/*.cc)
-else (SCHUR_SPECIALIZATIONS)
+else (WITH_SCHUR_SPECIALIZATIONS)
   # Only the fully dynamic solver. The build is much faster this way.
   file(GLOB CERES_INTERNAL_SCHUR_FILES generated/*_d_d_d.cc)
-endif (SCHUR_SPECIALIZATIONS)
+endif (WITH_SCHUR_SPECIALIZATIONS)
 
 # The generated specializations of the Schur eliminator include
 # schur_eliminator_impl.h which defines EIGEN_CACHEFRIENDLY_PRODUCT_THRESHOLD
@@ -85,7 +84,7 @@ endif (SCHUR_SPECIALIZATIONS)
 set_source_files_properties(${CERES_INTERNAL_SCHUR_FILES} PROPERTIES
   SKIP_UNITY_BUILD_INCLUSION ON)
 
-if (NOT MINIGLOG AND GLOG_FOUND)
+if (NOT WITH_MINIGLOG AND GLOG_FOUND)
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ${GLOG_LIBRARIES})
   if (gflags_FOUND)
     # If glog & gflags are both found, we assume that glog was built with
@@ -95,9 +94,9 @@ if (NOT MINIGLOG AND GLOG_FOUND)
     # gflags, it is thus a public dependency for Ceres in this case.
     list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES gflags)
   endif()
-endif (NOT MINIGLOG AND GLOG_FOUND)
+endif (NOT WITH_MINIGLOG AND GLOG_FOUND)
 
-if (SUITESPARSE AND SuiteSparse_FOUND)
+if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::CHOLMOD
@@ -106,19 +105,19 @@ if (SUITESPARSE AND SuiteSparse_FOUND)
   if (SuiteSparse_Partition_FOUND)
     list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::Partition)
   endif (SuiteSparse_Partition_FOUND)
-endif (SUITESPARSE AND SuiteSparse_FOUND)
+endif (WITH_SUITESPARSE AND SuiteSparse_FOUND)
 
-if (SuiteSparse_Partition_FOUND OR EIGENMETIS)
+if (SuiteSparse_Partition_FOUND OR METIS_FOUND)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_METIS_VERSION="${METIS_VERSION}")
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES METIS::METIS)
-endif (SuiteSparse_Partition_FOUND OR EIGENMETIS)
+endif (SuiteSparse_Partition_FOUND OR METIS_FOUND)
 
-if (ACCELERATESPARSE AND AccelerateSparse_FOUND)
+if (WITH_ACCELERATESPARSE AND AccelerateSparse_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${AccelerateSparse_LIBRARIES})
-endif()
+endif (WITH_ACCELERATESPARSE AND AccelerateSparse_FOUND)
 
-if (USE_CUDA)
+if (CMAKE_CUDA_COMPILER AND ${CUDAPackage}_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES
     CUDA::cublas
     CUDA::cudart
@@ -133,7 +132,7 @@ if (USE_CUDA)
   target_compile_options(ceres_cuda_kernels PRIVATE --extended-lambda)
   target_include_directories(ceres_cuda_kernels PRIVATE  ${Ceres_SOURCE_DIR}/include  ${Ceres_SOURCE_DIR}/internal ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ceres_cuda_kernels)
-endif (USE_CUDA)
+endif (CMAKE_CUDA_COMPILER AND ${CUDAPackage}_FOUND)
 
 if (LAPACK_FOUND)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${LAPACK_LIBRARIES})
@@ -258,13 +257,12 @@ set(CERES_LIBRARY_SOURCE
 
 # Primarily for Android, but optionally for others, compile the minimal
 # glog implementation into Ceres.
-if (MINIGLOG)
+if (WITH_MINIGLOG)
   list(APPEND CERES_LIBRARY_SOURCE miniglog/glog/logging.cc)
-endif (MINIGLOG)
+endif (WITH_MINIGLOG)
 
 # Ceres C++ compiler flags can be too strict for an external library code
 # which we do not maintain.
-include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-Wno-missing-declarations"
                         CHECK_CXX_FLAG_Wno_missing_declarations)
 if (CHECK_CXX_FLAG_Wno_missing_declarations)
@@ -347,11 +345,11 @@ target_link_libraries(ceres PUBLIC Eigen3::Eigen)
 # dependencies to be added to the Ceres target.
 set(CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS "")
 set(CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS "")
-if (MINIGLOG)
+if (WITH_MINIGLOG)
   # Force the miniglog headers to the front of the public include directories
   # to protect against the case when the user has glog installed in a standard
   # location (specifically the same as the Ceres install location) but compiled
-  # Ceres with MINIGLOG anyway.  Otherwise: "glog/logging.h" in the public Ceres
+  # Ceres with WITH_MINIGLOG anyway.  Otherwise: "glog/logging.h" in the public Ceres
   # headers used in client code would match the installed version of glog, not
   # the miniglog headers, and the client application would fail to link.
   #
@@ -367,7 +365,7 @@ elseif (NOT FOUND_INSTALLED_GLOG_CMAKE_CONFIGURATION)
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS
     ${GLOG_INCLUDE_DIRS})
 endif()
-if (ACCELERATESPARSE)
+if (WITH_ACCELERATESPARSE)
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES_INCLUDE_DIRS
     ${AccelerateSparse_INCLUDE_DIRS})
 endif()
@@ -379,17 +377,16 @@ list(REMOVE_DUPLICATES CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS)
 target_include_directories(ceres PUBLIC ${CERES_LIBRARY_PUBLIC_DEPENDENCIES_INCLUDE_DIRS})
 
 # Generate an export header for annotating symbols visibility
-include(GenerateExportHeader)
 generate_export_header(ceres EXPORT_FILE_NAME
   ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/export.h)
 
-if (USE_CUDA)
+if (TARGET ceres_cuda_kernels)
   install(TARGETS ceres_cuda_kernels
           EXPORT  CeresExport
           RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
           ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif(USE_CUDA)
+endif (TARGET ceres_cuda_kernels)
 
 install(TARGETS ceres
         EXPORT  CeresExport
@@ -397,7 +394,7 @@ install(TARGETS ceres
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if (BUILD_TESTING AND GFLAGS)
+if (BUILD_TESTING AND gflags_FOUND)
   add_library(gtest STATIC gmock_gtest_all.cc gmock_main.cc)
 
   target_include_directories(gtest PRIVATE ${Ceres_SOURCE_DIR}/internal/ceres)
@@ -547,8 +544,7 @@ if (BUILD_TESTING AND GFLAGS)
   ceres_test(visibility_based_preconditioner)
 
   add_subdirectory(generated_bundle_adjustment_tests)
-
-endif (BUILD_TESTING AND GFLAGS)
+endif (BUILD_TESTING AND gflags_FOUND)
 
 macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
   target_include_directories(${BENCHMARK_TARGET}
@@ -561,7 +557,7 @@ macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
             ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
 endmacro()
 
-if (BUILD_BENCHMARKS)
+if (benchmark_FOUND)
   add_executable(evaluation_benchmark evaluation_benchmark.cc)
   add_dependencies_to_benchmark(evaluation_benchmark)
 
@@ -597,4 +593,4 @@ if (BUILD_BENCHMARKS)
   add_dependencies_to_benchmark(block_jacobi_preconditioner_benchmark)
 
   add_subdirectory(autodiff_benchmarks)
-endif (BUILD_BENCHMARKS)
+endif (benchmark_FOUND)

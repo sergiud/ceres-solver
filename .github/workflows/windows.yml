@@ -238,6 +238,7 @@ jobs:
                 -DBUILD_SHARED_LIBS=${{matrix.lib == 'shared'}} `
                 -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} `
                 -DCMAKE_INSTALL_PREFIX:PATH=${{github.workspace}}/install `
+                -DCMAKE_REQUIRE_FIND_PACKAGE_CUDAToolkit=${{matrix.gpu == 'cuda'}} `
                 -DLAPACK_lapack_LIBRARY=${{github.workspace}}/suitesparse/lib/liblapack.lib
 
       - name: Build

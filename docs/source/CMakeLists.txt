@@ -7,9 +7,6 @@ install(DIRECTORY ${SPHINX_HTML_DIR}
         COMPONENT Doc
         PATTERN "${SPHINX_HTML_DIR}/*")
 
-# Find python
-find_package(Python REQUIRED COMPONENTS Interpreter)
-
 # Building using 'make_docs.py' python script
 add_custom_target(ceres_docs ALL
                   $<TARGET_FILE:Python::Interpreter>

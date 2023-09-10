@@ -81,7 +81,7 @@ target_link_libraries(iteration_callback_example PRIVATE Ceres::ceres)
 add_executable(evaluation_callback_example evaluation_callback_example.cc)
 target_link_libraries(evaluation_callback_example PRIVATE Ceres::ceres)
 
-if (GFLAGS)
+if (WITH_GFLAGS)
   add_executable(powell powell.cc)
   target_link_libraries(powell PRIVATE Ceres::ceres gflags)
 
@@ -118,7 +118,7 @@ if (GFLAGS)
   add_executable(robot_pose_mle
                  robot_pose_mle.cc)
   target_link_libraries(robot_pose_mle PRIVATE Ceres::ceres gflags)
-endif (GFLAGS)
+endif (WITH_GFLAGS)
 
 add_subdirectory(sampled_function)
 add_subdirectory(slam)

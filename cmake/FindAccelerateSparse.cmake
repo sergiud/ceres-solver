@@ -61,85 +61,54 @@
 # AccelerateSparse_LIBRARY: Accelerate framework, not including the libraries of
 #                           any dependencies.
 
-# Called if we failed to find the Accelerate framework with the sparse solvers.
-# Unsets all public (designed to be used externally) variables and reports
-# error message at priority depending upon [REQUIRED/QUIET/<NONE>] argument.
-macro(accelerate_sparse_report_not_found REASON_MSG)
-  unset(AccelerateSparse_FOUND)
-  unset(AccelerateSparse_INCLUDE_DIRS)
-  unset(AccelerateSparse_LIBRARIES)
-  # Make results of search visible in the CMake GUI if Accelerate has not
-  # been found so that user does not have to toggle to advanced view.
-  mark_as_advanced(CLEAR AccelerateSparse_INCLUDE_DIR
-                         AccelerateSparse_LIBRARY)
+find_path (AccelerateSparse_INCLUDE_DIR
+  NAMES Accelerate.h
+  DOC "AccelerateSparse include directory"
+)
 
-  # Note <package>_FIND_[REQUIRED/QUIETLY] variables defined by FindPackage()
-  # use the camelcase library name, not uppercase.
-  if (AccelerateSparse_FIND_QUIETLY)
-    message(STATUS "Failed to find Accelerate framework with sparse solvers - "
-      ${REASON_MSG} ${ARGN})
-  elseif (AccelerateSparse_FIND_REQUIRED)
-    message(FATAL_ERROR "Failed to find Accelerate framework with sparse solvers - "
-      ${REASON_MSG} ${ARGN})
-  else()
-    # Neither QUIETLY nor REQUIRED, use no priority which emits a message
-    # but continues configuration and allows generation.
-    message("-- Failed to find Accelerate framework with sparse solvers - "
-      ${REASON_MSG} ${ARGN})
-  endif()
-  return()
-endmacro()
+find_library (AccelerateSparse_LIBRARY
+  NAMES Accelerate
+  DOC "AccelerateSparse library"
+)
 
-unset(AccelerateSparse_FOUND)
-
-find_path(AccelerateSparse_INCLUDE_DIR NAMES Accelerate.h)
-if (NOT AccelerateSparse_INCLUDE_DIR OR
-    NOT EXISTS ${AccelerateSparse_INCLUDE_DIR})
-  accelerate_sparse_report_not_found(
-    "Could not find Accelerate framework headers. Set "
-    "AccelerateSparse_INCLUDE_DIR to the directory containing Accelerate.h")
-endif()
-
-find_library(AccelerateSparse_LIBRARY NAMES Accelerate)
-if (NOT AccelerateSparse_LIBRARY OR
-    NOT EXISTS ${AccelerateSparse_LIBRARY})
-  accelerate_sparse_report_not_found(
-    "Could not find Accelerate framework. Set AccelerateSparse_LIBRARY "
-    "to the Accelerate.framework directory")
-endif()
-
-set(AccelerateSparse_FOUND TRUE)
+mark_as_advanced (AccelerateSparse_INCLUDE_DIR AccelerateSparse_LIBRARY)
 
 # Determine if the Accelerate framework detected includes the sparse solvers.
-include(CheckCXXSourceCompiles)
-set(CMAKE_REQUIRED_INCLUDES ${AccelerateSparse_INCLUDE_DIR})
-set(CMAKE_REQUIRED_LIBRARIES ${AccelerateSparse_LIBRARY})
-check_cxx_source_compiles(
-  "#include <Accelerate.h>
-   int main() {
-     SparseMatrix_Double A;
-     SparseFactor(SparseFactorizationCholesky, A);
-     return 0;
-   }"
-   ACCELERATE_FRAMEWORK_HAS_SPARSE_SOLVER)
-unset(CMAKE_REQUIRED_INCLUDES)
-unset(CMAKE_REQUIRED_LIBRARIES)
-if (NOT ACCELERATE_FRAMEWORK_HAS_SPARSE_SOLVER)
-  accelerate_sparse_report_not_found(
-    "Detected Accelerate framework: ${AccelerateSparse_LIBRARY} does not "
-    "include the sparse solvers.")
-endif()
+include (CheckCXXSourceCompiles)
+include (CMakePushCheckState)
+include (FindPackageHandleStandardArgs)
+
+if (AccelerateSparse_INCLUDE_DIR AND AccelerateSparse_LIBRARY)
+  cmake_push_check_state (RESET)
+  set (CMAKE_REQUIRED_INCLUDES ${AccelerateSparse_INCLUDE_DIR})
+  set (CMAKE_REQUIRED_LIBRARIES ${AccelerateSparse_LIBRARY})
+
+  check_cxx_source_compiles (
+    "#include <Accelerate.h>
+     int main() {
+       SparseMatrix_Double A;
+       SparseFactor(SparseFactorizationCholesky, A);
+       return 0;
+     }"
+     ACCELERATE_FRAMEWORK_HAS_SPARSE_SOLVER)
+  cmake_pop_check_state ()
+
+  if (NOT ACCELERATE_FRAMEWORK_HAS_SPARSE_SOLVER)
+    set (_MORE_FPHSA_ARGS FAIL_MESSAGE
+      "Could not find AccelerateSparse because the Accelerate framework ${AccelerateSparse_LIBRARY} does not include the sparse solvers")
+  endif (NOT ACCELERATE_FRAMEWORK_HAS_SPARSE_SOLVER)
+endif (AccelerateSparse_INCLUDE_DIR AND AccelerateSparse_LIBRARY)
+
+# Handle REQUIRED / QUIET optional arguments and version.
+# Report variables that should be set by the user not the legacy convience variables.
+find_package_handle_standard_args (AccelerateSparse
+  REQUIRED_VARS AccelerateSparse_INCLUDE_DIR AccelerateSparse_LIBRARY
+  ${_MORE_FPHSA_ARGS}
+)
+
+unset (_MORE_FPHSA_ARGS)
 
 if (AccelerateSparse_FOUND)
   set(AccelerateSparse_INCLUDE_DIRS ${AccelerateSparse_INCLUDE_DIR})
   set(AccelerateSparse_LIBRARIES ${AccelerateSparse_LIBRARY})
-endif()
-
-# Handle REQUIRED / QUIET optional arguments and version.
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(AccelerateSparse
-  REQUIRED_VARS AccelerateSparse_INCLUDE_DIRS AccelerateSparse_LIBRARIES)
-if (AccelerateSparse_FOUND)
-  mark_as_advanced(FORCE AccelerateSparse_INCLUDE_DIR
-                         AccelerateSparse_LIBRARY)
-endif()
+endif (AccelerateSparse_FOUND)
