@@ -319,7 +319,7 @@ class EndianAwareFileReader {
   // Switch endian type between big to little.
   template <typename T>
   T SwitchEndian(const T value) const {
-    if (sizeof(T) == 4) {
+    if constexpr (sizeof(T) == 4) {
       auto temp_value = static_cast<unsigned int>(value);
       // clang-format off
       return ((temp_value >> 24)) |
@@ -327,7 +327,7 @@ class EndianAwareFileReader {
              ((temp_value >> 8) & 0x0000ff00) |
              ((temp_value << 24));
       // clang-format on
-    } else if (sizeof(T) == 1) {
+    } else if constexpr (sizeof(T) == 1) {
       return value;
     } else {
       LOG(FATAL) << "Entered non-implemented part of endian "
