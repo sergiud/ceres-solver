@@ -32,6 +32,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: ccache stats
+        run: ccache -s
+
       - name: Setup Dependencies
         run: |
           apt-get update
@@ -81,6 +84,7 @@ jobs:
       - name: Setup Environment
         if: matrix.build_type == 'Release'
         run: |
+          echo 'CFLAGS=-flto' >> $GITHUB_ENV
           echo 'CXXFLAGS=-flto' >> $GITHUB_ENV
 
       - name: Configure
@@ -89,8 +93,8 @@ jobs:
                 -DBUILD_SHARED_LIBS=${{matrix.lib == 'shared'}} \
                 -DUSE_CUDA=${{matrix.gpu == 'cuda'}} \
                 -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
-                -DCMAKE_C_COMPILER_LAUNCHER=$(which ccache) \
-                -DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache) \
+                -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=ccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=ccache \
                 -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
 
       - name: Build
