@@ -49,9 +49,6 @@ jobs:
             libsuitesparse-dev \
             ninja-build \
             wget
-            
-      - name: ccache stats
-        run: ccache -s
 
       # nvidia cuda toolkit shipped with 20.04 LTS does not support stream-ordered allocations
       - name: Setup CUDA toolkit repositories (20.04)
@@ -81,6 +78,9 @@ jobs:
           path: ${{env.CCACHE_DIR}}
           key: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}-${{github.run_id}}
           restore-keys: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}-
+
+      - name: ccache stats
+        run: ccache -s
 
       - name: Setup Environment
         if: matrix.build_type == 'Release'
