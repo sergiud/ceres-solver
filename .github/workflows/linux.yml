@@ -32,9 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: ccache stats
-        run: ccache -s
-
       - name: Setup Dependencies
         run: |
           apt-get update
@@ -52,6 +49,9 @@ jobs:
             libsuitesparse-dev \
             ninja-build \
             wget
+      - name: ccache stats
+        run: ccache -s
+
       # nvidia cuda toolkit shipped with 20.04 LTS does not support stream-ordered allocations
       - name: Setup CUDA toolkit repositories (20.04)
         if: matrix.gpu == 'cuda' && matrix.os == 'ubuntu:20.04'
