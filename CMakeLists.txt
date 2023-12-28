@@ -92,10 +92,10 @@ read_ceres_version_from_source(${Ceres_SOURCE_DIR})
 
 set (CPACK_PACKAGE_NAME ceres-solver)
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "")
-set (CPACK_PACKAGE_VERSION_MAJOR ${CERES_VERSION_MAJOR})
-set (CPACK_PACKAGE_VERSION_MINOR ${CERES_VERSION_MINOR})
-set (CPACK_PACKAGE_VERSION_PATCH ${CERES_VERSION_PATCH})
-set (CPACK_PACKAGE_VERSION ${CERES_VERSION})
+set (CPACK_PACKAGE_VERSION_MAJOR ${Ceres_VERSION_MAJOR})
+set (CPACK_PACKAGE_VERSION_MINOR ${Ceres_VERSION_MINOR})
+set (CPACK_PACKAGE_VERSION_PATCH ${Ceres_VERSION_PATCH})
+set (CPACK_PACKAGE_VERSION ${Ceres_VERSION})
 
 include (CMakePackageConfigHelpers)
 include (CTest)
@@ -449,7 +449,7 @@ configure_package_config_file (
   INSTALL_DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR}
   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file (CeresConfigVersion.cmake VERSION
-  ${CERES_VERSION} COMPATIBILITY AnyNewerVersion)
+  ${Ceres_VERSION} COMPATIBILITY AnyNewerVersion)
 
 # Install these files into the same directory as the generated exports-file,
 # we include the FindPackage scripts for libraries whose headers are included
