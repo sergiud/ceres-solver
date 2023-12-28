@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -186,6 +186,7 @@ class CERES_NO_EXPORT SparseSchurComplementSolver final
   std::vector<Block> blocks_;
   std::unique_ptr<SparseCholesky> sparse_cholesky_;
   std::unique_ptr<BlockRandomAccessDiagonalMatrix> preconditioner_;
+  std::unique_ptr<CompressedRowSparseMatrix> crs_lhs_;
   Vector cg_solution_;
   Vector* scratch_[4] = {nullptr, nullptr, nullptr, nullptr};
 };

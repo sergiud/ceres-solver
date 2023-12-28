@@ -578,7 +578,7 @@ void RotationMatrixToEulerAngles(
     } else {
       ea[0] = atan2(-R(j, k), R(j, j));
       ea[1] = atan2(sy, R(i, i));
-      ea[2] = 0;
+      ea[2] = T(0.0);
     }
   } else {
     const T cy = hypot(R(i, i), R(j, i));
@@ -589,7 +589,7 @@ void RotationMatrixToEulerAngles(
     } else {
       ea[0] = atan2(-R(j, k), R(j, j));
       ea[1] = atan2(-R(k, i), cy);
-      ea[2] = 0;
+      ea[2] = T(0.0);
     }
   }
   if constexpr (EulerSystem::kIsParityOdd) {
@@ -610,8 +610,8 @@ void RotationMatrixToEulerAngles(
   //   [-pi, pi) x [0, pi / 2) x [-pi, pi)
   // which is enforced here
   if constexpr (EulerSystem::kIsProperEuler) {
-    constexpr T kPi = constants::pi_v<T>;
-    constexpr T kTwoPi(2.0 * kPi);
+    const T kPi(constants::pi);
+    const T kTwoPi(2.0 * kPi);
     if (euler[1] < T(0.0) || ea[1] > kPi) {
       euler[0] += kPi;
       euler[1] = -euler[1];

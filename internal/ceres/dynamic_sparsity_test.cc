@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -383,7 +383,7 @@ TEST(DynamicSparsity, StaticAndDynamicSparsityProduceSameSolution) {
   //
   // Initialize `X` to points on the unit circle.
   Vector w(num_segments + 1);
-  w.setLinSpaced(num_segments + 1, 0.0, 2.0 * M_PI);
+  w.setLinSpaced(num_segments + 1, 0.0, 2.0 * constants::pi);
   w.conservativeResize(num_segments);
   Matrix X(num_segments, 2);
   X.col(0) = w.array().cos();

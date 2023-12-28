@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@
 // residual jacobians are written directly into their final position in the
 // block sparse matrix by the user's CostFunction; there is no copying.
 //
-// The evaluation is threaded with OpenMP or C++ threads.
+// The evaluation is threaded with C++ threads.
 //
 // The EvaluatePreparer and JacobianWriter interfaces are as follows:
 //
@@ -96,6 +96,7 @@
 #include "ceres/execution_summary.h"
 #include "ceres/internal/eigen.h"
 #include "ceres/parallel_for.h"
+#include "ceres/parallel_vector_ops.h"
 #include "ceres/parameter_block.h"
 #include "ceres/program.h"
 #include "ceres/residual_block.h"
@@ -255,37 +256,48 @@ class ProgramEvaluator final : public Evaluator {
           }
         });
 
-    if (!abort) {
-      // Sum the cost and gradient (if requested) from each thread.
-      (*cost) = 0.0;
+    if (abort) {
+      return false;
+    }
+
+    // Sum the cost and gradient (if requested) from each thread.
+    (*cost) = 0.0;
+    if (gradient != nullptr) {
+      auto gradient_vector = VectorRef(gradient, num_parameters_);
+      ParallelSetZero(options_.context, options_.num_threads, gradient_vector);
+    }
+
+    for (int i = 0; i < options_.num_threads; ++i) {
+      (*cost) += evaluate_scratch_[i].cost;
       if (gradient != nullptr) {
         auto gradient_vector = VectorRef(gradient, num_parameters_);
-        ParallelSetZero(
-            options_.context, options_.num_threads, gradient_vector);
-      }
-      for (int i = 0; i < options_.num_threads; ++i) {
-        (*cost) += evaluate_scratch_[i].cost;
-        if (gradient != nullptr) {
-          auto gradient_vector = VectorRef(gradient, num_parameters_);
-          ParallelAssign(
-              options_.context,
-              options_.num_threads,
-              gradient_vector,
-              gradient_vector + VectorRef(evaluate_scratch_[i].gradient.get(),
-                                          num_parameters_));
-        }
-      }
-
-      // Finalize the Jacobian if it is available.
-      // `num_parameters` is passed to the finalizer so that additional
-      // storage can be reserved for additional diagonal elements if
-      // necessary.
-      if (jacobian != nullptr) {
-        JacobianFinalizer f;
-        f(jacobian, num_parameters_);
+        ParallelAssign(
+            options_.context,
+            options_.num_threads,
+            gradient_vector,
+            gradient_vector + VectorRef(evaluate_scratch_[i].gradient.get(),
+                                        num_parameters_));
       }
     }
-    return !abort;
+
+    // It is possible that after accumulation that the cost has become infinite
+    // or a nan.
+    if (!std::isfinite(*cost)) {
+      LOG(ERROR) << "Accumulated cost = " << *cost
+                 << " is not a finite number. Evaluation failed.";
+      return false;
+    }
+
+    // Finalize the Jacobian if it is available.
+    // `num_parameters` is passed to the finalizer so that additional
+    // storage can be reserved for additional diagonal elements if
+    // necessary.
+    if (jacobian != nullptr) {
+      JacobianFinalizer f;
+      f(jacobian, num_parameters_);
+    }
+
+    return true;
   }
 
   bool Plus(const double* state,

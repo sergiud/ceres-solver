@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2018 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,7 @@ ITERATIVE_SOLVER_CONFIGS = [
     # Linear solver            Sparse backend      Preconditioner
     ('ITERATIVE_SCHUR',        'NO_SPARSE',        'JACOBI'),
     ('ITERATIVE_SCHUR',        'NO_SPARSE',        'SCHUR_JACOBI'),
+    ('ITERATIVE_SCHUR',        'NO_SPARSE',        'SCHUR_POWER_SERIES_EXPANSION'),
     ('ITERATIVE_SCHUR',        'SUITE_SPARSE',     'CLUSTER_JACOBI'),
     ('ITERATIVE_SCHUR',        'EIGEN_SPARSE',     'CLUSTER_JACOBI'),
     ('ITERATIVE_SCHUR',        'ACCELERATE_SPARSE','CLUSTER_JACOBI'),
@@ -87,13 +88,14 @@ FILENAME_SHORTENING_MAP = dict(
   SCHUR_JACOBI='schurjacobi',
   CLUSTER_JACOBI='clustjacobi',
   CLUSTER_TRIDIAGONAL='clusttri',
+  SCHUR_POWER_SERIES_EXPANSION='spse',
   kAutomaticOrdering='auto',
   kUserOrdering='user',
 )
 
 COPYRIGHT_HEADER = (
 """// Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -131,8 +133,9 @@ COPYRIGHT_HEADER = (
 
 BUNDLE_ADJUSTMENT_TEST_TEMPLATE = (COPYRIGHT_HEADER + """
 
+#include "ceres/bundle_adjustment_test_util.h"
 #include "ceres/internal/config.h"
-#include "bundle_adjustment_test_util.h"
+#include "gtest/gtest.h"
 %(preprocessor_conditions_begin)s
 namespace ceres::internal {
 
@@ -140,6 +143,7 @@ TEST_F(BundleAdjustmentTest,
        %(test_class_name)s) {  // NOLINT
   BundleAdjustmentProblem bundle_adjustment_problem;
   Solver::Options* options = bundle_adjustment_problem.mutable_solver_options();
+  options->eta = 0.01;
   options->num_threads = %(num_threads)s;
   options->linear_solver_type = %(linear_solver)s;
   options->dense_linear_algebra_library_type = %(dense_backend)s;

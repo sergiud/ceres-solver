@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,18 +28,14 @@
 //
 // Author: joydeepb@cs.utexas.edu (Joydeep Biswas)
 
-#include "cuda_runtime.h"
+#include "ceres/cuda_kernels_vector_ops.h"
+
+#include <cuda_runtime.h>
+
+#include "ceres/cuda_kernels_utils.h"
 
 namespace ceres {
 namespace internal {
-
-// As the CUDA Toolkit documentation says, "although arbitrary in this case, is
-// a common choice". This is determined by the warp size, max block size, and
-// multiprocessor sizes of recent GPUs. For complex kernels with significant
-// register usage and unusual memory patterns, the occupancy calculator API
-// might provide better performance. See "Occupancy Calculator" under the CUDA
-// toolkit documentation.
-constexpr int kCudaBlockSize = 256;
 
 template <typename SrcType, typename DstType>
 __global__ void TypeConversionKernel(const SrcType* __restrict__ input,
@@ -55,7 +51,7 @@ void CudaFP64ToFP32(const double* input,
                     float* output,
                     const int size,
                     cudaStream_t stream) {
-  const int num_blocks = (size + kCudaBlockSize - 1) / kCudaBlockSize;
+  const int num_blocks = NumBlocksInGrid(size);
   TypeConversionKernel<double, float>
       <<<num_blocks, kCudaBlockSize, 0, stream>>>(input, output, size);
 }
@@ -64,7 +60,7 @@ void CudaFP32ToFP64(const float* input,
                     double* output,
                     const int size,
                     cudaStream_t stream) {
-  const int num_blocks = (size + kCudaBlockSize - 1) / kCudaBlockSize;
+  const int num_blocks = NumBlocksInGrid(size);
   TypeConversionKernel<float, double>
       <<<num_blocks, kCudaBlockSize, 0, stream>>>(input, output, size);
 }
@@ -78,12 +74,12 @@ __global__ void SetZeroKernel(T* __restrict__ output, const int size) {
 }
 
 void CudaSetZeroFP32(float* output, const int size, cudaStream_t stream) {
-  const int num_blocks = (size + kCudaBlockSize - 1) / kCudaBlockSize;
+  const int num_blocks = NumBlocksInGrid(size);
   SetZeroKernel<float><<<num_blocks, kCudaBlockSize, 0, stream>>>(output, size);
 }
 
 void CudaSetZeroFP64(double* output, const int size, cudaStream_t stream) {
-  const int num_blocks = (size + kCudaBlockSize - 1) / kCudaBlockSize;
+  const int num_blocks = NumBlocksInGrid(size);
   SetZeroKernel<double>
       <<<num_blocks, kCudaBlockSize, 0, stream>>>(output, size);
 }
@@ -99,7 +95,7 @@ __global__ void XPlusEqualsYKernel(DstType* __restrict__ x,
 }
 
 void CudaDsxpy(double* x, float* y, const int size, cudaStream_t stream) {
-  const int num_blocks = (size + kCudaBlockSize - 1) / kCudaBlockSize;
+  const int num_blocks = NumBlocksInGrid(size);
   XPlusEqualsYKernel<float, double>
       <<<num_blocks, kCudaBlockSize, 0, stream>>>(x, y, size);
 }
@@ -119,7 +115,7 @@ void CudaDtDxpy(double* y,
                 const double* x,
                 const int size,
                 cudaStream_t stream) {
-  const int num_blocks = (size + kCudaBlockSize - 1) / kCudaBlockSize;
+  const int num_blocks = NumBlocksInGrid(size);
   CudaDtDxpyKernel<<<num_blocks, kCudaBlockSize, 0, stream>>>(y, D, x, size);
 }
 

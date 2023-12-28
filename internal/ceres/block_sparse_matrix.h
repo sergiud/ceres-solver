@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,9 @@ class CERES_NO_EXPORT BlockSparseMatrix final : public SparseMatrix {
   //
   // TODO(sameeragarwal): Add a function which will validate legal
   // CompressedRowBlockStructure objects.
-  explicit BlockSparseMatrix(CompressedRowBlockStructure* block_structure);
+  explicit BlockSparseMatrix(CompressedRowBlockStructure* block_structure,
+                             bool use_page_locked_memory = false);
+  ~BlockSparseMatrix();
 
   BlockSparseMatrix(const BlockSparseMatrix&) = delete;
   void operator=(const BlockSparseMatrix&) = delete;
@@ -91,7 +93,20 @@ class CERES_NO_EXPORT BlockSparseMatrix final : public SparseMatrix {
   void ScaleColumns(const double* scale,
                     ContextImpl* context,
                     int num_threads) final;
-  void ToCompressedRowSparseMatrix(CompressedRowSparseMatrix* matrix) const;
+
+  // Convert to CompressedRowSparseMatrix
+  std::unique_ptr<CompressedRowSparseMatrix> ToCompressedRowSparseMatrix()
+      const;
+  // Create CompressedRowSparseMatrix corresponding to transposed matrix
+  std::unique_ptr<CompressedRowSparseMatrix>
+  ToCompressedRowSparseMatrixTranspose() const;
+  // Copy values to CompressedRowSparseMatrix that has compatible structure
+  void UpdateCompressedRowSparseMatrix(
+      CompressedRowSparseMatrix* crs_matrix) const;
+  // Copy values to CompressedRowSparseMatrix that has structure of transposed
+  // matrix
+  void UpdateCompressedRowSparseMatrixTranspose(
+      CompressedRowSparseMatrix* crs_matrix) const;
   void ToDenseMatrix(Matrix* dense_matrix) const final;
   void ToTextFile(FILE* file) const final;
 
@@ -101,8 +116,8 @@ class CERES_NO_EXPORT BlockSparseMatrix final : public SparseMatrix {
   int num_rows()         const final { return num_rows_;     }
   int num_cols()         const final { return num_cols_;     }
   int num_nonzeros()     const final { return num_nonzeros_; }
-  const double* values() const final { return values_.get(); }
-  double* mutable_values()     final { return values_.get(); }
+  const double* values() const final { return values_; }
+  double* mutable_values()     final { return values_; }
   // clang-format on
 
   void ToTripletSparseMatrix(TripletSparseMatrix* matrix) const;
@@ -142,14 +157,20 @@ class CERES_NO_EXPORT BlockSparseMatrix final : public SparseMatrix {
   // distributed and whose structure is determined by
   // RandomMatrixOptions.
   static std::unique_ptr<BlockSparseMatrix> CreateRandomMatrix(
-      const RandomMatrixOptions& options, std::mt19937& prng);
+      const RandomMatrixOptions& options,
+      std::mt19937& prng,
+      bool use_page_locked_memory = false);
 
  private:
+  double* AllocateValues(int size);
+  void FreeValues(double*& values);
+
+  const bool use_page_locked_memory_;
   int num_rows_;
   int num_cols_;
   int num_nonzeros_;
   int max_num_nonzeros_;
-  std::unique_ptr<double[]> values_;
+  double* values_;
   std::unique_ptr<CompressedRowBlockStructure> block_structure_;
   std::unique_ptr<CompressedRowBlockStructure> transpose_block_structure_;
 };

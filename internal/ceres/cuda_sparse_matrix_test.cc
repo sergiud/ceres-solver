@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -80,10 +80,8 @@ class CudaSparseMatrixTest : public ::testing::Test {
 
 TEST_F(CudaSparseMatrixTest, RightMultiplyAndAccumulate) {
   std::string message;
-  CompressedRowSparseMatrix A_crs(
-      A_->num_rows(), A_->num_cols(), A_->num_nonzeros());
-  A_->ToCompressedRowSparseMatrix(&A_crs);
-  CudaSparseMatrix A_gpu(&context_, A_crs);
+  auto A_crs = A_->ToCompressedRowSparseMatrix();
+  CudaSparseMatrix A_gpu(&context_, *A_crs);
   CudaVector x_gpu(&context_, A_gpu.num_cols());
   CudaVector res_gpu(&context_, A_gpu.num_rows());
   x_gpu.CopyFromCpu(x_);

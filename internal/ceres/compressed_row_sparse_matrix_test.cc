@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -253,9 +253,9 @@ TEST(CompressedRowSparseMatrix, CreateBlockDiagonalMatrix) {
 
 TEST(CompressedRowSparseMatrix, Transpose) {
   //  0  1  0  2  3  0
-  //  4  6  7  0  0  8
-  //  9 10  0 11 12  0
-  // 13  0 14 15  9  0
+  //  4  5  6  0  0  7
+  //  8  9  0 10 11  0
+  // 12  0 13 14 15  0
   //  0 16 17  0  0  0
 
   // Block structure:
@@ -303,7 +303,7 @@ TEST(CompressedRowSparseMatrix, Transpose) {
   cols[16] = 2;
   rows[5] = 17;
 
-  std::copy(values, values + 17, cols);
+  std::iota(values, values + 17, 1);
 
   auto transpose = matrix.Transpose();
 

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,13 @@ class CudaBuffer {
   CudaBuffer(ContextImpl* context, int size) : context_(context) {
     Reserve(size);
   }
+
+  CudaBuffer(CudaBuffer&& other)
+      : data_(other.data_), size_(other.size_), context_(other.context_) {
+    other.data_ = nullptr;
+    other.size_ = 0;
+  }
+
   CudaBuffer(const CudaBuffer&) = delete;
   CudaBuffer& operator=(const CudaBuffer&) = delete;
 
@@ -86,7 +93,7 @@ class CudaBuffer {
                              data,
                              size * sizeof(T),
                              cudaMemcpyHostToDevice,
-                             context_->stream_),
+                             context_->DefaultStream()),
              cudaSuccess);
   }
 
@@ -98,7 +105,7 @@ class CudaBuffer {
                              data.data(),
                              data.size() * sizeof(T),
                              cudaMemcpyHostToDevice,
-                             context_->stream_),
+                             context_->DefaultStream()),
              cudaSuccess);
   }
 
@@ -110,7 +117,7 @@ class CudaBuffer {
                              data,
                              size * sizeof(T),
                              cudaMemcpyDeviceToDevice,
-                             context_->stream_),
+                             context_->DefaultStream()),
              cudaSuccess);
   }
 
@@ -126,9 +133,9 @@ class CudaBuffer {
                              data_,
                              size * sizeof(T),
                              cudaMemcpyDeviceToHost,
-                             context_->stream_),
+                             context_->DefaultStream()),
              cudaSuccess);
-    CHECK_EQ(cudaStreamSynchronize(context_->stream_), cudaSuccess);
+    CHECK_EQ(cudaStreamSynchronize(context_->DefaultStream()), cudaSuccess);
   }
 
   // Copy N items from another GPU memory array to the GPU memory managed by
@@ -142,7 +149,7 @@ class CudaBuffer {
                              other.data_,
                              size_ * sizeof(T),
                              cudaMemcpyDeviceToDevice,
-                             context_->stream_),
+                             context_->DefaultStream()),
              cudaSuccess);
   }
 

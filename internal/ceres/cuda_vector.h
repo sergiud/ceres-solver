@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,7 +50,7 @@
 #ifndef CERES_NO_CUDA
 
 #include "ceres/cuda_buffer.h"
-#include "ceres/cuda_kernels.h"
+#include "ceres/cuda_kernels_vector_ops.h"
 #include "ceres/internal/eigen.h"
 #include "cublas_v2.h"
 #include "cusparse.h"
@@ -64,6 +64,8 @@ class CERES_NO_EXPORT CudaVector {
   // caller must ensure that InitCuda() has already been successfully called on
   // context before calling this method.
   CudaVector(ContextImpl* context, int size);
+
+  CudaVector(CudaVector&& other);
 
   ~CudaVector();
 
@@ -84,6 +86,9 @@ class CERES_NO_EXPORT CudaVector {
   // Copy from Eigen vector.
   void CopyFromCpu(const Vector& x);
 
+  // Copy from CPU memory array.
+  void CopyFromCpu(const double* x);
+
   // Copy to Eigen vector.
   void CopyTo(Vector* x) const;
 
@@ -103,7 +108,8 @@ class CERES_NO_EXPORT CudaVector {
   int num_rows() const { return num_rows_; }
   int num_cols() const { return 1; }
 
-  const CudaBuffer<double>& data() const { return data_; }
+  const double* data() const { return data_.data(); }
+  double* mutable_data() { return data_.data(); }
 
   const cusparseDnVecDescr_t& descr() const { return descr_; }
 

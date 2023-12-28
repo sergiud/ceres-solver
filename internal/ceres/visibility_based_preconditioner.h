@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -194,6 +194,7 @@ class CERES_NO_EXPORT VisibilityBasedPreconditioner
 
   // Preconditioner matrix.
   std::unique_ptr<BlockRandomAccessSparseMatrix> m_;
+  std::unique_ptr<CompressedRowSparseMatrix> m_crs_;
   std::unique_ptr<SparseCholesky> sparse_cholesky_;
 };
 

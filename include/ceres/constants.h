@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 namespace ceres::constants {
 template <typename T>
 inline constexpr T pi_v(3.141592653589793238462643383279502884);
+inline constexpr double pi = pi_v<double>;
 }  // namespace ceres::constants
 
 #endif  // CERES_PUBLIC_CONSTANTS_H_

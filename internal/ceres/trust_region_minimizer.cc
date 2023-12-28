@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2016 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -218,6 +218,8 @@ bool TrustRegionMinimizer::IterationZero() {
   }
 
   if (!EvaluateGradientAndJacobian(/*new_evaluation_point=*/true)) {
+    solver_summary_->message =
+        "Initial residual and Jacobian evaluation failed.";
     return false;
   }
 

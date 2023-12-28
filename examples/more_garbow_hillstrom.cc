@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -223,7 +223,7 @@ BEGIN_MGH_PROBLEM(TestProblem7, 3, 3)
   const T x1 = x[0];
   const T x2 = x[1];
   const T x3 = x[2];
-  const T theta = (0.5 / M_PI)  * atan(x2 / x1) + (x1 > 0.0 ? 0.0 : 0.5);
+  const T theta = (0.5 / constants::pi)  * atan(x2 / x1) + (x1 > 0.0 ? 0.0 : 0.5);
   residual[0] = 10.0 * (x3 - 10.0 * theta);
   residual[1] = 10.0 * (sqrt(x1 * x1 + x2 * x2) - 1.0);
   residual[2] = x3;
@@ -585,7 +585,6 @@ bool Solve(bool is_constrained, int trial) {
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
-
   using ceres::examples::Solve;
 
   int unconstrained_problems = 0;

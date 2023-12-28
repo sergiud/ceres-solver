@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -71,9 +71,12 @@
 // Average LRE     2.3      4.3       4.0  6.8      4.4    9.4
 //      Winner       0        0         5   11        2     41
 
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <string>
+#include <vector>
 
 #include "Eigen/Core"
 #include "ceres/ceres.h"

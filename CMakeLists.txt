@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2022 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 # Authors: keir@google.com (Keir Mierle)
 #          alexs.mac@gmail.com (Alex Stewart)
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.18...3.27)
 project(Ceres LANGUAGES C CXX VERSION 2.1.0)
 
 # NOTE: The following CMake variables must be applied consistently to all
@@ -179,6 +179,9 @@ if (WITH_CUDA)
 endif (WITH_CUDA)
 
 if (CMAKE_CUDA_COMPILER_LOADED)
+  set (CMAKE_CUDA_RUNTIME_LIBRARY NONE)
+  set (CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
+
   find_package (CUDAToolkit REQUIRED)
 else (CMAKE_CUDA_COMPILER_LOADED)
   list (APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
@@ -279,37 +282,34 @@ add_feature_info (Benchmarks WITH_BENCHMARK
 
 # After the tweaks for the compile settings, disable some warnings on MSVC.
 if (MSVC)
-  # On MSVC, math constants are not included in <cmath> or <math.h> unless
-  # _USE_MATH_DEFINES is defined [1].  As we use M_PI in the examples, ensure
-  # that _USE_MATH_DEFINES is defined before the first inclusion of <cmath>.
-  #
-  # [1] https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx
-  add_definitions("-D_USE_MATH_DEFINES")
+  # Insecure standard library functions
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+  # std::numeric_limits<T>::has_denorm is deprecated in C++23
+  add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:_SILENCE_CXX23_DENORM_DEPRECATION_WARNING>)
+  # std::aligned_storage is deprecated in C++23
+  add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING>)
   # Disable signed/unsigned int conversion warnings.
-  add_compile_options("/wd4018" "/wd4267")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/wd4018>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/wd4267>)
   # Disable warning about using struct/class for the same symbol.
-  add_compile_options("/wd4099")
-  # Disable warning about the insecurity of using "std::copy".
-  add_compile_options("/wd4996")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/wd4099>)
   # Disable performance warning about int-to-bool conversion.
-  add_compile_options("/wd4800")
-  # Disable performance warning about fopen insecurity.
-  add_compile_options("/wd4996")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/wd4800>)
   # Disable warning about int64 to int32 conversion. Disabling
   # this warning may not be correct; needs investigation.
   # TODO(keir): Investigate these warnings in more detail.
-  add_compile_options("/wd4244")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/wd4244>)
   # It's not possible to use STL types in DLL interfaces in a portable and
   # reliable way. However, that's what happens with Google Log and Google Flags
   # on Windows. MSVC gets upset about this and throws warnings that we can't do
   # much about. The real solution is to link static versions of Google Log and
   # Google Test, but that seems tricky on Windows. So, disable the warning.
-  add_compile_options("/wd4251")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/wd4251>)
 
   # Add bigobj flag otherwise the build would fail due to large object files
   # probably resulting from generated headers (like the fixed-size schur
   # specializations).
-  add_compile_options("/bigobj")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
 
   # Google Flags doesn't have their DLL import/export stuff set up correctly,
   # which results in linker warnings. This is irrelevant for Ceres, so ignore
@@ -360,14 +360,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang") # Matches Clang & AppleClang.
   endif(HAVE_RETURN_TYPE_C_LINKAGE)
 endif ()
 
-if (CMAKE_VERSION VERSION_LESS 3.12)
-  # Disable the definition of min/max macros within the project
-  if (WIN32)
-    add_definitions (-DNOMINMAX)
-  endif (WIN32)
-else (CMAKE_VERSION VERSION_LESS 3.12)
-  add_compile_definitions($<$<BOOL:${WIN32}>:NOMINMAX>)
-endif (CMAKE_VERSION VERSION_LESS 3.12)
+add_compile_definitions($<$<BOOL:${WIN32}>:NOMINMAX>)
 
 # Configure the Ceres config.h compile options header using the current
 # compile options and put the configured header into the Ceres build
@@ -385,9 +378,9 @@ endif (CMAKE_CL OR CMAKE_CL_64)
 add_subdirectory(internal/ceres)
 
 if (BUILD_DOCUMENTATION)
-  find_package(Sphinx)
+  find_package (Sphinx REQUIRED COMPONENTS sphinx_rtd_theme)
 
-  if (NOT SPHINX_FOUND)
+  if (NOT Sphinx_FOUND)
     update_cache_variable(BUILD_DOCUMENTATION OFF)
   else()
     # Generate the User's Guide (html).
@@ -465,6 +458,16 @@ install(FILES "${Ceres_BINARY_DIR}/CeresConfig.cmake"
               "${Ceres_BINARY_DIR}/CeresConfigVersion.cmake"
         DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR})
 
+set (Ceres_EXPORT_TARGETS ceres)
+
+if (TARGET ceres_cuda_kernels)
+  # The target ceres depends on ceres_cuda_kernels requiring the latter to be
+  # exported as part of the same export set.
+  list (APPEND Ceres_EXPORT_TARGETS ceres_cuda_kernels)
+endif (TARGET ceres_cuda_kernels)
+
+unset (Ceres_EXPORT_TARGETS)
+
 add_feature_info (Examples BUILD_EXAMPLES "Build the examples")
 
 set_package_properties (glog PROPERTIES
@@ -491,6 +494,8 @@ set_package_properties (LAPACK PROPERTIES
   DESCRIPTION "Linear Algebra PACKage"
   TYPE RECOMMENDED
 )
+
+
 
 set_package_properties (Threads PROPERTIES
   DESCRIPTION "Multithreading support"

@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2018 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -95,7 +95,8 @@ CERES_SRCS = ["internal/ceres/" + filename for filename in [
     "manifold.cc",
     "minimizer.cc",
     "normal_prior.cc",
-    "parallel_for_cxx.cc",
+    "parallel_for.cc",
+    "parallel_invoke.cc",
     "parallel_utils.cc",
     "parameter_block_ordering.cc",
     "partitioned_matrix_view.cc",
@@ -205,7 +206,6 @@ def ceres_library(name,
             "CERES_NO_EXPORT=",
             "CERES_NO_LAPACK",
             "CERES_NO_SUITESPARSE",
-            "CERES_USE_CXX_THREADS",
             "CERES_USE_EIGEN_SPARSE",
         ],
         includes = [

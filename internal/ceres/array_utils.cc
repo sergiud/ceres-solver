@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -74,7 +74,9 @@ void InvalidateArray(const int64_t size, double* x) {
   }
 }
 
-void AppendArrayToString(const int64_t size, const double* x, std::string* result) {
+void AppendArrayToString(const int64_t size,
+                         const double* x,
+                         std::string* result) {
   for (int64_t i = 0; i < size; ++i) {
     if (x == nullptr) {
       StringAppendF(result, "Not Computed  ");

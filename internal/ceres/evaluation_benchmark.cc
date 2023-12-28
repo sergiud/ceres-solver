@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,11 +36,14 @@
 #include "benchmark/benchmark.h"
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/bundle_adjustment_test_util.h"
+#include "ceres/cuda_block_sparse_crs_view.h"
+#include "ceres/cuda_partitioned_block_sparse_crs_view.h"
 #include "ceres/cuda_sparse_matrix.h"
 #include "ceres/cuda_vector.h"
 #include "ceres/evaluator.h"
 #include "ceres/implicit_schur_complement.h"
 #include "ceres/partitioned_matrix_view.h"
+#include "ceres/power_series_expansion_preconditioner.h"
 #include "ceres/preprocessor.h"
 #include "ceres/problem.h"
 #include "ceres/problem_impl.h"
@@ -95,7 +98,7 @@ struct BALData {
   }
 
   std::unique_ptr<BlockSparseMatrix> CreateBlockSparseJacobian(
-      ContextImpl* context) {
+      ContextImpl* context, bool sequential) {
     auto problem = bal_problem->mutable_problem();
     auto problem_impl = problem->mutable_impl();
     CHECK(problem_impl != nullptr);
@@ -115,6 +118,30 @@ struct BALData {
     auto block_sparse = downcast_unique_ptr<BlockSparseMatrix>(jacobian);
     CHECK(block_sparse != nullptr);
 
+    if (sequential) {
+      auto block_structure_sequential =
+          std::make_unique<CompressedRowBlockStructure>(
+              *block_sparse->block_structure());
+      int num_nonzeros = 0;
+      for (auto& row_block : block_structure_sequential->rows) {
+        const int row_block_size = row_block.block.size;
+        for (auto& cell : row_block.cells) {
+          const int col_block_size =
+              block_structure_sequential->cols[cell.block_id].size;
+          cell.position = num_nonzeros;
+          num_nonzeros += col_block_size * row_block_size;
+        }
+      }
+      block_sparse = std::make_unique<BlockSparseMatrix>(
+          block_structure_sequential.release(),
+#ifndef CERES_NO_CUDA
+          true
+#else
+          false
+#endif
+      );
+    }
+
     std::mt19937 rng;
     std::normal_distribution<double> rnorm;
     const int nnz = block_sparse->num_nonzeros();
@@ -122,26 +149,30 @@ struct BALData {
     for (int i = 0; i < nnz; ++i) {
       values[i] = rnorm(rng);
     }
+
     return block_sparse;
   }
 
   std::unique_ptr<CompressedRowSparseMatrix> CreateCompressedRowSparseJacobian(
       ContextImpl* context) {
     auto block_sparse = BlockSparseJacobian(context);
-    auto crs_jacobian = std::make_unique<CompressedRowSparseMatrix>(
-        block_sparse->num_rows(),
-        block_sparse->num_cols(),
-        block_sparse->num_nonzeros());
-
-    block_sparse->ToCompressedRowSparseMatrix(crs_jacobian.get());
-    return crs_jacobian;
+    return block_sparse->ToCompressedRowSparseMatrix();
   }
 
   const BlockSparseMatrix* BlockSparseJacobian(ContextImpl* context) {
     if (!block_sparse_jacobian) {
-      block_sparse_jacobian = CreateBlockSparseJacobian(context);
+      block_sparse_jacobian = CreateBlockSparseJacobian(context, true);
     }
     return block_sparse_jacobian.get();
+  }
+
+  const BlockSparseMatrix* BlockSparseJacobianPartitioned(
+      ContextImpl* context) {
+    if (!block_sparse_jacobian_partitioned) {
+      block_sparse_jacobian_partitioned =
+          CreateBlockSparseJacobian(context, false);
+    }
+    return block_sparse_jacobian_partitioned.get();
   }
 
   const CompressedRowSparseMatrix* CompressedRowSparseJacobian(
@@ -154,7 +185,7 @@ struct BALData {
 
   std::unique_ptr<PartitionedView> PartitionedMatrixViewJacobian(
       const LinearSolver::Options& options) {
-    auto block_sparse = BlockSparseJacobian(options.context);
+    auto block_sparse = BlockSparseJacobianPartitioned(options.context);
     return std::make_unique<PartitionedView>(options, *block_sparse);
   }
 
@@ -176,7 +207,7 @@ struct BALData {
 
   const ImplicitSchurComplement* ImplicitSchurComplementWithoutDiagonal(
       const LinearSolver::Options& options) {
-    auto block_sparse = BlockSparseJacobian(options.context);
+    auto block_sparse = BlockSparseJacobianPartitioned(options.context);
     implicit_schur_complement =
         std::make_unique<ImplicitSchurComplement>(options);
     implicit_schur_complement->Init(*block_sparse, nullptr, b.data());
@@ -185,7 +216,7 @@ struct BALData {
 
   const ImplicitSchurComplement* ImplicitSchurComplementWithDiagonal(
       const LinearSolver::Options& options) {
-    auto block_sparse = BlockSparseJacobian(options.context);
+    auto block_sparse = BlockSparseJacobianPartitioned(options.context);
     implicit_schur_complement_diag =
         std::make_unique<ImplicitSchurComplement>(options);
     implicit_schur_complement_diag->Init(*block_sparse, D.data(), b.data());
@@ -197,6 +228,7 @@ struct BALData {
   Vector b;
   std::unique_ptr<BundleAdjustmentProblem> bal_problem;
   std::unique_ptr<PreprocessedProblem> preprocessed_problem;
+  std::unique_ptr<BlockSparseMatrix> block_sparse_jacobian_partitioned;
   std::unique_ptr<BlockSparseMatrix> block_sparse_jacobian;
   std::unique_ptr<CompressedRowSparseMatrix> crs_jacobian;
   std::unique_ptr<BlockSparseMatrix> block_diagonal_ete;
@@ -294,6 +326,29 @@ static void Plus(benchmark::State& state, BALData* data, ContextImpl* context) {
         data->parameters.data(), delta.data(), state_plus_delta.data()));
   }
   CHECK_GT(state_plus_delta.squaredNorm(), 0.);
+}
+
+static void PSEPreconditioner(benchmark::State& state,
+                              BALData* data,
+                              ContextImpl* context) {
+  LinearSolver::Options options;
+  options.num_threads = static_cast<int>(state.range(0));
+  options.elimination_groups.push_back(data->bal_problem->num_points());
+  options.context = context;
+
+  auto jacobian = data->ImplicitSchurComplementWithDiagonal(options);
+  Preconditioner::Options preconditioner_options(options);
+
+  PowerSeriesExpansionPreconditioner preconditioner(
+      jacobian, 10, 0, preconditioner_options);
+
+  Vector y = Vector::Zero(jacobian->num_cols());
+  Vector x = Vector::Random(jacobian->num_cols());
+
+  for (auto _ : state) {
+    preconditioner.RightMultiplyAndAccumulate(x.data(), y.data());
+  }
+  CHECK_GT(y.squaredNorm(), 0.);
 }
 
 static void PMVRightMultiplyAndAccumulateF(benchmark::State& state,
@@ -432,6 +487,179 @@ static void ISCRightMultiplyDiag(benchmark::State& state,
   }
   CHECK_GT(y.squaredNorm(), 0.);
 }
+
+static void JacobianToCRS(benchmark::State& state,
+                          BALData* data,
+                          ContextImpl* context) {
+  auto jacobian = data->BlockSparseJacobian(context);
+
+  std::unique_ptr<CompressedRowSparseMatrix> matrix;
+  for (auto _ : state) {
+    matrix = jacobian->ToCompressedRowSparseMatrix();
+  }
+  CHECK(matrix != nullptr);
+}
+
+#ifndef CERES_NO_CUDA
+static void PMVRightMultiplyAndAccumulateFCuda(benchmark::State& state,
+                                               BALData* data,
+                                               ContextImpl* context) {
+  LinearSolver::Options options;
+  options.elimination_groups.push_back(data->bal_problem->num_points());
+  options.context = context;
+  options.num_threads = 1;
+  auto jacobian = data->PartitionedMatrixViewJacobian(options);
+  auto underlying_matrix = data->BlockSparseJacobianPartitioned(context);
+  CudaPartitionedBlockSparseCRSView view(
+      *underlying_matrix, jacobian->num_col_blocks_e(), context);
+
+  Vector x = Vector::Random(jacobian->num_cols_f());
+  CudaVector cuda_x(context, x.size());
+  CudaVector cuda_y(context, jacobian->num_rows());
+
+  cuda_x.CopyFromCpu(x);
+  cuda_y.SetZero();
+
+  auto matrix = view.matrix_f();
+  for (auto _ : state) {
+    matrix->RightMultiplyAndAccumulate(cuda_x, &cuda_y);
+  }
+  CHECK_GT(cuda_y.Norm(), 0.);
+}
+
+static void PMVLeftMultiplyAndAccumulateFCuda(benchmark::State& state,
+                                              BALData* data,
+                                              ContextImpl* context) {
+  LinearSolver::Options options;
+  options.elimination_groups.push_back(data->bal_problem->num_points());
+  options.context = context;
+  options.num_threads = 1;
+  auto jacobian = data->PartitionedMatrixViewJacobian(options);
+  auto underlying_matrix = data->BlockSparseJacobianPartitioned(context);
+  CudaPartitionedBlockSparseCRSView view(
+      *underlying_matrix, jacobian->num_col_blocks_e(), context);
+
+  Vector x = Vector::Random(jacobian->num_rows());
+  CudaVector cuda_x(context, x.size());
+  CudaVector cuda_y(context, jacobian->num_cols_f());
+
+  cuda_x.CopyFromCpu(x);
+  cuda_y.SetZero();
+
+  auto matrix = view.matrix_f();
+  for (auto _ : state) {
+    matrix->LeftMultiplyAndAccumulate(cuda_x, &cuda_y);
+  }
+  CHECK_GT(cuda_y.Norm(), 0.);
+}
+
+static void PMVRightMultiplyAndAccumulateECuda(benchmark::State& state,
+                                               BALData* data,
+                                               ContextImpl* context) {
+  LinearSolver::Options options;
+  options.elimination_groups.push_back(data->bal_problem->num_points());
+  options.context = context;
+  options.num_threads = 1;
+  auto jacobian = data->PartitionedMatrixViewJacobian(options);
+  auto underlying_matrix = data->BlockSparseJacobianPartitioned(context);
+  CudaPartitionedBlockSparseCRSView view(
+      *underlying_matrix, jacobian->num_col_blocks_e(), context);
+
+  Vector x = Vector::Random(jacobian->num_cols_e());
+  CudaVector cuda_x(context, x.size());
+  CudaVector cuda_y(context, jacobian->num_rows());
+
+  cuda_x.CopyFromCpu(x);
+  cuda_y.SetZero();
+
+  auto matrix = view.matrix_e();
+  for (auto _ : state) {
+    matrix->RightMultiplyAndAccumulate(cuda_x, &cuda_y);
+  }
+  CHECK_GT(cuda_y.Norm(), 0.);
+}
+
+static void PMVLeftMultiplyAndAccumulateECuda(benchmark::State& state,
+                                              BALData* data,
+                                              ContextImpl* context) {
+  LinearSolver::Options options;
+  options.elimination_groups.push_back(data->bal_problem->num_points());
+  options.context = context;
+  options.num_threads = 1;
+  auto jacobian = data->PartitionedMatrixViewJacobian(options);
+  auto underlying_matrix = data->BlockSparseJacobianPartitioned(context);
+  CudaPartitionedBlockSparseCRSView view(
+      *underlying_matrix, jacobian->num_col_blocks_e(), context);
+
+  Vector x = Vector::Random(jacobian->num_rows());
+  CudaVector cuda_x(context, x.size());
+  CudaVector cuda_y(context, jacobian->num_cols_e());
+
+  cuda_x.CopyFromCpu(x);
+  cuda_y.SetZero();
+
+  auto matrix = view.matrix_e();
+  for (auto _ : state) {
+    matrix->LeftMultiplyAndAccumulate(cuda_x, &cuda_y);
+  }
+  CHECK_GT(cuda_y.Norm(), 0.);
+}
+
+// We want CudaBlockSparseCRSView to be not slower than explicit conversion to
+// CRS on CPU
+static void JacobianToCRSView(benchmark::State& state,
+                              BALData* data,
+                              ContextImpl* context) {
+  auto jacobian = data->BlockSparseJacobian(context);
+
+  std::unique_ptr<CudaBlockSparseCRSView> matrix;
+  for (auto _ : state) {
+    matrix = std::make_unique<CudaBlockSparseCRSView>(*jacobian, context);
+  }
+  CHECK(matrix != nullptr);
+}
+static void JacobianToCRSMatrix(benchmark::State& state,
+                                BALData* data,
+                                ContextImpl* context) {
+  auto jacobian = data->BlockSparseJacobian(context);
+
+  std::unique_ptr<CudaSparseMatrix> matrix;
+  std::unique_ptr<CompressedRowSparseMatrix> matrix_cpu;
+  for (auto _ : state) {
+    matrix_cpu = jacobian->ToCompressedRowSparseMatrix();
+    matrix = std::make_unique<CudaSparseMatrix>(context, *matrix_cpu);
+  }
+  CHECK(matrix != nullptr);
+}
+// Updating values in CudaBlockSparseCRSView should be +- as fast as just
+// copying values (time spent in value permutation has to be hidden by PCIe
+// transfer)
+static void JacobianToCRSViewUpdate(benchmark::State& state,
+                                    BALData* data,
+                                    ContextImpl* context) {
+  auto jacobian = data->BlockSparseJacobian(context);
+
+  auto matrix = CudaBlockSparseCRSView(*jacobian, context);
+  for (auto _ : state) {
+    matrix.UpdateValues(*jacobian);
+  }
+}
+static void JacobianToCRSMatrixUpdate(benchmark::State& state,
+                                      BALData* data,
+                                      ContextImpl* context) {
+  auto jacobian = data->BlockSparseJacobian(context);
+
+  auto matrix_cpu = jacobian->ToCompressedRowSparseMatrix();
+  auto matrix = std::make_unique<CudaSparseMatrix>(context, *matrix_cpu);
+  for (auto _ : state) {
+    CHECK_EQ(cudaSuccess,
+             cudaMemcpy(matrix->mutable_values(),
+                        matrix_cpu->values(),
+                        matrix->num_nonzeros() * sizeof(double),
+                        cudaMemcpyHostToDevice));
+  }
+}
+#endif
 
 static void JacobianSquaredColumnNorm(benchmark::State& state,
                                       BALData* data,
@@ -635,6 +863,16 @@ int main(int argc, char** argv) {
         ->Arg(8)
         ->Arg(16);
 
+#ifndef CERES_NO_CUDA
+    const std::string name_right_product_partitioned_f_cuda =
+        "PMVRightMultiplyAndAccumulateFCuda<" + path + ">";
+    ::benchmark::RegisterBenchmark(
+        name_right_product_partitioned_f_cuda.c_str(),
+        ceres::internal::PMVRightMultiplyAndAccumulateFCuda,
+        data,
+        &context);
+#endif
+
     const std::string name_right_product_partitioned_e =
         "PMVRightMultiplyAndAccumulateE<" + path + ">";
     ::benchmark::RegisterBenchmark(
@@ -648,12 +886,32 @@ int main(int argc, char** argv) {
         ->Arg(8)
         ->Arg(16);
 
+#ifndef CERES_NO_CUDA
+    const std::string name_right_product_partitioned_e_cuda =
+        "PMVRightMultiplyAndAccumulateECuda<" + path + ">";
+    ::benchmark::RegisterBenchmark(
+        name_right_product_partitioned_e_cuda.c_str(),
+        ceres::internal::PMVRightMultiplyAndAccumulateECuda,
+        data,
+        &context);
+#endif
+
     const std::string name_update_block_diagonal_ftf =
         "PMVUpdateBlockDiagonalFtF<" + path + ">";
     ::benchmark::RegisterBenchmark(name_update_block_diagonal_ftf.c_str(),
                                    ceres::internal::PMVUpdateBlockDiagonalFtF,
                                    data,
                                    &context)
+        ->Arg(1)
+        ->Arg(2)
+        ->Arg(4)
+        ->Arg(8)
+        ->Arg(16);
+
+    const std::string name_pse =
+        "PSEPreconditionerRightMultiplyAndAccumulate<" + path + ">";
+    ::benchmark::RegisterBenchmark(
+        name_pse.c_str(), ceres::internal::PSEPreconditioner, data, &context)
         ->Arg(1)
         ->Arg(2)
         ->Arg(4)
@@ -732,6 +990,16 @@ int main(int argc, char** argv) {
         ->Arg(8)
         ->Arg(16);
 
+#ifndef CERES_NO_CUDA
+    const std::string name_left_product_partitioned_f_cuda =
+        "PMVLeftMultiplyAndAccumulateFCuda<" + path + ">";
+    ::benchmark::RegisterBenchmark(
+        name_left_product_partitioned_f_cuda.c_str(),
+        ceres::internal::PMVLeftMultiplyAndAccumulateFCuda,
+        data,
+        &context);
+#endif
+
     const std::string name_left_product_partitioned_e =
         "PMVLeftMultiplyAndAccumulateE<" + path + ">";
     ::benchmark::RegisterBenchmark(
@@ -744,6 +1012,16 @@ int main(int argc, char** argv) {
         ->Arg(4)
         ->Arg(8)
         ->Arg(16);
+
+#ifndef CERES_NO_CUDA
+    const std::string name_left_product_partitioned_e_cuda =
+        "PMVLeftMultiplyAndAccumulateECuda<" + path + ">";
+    ::benchmark::RegisterBenchmark(
+        name_left_product_partitioned_e_cuda.c_str(),
+        ceres::internal::PMVLeftMultiplyAndAccumulateECuda,
+        data,
+        &context);
+#endif
 
 #ifndef CERES_NO_CUDA
     const std::string name_left_product_cuda =
@@ -778,6 +1056,34 @@ int main(int argc, char** argv) {
         ->Arg(4)
         ->Arg(8)
         ->Arg(16);
+
+    const std::string name_to_crs = "JacobianToCRS<" + path + ">";
+    ::benchmark::RegisterBenchmark(
+        name_to_crs.c_str(), ceres::internal::JacobianToCRS, data, &context);
+#ifndef CERES_NO_CUDA
+    const std::string name_to_crs_view = "JacobianToCRSView<" + path + ">";
+    ::benchmark::RegisterBenchmark(name_to_crs_view.c_str(),
+                                   ceres::internal::JacobianToCRSView,
+                                   data,
+                                   &context);
+    const std::string name_to_crs_matrix = "JacobianToCRSMatrix<" + path + ">";
+    ::benchmark::RegisterBenchmark(name_to_crs_matrix.c_str(),
+                                   ceres::internal::JacobianToCRSMatrix,
+                                   data,
+                                   &context);
+    const std::string name_to_crs_view_update =
+        "JacobianToCRSViewUpdate<" + path + ">";
+    ::benchmark::RegisterBenchmark(name_to_crs_view_update.c_str(),
+                                   ceres::internal::JacobianToCRSViewUpdate,
+                                   data,
+                                   &context);
+    const std::string name_to_crs_matrix_update =
+        "JacobianToCRSMatrixUpdate<" + path + ">";
+    ::benchmark::RegisterBenchmark(name_to_crs_matrix_update.c_str(),
+                                   ceres::internal::JacobianToCRSMatrixUpdate,
+                                   data,
+                                   &context);
+#endif
   }
   ::benchmark::RunSpecifiedBenchmarks();
 

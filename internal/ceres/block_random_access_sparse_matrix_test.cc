@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -91,12 +91,11 @@ TEST(BlockRandomAccessSparseMatrix, GetCell) {
         Matrix::Ones(blocks[row_block_id].size, blocks[col_block_id].size);
   }
 
-  const TripletSparseMatrix* tsm = m.matrix();
-  EXPECT_EQ(tsm->num_nonzeros(), num_nonzeros);
-  EXPECT_EQ(tsm->max_num_nonzeros(), num_nonzeros);
+  const BlockSparseMatrix* bsm = m.matrix();
+  EXPECT_EQ(bsm->num_nonzeros(), num_nonzeros);
 
   Matrix dense;
-  tsm->ToDenseMatrix(&dense);
+  bsm->ToDenseMatrix(&dense);
 
   double kTolerance = 1e-14;
 
@@ -131,7 +130,7 @@ TEST(BlockRandomAccessSparseMatrix, GetCell) {
       << "expected: " << expected_y.transpose() << "matrix: \n " << dense;
 }
 
-// IntPairToLong is private, thus this fixture is needed to access and
+// IntPairToInt64 is private, thus this fixture is needed to access and
 // test it.
 class BlockRandomAccessSparseMatrixTest : public ::testing::Test {
  public:
@@ -144,21 +143,21 @@ class BlockRandomAccessSparseMatrixTest : public ::testing::Test {
         blocks, block_pairs, &context_, 1);
   }
 
-  void CheckIntPairToLong(int a, int b) {
-    int64_t value = m_->IntPairToLong(a, b);
+  void CheckIntPairToInt64(int a, int b) {
+    int64_t value = m_->IntPairToInt64(a, b);
     EXPECT_GT(value, 0) << "Overflow a = " << a << " b = " << b;
     EXPECT_GT(value, a) << "Overflow a = " << a << " b = " << b;
     EXPECT_GT(value, b) << "Overflow a = " << a << " b = " << b;
   }
 
-  void CheckLongToIntPair() {
-    uint64_t max_rows = m_->kMaxRowBlocks;
+  void CheckInt64ToIntPair() {
+    uint64_t max_rows = m_->kRowShift;
     for (int row = max_rows - 10; row < max_rows; ++row) {
       for (int col = 0; col < 10; ++col) {
         int row_computed;
         int col_computed;
-        m_->LongToIntPair(
-            m_->IntPairToLong(row, col), &row_computed, &col_computed);
+        m_->Int64ToIntPair(
+            m_->IntPairToInt64(row, col), &row_computed, &col_computed);
         EXPECT_EQ(row, row_computed);
         EXPECT_EQ(col, col_computed);
       }
@@ -170,13 +169,13 @@ class BlockRandomAccessSparseMatrixTest : public ::testing::Test {
   std::unique_ptr<BlockRandomAccessSparseMatrix> m_;
 };
 
-TEST_F(BlockRandomAccessSparseMatrixTest, IntPairToLongOverflow) {
-  CheckIntPairToLong(std::numeric_limits<int>::max(),
-                     std::numeric_limits<int>::max());
+TEST_F(BlockRandomAccessSparseMatrixTest, IntPairToInt64Overflow) {
+  CheckIntPairToInt64(std::numeric_limits<int32_t>::max(),
+                      std::numeric_limits<int32_t>::max());
 }
 
-TEST_F(BlockRandomAccessSparseMatrixTest, LongToIntPair) {
-  CheckLongToIntPair();
+TEST_F(BlockRandomAccessSparseMatrixTest, Int64ToIntPair) {
+  CheckInt64ToIntPair();
 }
 
 }  // namespace ceres::internal

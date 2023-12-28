@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -617,7 +617,7 @@ bool CovarianceImpl::ComputeCovarianceValuesUsingSuiteSparseQR() {
       SPQR_ORDERING_BESTAMD,
       options_.column_pivot_threshold < 0 ? SPQR_DEFAULT_TOL
                                           : options_.column_pivot_threshold,
-      cholmod_jacobian.ncol,
+      static_cast<int64_t>(cholmod_jacobian.ncol),
       &cholmod_jacobian,
       &R,
       &permutation,

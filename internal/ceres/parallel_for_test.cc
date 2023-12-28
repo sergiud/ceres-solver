@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,7 @@
 
 #include "ceres/parallel_for.h"
 
+#include <atomic>
 #include <cmath>
 #include <condition_variable>
 #include <mutex>
@@ -41,6 +42,7 @@
 
 #include "ceres/context_impl.h"
 #include "ceres/internal/config.h"
+#include "ceres/parallel_vector_ops.h"
 #include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -90,6 +92,29 @@ TEST(ParallelForWithRange, NumThreads) {
           for (int i = start; i < end; ++i) values[i] = std::sqrt(i);
         });
     EXPECT_THAT(values, ElementsAreArray(expected_results));
+  }
+}
+
+// Tests parallel for loop with ranges and lower bound on minimal range size
+TEST(ParallelForWithRange, MinimalSize) {
+  ContextImpl context;
+  constexpr int kNumThreads = 4;
+  constexpr int kMinBlockSize = 5;
+  context.EnsureMinimumThreads(kNumThreads);
+
+  for (int size = kMinBlockSize; size <= 25; ++size) {
+    std::atomic<bool> failed(false);
+    ParallelFor(
+        &context,
+        0,
+        size,
+        kNumThreads,
+        [&failed, kMinBlockSize](std::tuple<int, int> range) {
+          auto [start, end] = range;
+          if (end - start < kMinBlockSize) failed = true;
+        },
+        kMinBlockSize);
+    EXPECT_EQ(failed, false);
   }
 }
 
@@ -190,8 +215,6 @@ bool BruteForcePartition(
 // Basic test if MaxPartitionCostIsFeasible and BruteForcePartition agree on
 // simple test-cases
 TEST(GuidedParallelFor, MaxPartitionCostIsFeasible) {
-  using parallel_for_details::MaxPartitionCostIsFeasible;
-
   std::vector<int> costs, cumulative_costs, partition;
   costs = {1, 2, 3, 5, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0};
   cumulative_costs.resize(costs.size());
@@ -242,8 +265,6 @@ TEST(GuidedParallelFor, MaxPartitionCostIsFeasible) {
 
 // Randomized tests for MaxPartitionCostIsFeasible
 TEST(GuidedParallelFor, MaxPartitionCostIsFeasibleRandomized) {
-  using parallel_for_details::MaxPartitionCostIsFeasible;
-
   std::vector<int> costs, cumulative_costs, partition;
   const auto dummy_getter = [](const int v) { return v; };
 
@@ -315,9 +336,7 @@ TEST(GuidedParallelFor, MaxPartitionCostIsFeasibleRandomized) {
   }
 }
 
-TEST(GuidedParallelFor, ComputePartition) {
-  using parallel_for_details::ComputePartition;
-
+TEST(GuidedParallelFor, PartitionRangeForParallelFor) {
   std::vector<int> costs, cumulative_costs, partition;
   const auto dummy_getter = [](const int v) { return v; };
 
@@ -359,8 +378,8 @@ TEST(GuidedParallelFor, ComputePartition) {
       }
     }
     EXPECT_TRUE(first_admissible != 0 || total == 0);
-    partition =
-        ComputePartition(start, end, M, cumulative_costs.data(), dummy_getter);
+    partition = PartitionRangeForParallelFor(
+        start, end, M, cumulative_costs.data(), dummy_getter);
     ASSERT_GT(partition.size(), 1);
     EXPECT_EQ(partition.front(), start);
     EXPECT_EQ(partition.back(), end);

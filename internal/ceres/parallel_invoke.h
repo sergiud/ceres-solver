@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,19 +29,47 @@
 // Authors: vitus@google.com (Michael Vitus),
 //          dmitriy.korchemkin@gmail.com (Dmitriy Korchemkin)
 
-#ifndef CERES_INTERNAL_PARALLEL_FOR_CXX_H_
-#define CERES_INTERNAL_PARALLEL_FOR_CXX_H_
+#ifndef CERES_INTERNAL_PARALLEL_INVOKE_H_
+#define CERES_INTERNAL_PARALLEL_INVOKE_H_
 
 #include <atomic>
-#include <cmath>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
-
-#include "ceres/internal/config.h"
-#include "glog/logging.h"
+#include <tuple>
+#include <type_traits>
 
 namespace ceres::internal {
+
+// InvokeWithThreadId handles passing thread_id to the function
+template <typename F, typename... Args>
+void InvokeWithThreadId(int thread_id, F&& function, Args&&... args) {
+  constexpr bool kPassThreadId = std::is_invocable_v<F, int, Args...>;
+
+  if constexpr (kPassThreadId) {
+    function(thread_id, std::forward<Args>(args)...);
+  } else {
+    function(std::forward<Args>(args)...);
+  }
+}
+
+// InvokeOnSegment either runs a loop over segment indices or passes it to the
+// function
+template <typename F>
+void InvokeOnSegment(int thread_id, std::tuple<int, int> range, F&& function) {
+  constexpr bool kExplicitLoop =
+      std::is_invocable_v<F, int> || std::is_invocable_v<F, int, int>;
+
+  if constexpr (kExplicitLoop) {
+    const auto [start, end] = range;
+    for (int i = start; i != end; ++i) {
+      InvokeWithThreadId(thread_id, std::forward<F>(function), i);
+    }
+  } else {
+    InvokeWithThreadId(thread_id, std::forward<F>(function), range);
+  }
+}
+
 // This class creates a thread safe barrier which will block until a
 // pre-specified number of threads call Finished.  This allows us to block the
 // main thread until all the parallel threads are finished processing all the
@@ -62,18 +90,17 @@ class BlockUntilFinished {
   std::mutex mutex_;
   std::condition_variable condition_;
   int num_total_jobs_finished_;
-  int num_total_jobs_;
+  const int num_total_jobs_;
 };
 
 // Shared state between the parallel tasks. Each thread will use this
 // information to get the next block of work to be performed.
-struct ThreadPoolState {
+struct ParallelInvokeState {
   // The entire range [start, end) is split into num_work_blocks contiguous
   // disjoint intervals (blocks), which are as equal as possible given
   // total index count and requested number of  blocks.
   //
-  // Those num_work_blocks blocks are then processed by num_workers
-  // workers
+  // Those num_work_blocks blocks are then processed in parallel.
   //
   // Total number of integer indices in interval [start, end) is
   // end - start, and when splitting them into num_work_blocks blocks
@@ -87,7 +114,7 @@ struct ThreadPoolState {
   // Note that this splitting is optimal in the sense of maximal difference
   // between block sizes, since splitting into equal blocks is possible
   // if and only if number of indices is divisible by number of blocks.
-  ThreadPoolState(int start, int end, int num_work_blocks);
+  ParallelInvokeState(int start, int end, int num_work_blocks);
 
   // The start and end index of the for loop.
   const int start;
@@ -118,9 +145,9 @@ struct ThreadPoolState {
 
 // This implementation uses a fixed size max worker pool with a shared task
 // queue. The problem of executing the function for the interval of [start, end)
-// is broken up into at most num_threads * kWorkBlocksPerThread blocks
-// and added to the thread pool. To avoid deadlocks, the calling thread is
-// allowed to steal work from the worker pool.
+// is broken up into at most num_threads * kWorkBlocksPerThread blocks (each of
+// size at least min_block_size) and added to the thread pool. To avoid
+// deadlocks, the calling thread is allowed to steal work from the worker pool.
 // This is implemented via a shared state between the tasks. In order for
 // the calling thread or thread pool to get a block of work, it will query the
 // shared state for the next block of work to be done. If there is nothing left,
@@ -139,8 +166,8 @@ void ParallelInvoke(ContextImpl* context,
                     int start,
                     int end,
                     int num_threads,
-                    const F& function) {
-  using namespace parallel_for_details;
+                    F&& function,
+                    int min_block_size) {
   CHECK(context != nullptr);
 
   // Maximal number of work items scheduled for a single thread
@@ -153,17 +180,19 @@ void ParallelInvoke(ContextImpl* context,
   //
   // In order to avoid creating empty blocks of work, we need to limit
   // number of work blocks by a total number of indices.
-  const int num_work_blocks =
-      std::min((end - start), num_threads * kWorkBlocksPerThread);
+  const int num_work_blocks = std::min((end - start) / min_block_size,
+                                       num_threads * kWorkBlocksPerThread);
 
   // We use a std::shared_ptr because the main thread can finish all
   // the work before the tasks have been popped off the queue.  So the
   // shared state needs to exist for the duration of all the tasks.
-  std::shared_ptr<ThreadPoolState> shared_state(
-      new ThreadPoolState(start, end, num_work_blocks));
+  auto shared_state =
+      std::make_shared<ParallelInvokeState>(start, end, num_work_blocks);
 
-  // A function which tries to perform several chunks of work.
-  auto task = [shared_state, num_threads, &function]() {
+  // A function which tries to schedule another task in the thread pool and
+  // perform several chunks of work. Function expects itself as the argument in
+  // order to schedule next task in the thread pool.
+  auto task = [context, shared_state, num_threads, &function](auto& task_copy) {
     int num_jobs_finished = 0;
     const int thread_id = shared_state->thread_id.fetch_add(1);
     // In order to avoid dead-locks in nested parallel for loops, task() will be
@@ -174,11 +203,21 @@ void ParallelInvoke(ContextImpl* context,
     //  the last task being executed will be terminated here in order to avoid
     //  having more than num_threads active threads
     if (thread_id >= num_threads) return;
+    const int num_work_blocks = shared_state->num_work_blocks;
+    if (thread_id + 1 < num_threads &&
+        shared_state->block_id < num_work_blocks) {
+      // Add another thread to the thread pool.
+      // Note we are taking the task as value so the copy of shared_state shared
+      // pointer (captured by value at declaration of task lambda-function) is
+      // copied and the ref count is increased. This is to prevent it from being
+      // deleted when the main thread finishes all the work and exits before the
+      // threads finish.
+      context->thread_pool.AddTask([task_copy]() { task_copy(task_copy); });
+    }
 
     const int start = shared_state->start;
     const int base_block_size = shared_state->base_block_size;
     const int num_base_p1_sized_blocks = shared_state->num_base_p1_sized_blocks;
-    const int num_work_blocks = shared_state->num_work_blocks;
 
     while (true) {
       // Get the next available chunk of work to be performed. If there is no
@@ -213,25 +252,16 @@ void ParallelInvoke(ContextImpl* context,
       const int curr_end = curr_start + base_block_size +
                            (block_id < num_base_p1_sized_blocks ? 1 : 0);
       // Perform each task in current block
-      InvokeOnSegment<F>(thread_id, curr_start, curr_end, function);
+      const auto range = std::make_tuple(curr_start, curr_end);
+      InvokeOnSegment(thread_id, range, function);
     }
     shared_state->block_until_finished.Finished(num_jobs_finished);
   };
 
-  // Add all the tasks to the thread pool.
-  for (int i = 0; i < num_threads; ++i) {
-    // Note we are taking the task as value so the copy of shared_state shared
-    // pointer (captured by value at declaration of task lambda-function) is
-    // copied and the ref count is increased. This is to prevent it from being
-    // deleted when the main thread finishes all the work and exits before the
-    // threads finish.
-    context->thread_pool.AddTask([task]() { task(); });
-  }
-
-  // Try to do any available work on the main thread. This may steal work from
-  // the thread pool, but when there is no work left the thread pool tasks
-  // will be no-ops.
-  task();
+  // Start scheduling threads and doing work. We might end up with less threads
+  // scheduled than expected, if scheduling overhead is larger than the amount
+  // of work to be done.
+  task(task);
 
   // Wait until all tasks have finished.
   shared_state->block_until_finished.Block();
@@ -239,4 +269,4 @@ void ParallelInvoke(ContextImpl* context,
 
 }  // namespace ceres::internal
 
-#endif  // CERES_INTERNAL_PARALLEL_FOR_CXX_H_
+#endif

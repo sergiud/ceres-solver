@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2022 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@
 #ifndef CERES_NO_CUDA
 
 #include "ceres/cuda_buffer.h"
-#include "ceres/cuda_kernels.h"
+#include "ceres/cuda_kernels_vector_ops.h"
 #include "ceres/cuda_vector.h"
 #include "cublas_v2.h"
 
@@ -55,6 +55,15 @@ CudaVector::CudaVector(ContextImpl* context, int size)
   DCHECK_NE(context, nullptr);
   DCHECK(context->IsCudaInitialized());
   Resize(size);
+}
+
+CudaVector::CudaVector(CudaVector&& other)
+    : num_rows_(other.num_rows_),
+      context_(other.context_),
+      data_(std::move(other.data_)),
+      descr_(other.descr_) {
+  other.num_rows_ = 0;
+  other.descr_ = nullptr;
 }
 
 CudaVector& CudaVector::operator=(const CudaVector& other) {
@@ -88,7 +97,7 @@ double CudaVector::Dot(const CudaVector& x) const {
                       num_rows_,
                       data_.data(),
                       1,
-                      x.data().data(),
+                      x.data(),
                       1,
                       &result),
            CUBLAS_STATUS_SUCCESS)
@@ -105,13 +114,15 @@ double CudaVector::Norm() const {
   return result;
 }
 
+void CudaVector::CopyFromCpu(const double* x) {
+  data_.CopyFromCpu(x, num_rows_);
+}
+
 void CudaVector::CopyFromCpu(const Vector& x) {
-  data_.Reserve(x.rows());
-  data_.CopyFromCpu(x.data(), x.rows());
-  num_rows_ = x.rows();
-  DestroyDescriptor();
-  CHECK_EQ(cusparseCreateDnVec(&descr_, num_rows_, data_.data(), CUDA_R_64F),
-           CUSPARSE_STATUS_SUCCESS);
+  if (x.rows() != num_rows_) {
+    Resize(x.rows());
+  }
+  CopyFromCpu(x.data());
 }
 
 void CudaVector::CopyTo(Vector* x) const {
@@ -126,8 +137,10 @@ void CudaVector::CopyTo(double* x) const {
 }
 
 void CudaVector::SetZero() {
+  // Allow empty vector to be zeroed
+  if (num_rows_ == 0) return;
   CHECK(data_.data() != nullptr);
-  CudaSetZeroFP64(data_.data(), num_rows_, context_->stream_);
+  CudaSetZeroFP64(data_.data(), num_rows_, context_->DefaultStream());
 }
 
 void CudaVector::Axpby(double a, const CudaVector& x, double b) {
@@ -147,7 +160,7 @@ void CudaVector::Axpby(double a, const CudaVector& x, double b) {
   CHECK_EQ(cublasDaxpy(context_->cublas_handle_,
                        num_rows_,
                        &a,
-                       x.data().data(),
+                       x.data(),
                        1,
                        data_.data(),
                        1),
@@ -156,11 +169,8 @@ void CudaVector::Axpby(double a, const CudaVector& x, double b) {
 }
 
 void CudaVector::DtDxpy(const CudaVector& D, const CudaVector& x) {
-  CudaDtDxpy(data_.data(),
-             D.data().data(),
-             x.data().data(),
-             num_rows_,
-             context_->stream_);
+  CudaDtDxpy(
+      data_.data(), D.data(), x.data(), num_rows_, context_->DefaultStream());
 }
 
 void CudaVector::Scale(double s) {
