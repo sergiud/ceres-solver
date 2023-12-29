@@ -106,6 +106,7 @@ option (BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option (BUILD_EXAMPLES "Build examples" ON)
 option (BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
 option (WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
+option (WITH_CUDA "Enable CUDA support" ON)
 option (WITH_CUSTOM_BLAS "Use handcoded BLAS routines (usually faster) instead of Eigen." ON)
 # Enable the use of Eigen as a sparse linear algebra library for
 # solving the nonlinear least squares problems.
@@ -118,7 +119,6 @@ option (WITH_LAPACK "Enable use of LAPACK." ON)
 # may consider disabling this.
 option (WITH_SCHUR_SPECIALIZATIONS "Enable fixed-size schur specializations." ON)
 option (WITH_SUITESPARSE "Enable SuiteSparse." ON)
-cmake_dependent_option (WITH_CUDA "Enable CUDA support" ON CMAKE_CUDA_COMPILER OFF)
 cmake_dependent_option (WITH_EIGENMETIS "Enable Eigen METIS support." ON WITH_EIGENSPARSE OFF)
 
 if (NOT WITH_BENCHMARK)
@@ -171,15 +171,12 @@ else (WITH_EIGENSPARSE)
 endif (WITH_EIGENSPARSE)
 
 if (WITH_CUDA)
-  if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.18")
-    # Support Maxwell, Pascal, Volta, Turing, and Ampere GPUs.
-    set (CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
-  endif (CMAKE_VERSION VERSION_GREATER_EQUAL "3.18")
   enable_language (CUDA)
 endif (WITH_CUDA)
 
 if (CMAKE_CUDA_COMPILER_LOADED)
   set (CMAKE_CUDA_RUNTIME_LIBRARY NONE)
+  # Support Maxwell, Pascal, Volta, Turing, and Ampere GPUs.
   set (CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
 
   find_package (CUDAToolkit REQUIRED)
