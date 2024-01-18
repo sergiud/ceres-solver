@@ -105,14 +105,9 @@ namespace ceres {
 class CERES_EXPORT DynamicCostFunctionToFunctor {
  public:
   // Takes ownership of cost_function.
-  explicit DynamicCostFunctionToFunctor(CostFunction* cost_function)
-      : cost_function_(cost_function) {
-    CHECK(cost_function != nullptr);
-  }
+  explicit DynamicCostFunctionToFunctor(CostFunction* cost_function);
 
-  bool operator()(double const* const* parameters, double* residuals) const {
-    return cost_function_->Evaluate(parameters, residuals, nullptr);
-  }
+  bool operator()(double const* const* parameters, double* residuals) const;
 
   template <typename JetT>
   bool operator()(JetT const* const* inputs, JetT* output) const {
