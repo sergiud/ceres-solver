@@ -109,7 +109,7 @@ if (LAPACK_FOUND)
   list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES LAPACK::LAPACK)
 endif (LAPACK_FOUND)
 
-if (CMAKE_CUDA_COMPILER_LOADED)
+if (CUDAToolkit_FOUND)
   list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES
        CUDA::cublas
        CUDA::cudart
@@ -124,7 +124,7 @@ if (CMAKE_CUDA_COMPILER_LOADED)
   target_compile_options(ceres_cuda_kernels PRIVATE --extended-lambda)
   target_include_directories(ceres_cuda_kernels PRIVATE  ${Ceres_SOURCE_DIR}/include  ${Ceres_SOURCE_DIR}/internal ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ceres_cuda_kernels)
-endif (CMAKE_CUDA_COMPILER_LOADED)
+endif (CUDAToolkit_FOUND)
 
 # Source files that contain private symbols and live in the ceres::internal
 # namespace. The corresponding symbols (classes, functions, etc.) are expected
@@ -297,9 +297,9 @@ else()
   # symbols are visible.
   add_library(ceres_static ALIAS ceres)
 
-  if (CMAKE_CUDA_COMPILER_LOADED)
+  if (CUDAToolkit_FOUND)
     target_link_libraries (ceres INTERFACE $<BUILD_INTERFACE:CUDA::cublas>)
-  endif (CMAKE_CUDA_COMPILER_LOADED)
+  endif (CUDAToolkit_FOUND)
 endif()
 
 # Create a local alias target that matches the expected installed target.
@@ -367,9 +367,9 @@ generate_export_header(ceres EXPORT_FILE_NAME
 
 set (_Ceres_EXPORT_TARGETS ceres)
 
-if (CMAKE_CUDA_COMPILER_LOADED)
+if (CUDAToolkit_FOUND)
   list (APPEND _Ceres_EXPORT_TARGETS ceres_cuda_kernels)
-endif(CMAKE_CUDA_COMPILER_LOADED)
+endif(CUDAToolkit_FOUND)
 
 set (_Ceres_EXPORT_TARGETS ${_Ceres_EXPORT_TARGETS} PARENT_SCOPE)
 

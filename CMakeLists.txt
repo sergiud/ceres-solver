@@ -63,6 +63,7 @@ list(APPEND CMAKE_MODULE_PATH "${Ceres_SOURCE_DIR}/cmake")
 
 include (AddCompileFlagsIfSupported)
 include (CheckCXXCompilerFlag)
+include (CheckLanguage)
 include (CheckLibraryExists)
 include (CMakeDependentOption)
 include (CreateCeresConfig)
@@ -171,7 +172,11 @@ else (WITH_EIGENSPARSE)
 endif (WITH_EIGENSPARSE)
 
 if (WITH_CUDA)
-  enable_language (CUDA)
+  check_language (CUDA)
+
+  if (CMAKE_CUDA_COMPILER)
+    enable_language (CUDA)
+  endif (CMAKE_CUDA_COMPILER)
 endif (WITH_CUDA)
 
 if (CMAKE_CUDA_COMPILER_LOADED)
@@ -179,7 +184,7 @@ if (CMAKE_CUDA_COMPILER_LOADED)
   # Support Maxwell, Pascal, Volta, Turing, and Ampere GPUs.
   set (CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
 
-  find_package (CUDAToolkit REQUIRED)
+  find_package (CUDAToolkit)
 else (CMAKE_CUDA_COMPILER_LOADED)
   list (APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
 endif (CMAKE_CUDA_COMPILER_LOADED)
