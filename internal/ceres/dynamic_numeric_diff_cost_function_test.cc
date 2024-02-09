@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2023 Google Inc. All rights reserved.
+// Copyright 2024 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,8 @@
 #include <memory>
 #include <vector>
 
+#include "ceres/numeric_diff_options.h"
+#include "ceres/types.h"
 #include "gtest/gtest.h"
 
 namespace ceres::internal {
@@ -506,6 +508,26 @@ TEST_F(ThreeParameterCostFunctorTest,
   for (int i = 0; i < 21; ++i) {
     EXPECT_NEAR(expected_jacobian_z_[i], jacobian[2][i], kTolerance);
   }
+}
+
+TEST(DynamicNumericdiffCostFunctionTest, DeductionTemplateCompilationTest) {
+  // Ensure deduction guide to be working
+  (void)DynamicNumericDiffCostFunction{std::make_unique<MyCostFunctor>()};
+  (void)DynamicNumericDiffCostFunction{std::make_unique<MyCostFunctor>(),
+                                       NumericDiffOptions{}};
+  (void)DynamicNumericDiffCostFunction{new MyCostFunctor};
+  (void)DynamicNumericDiffCostFunction{new MyCostFunctor, TAKE_OWNERSHIP};
+  (void)DynamicNumericDiffCostFunction{
+      new MyCostFunctor, TAKE_OWNERSHIP, NumericDiffOptions{}};
+}
+
+TEST(DynamicNumericdiffCostFunctionTest, ArgumentForwarding) {
+  (void)DynamicNumericDiffCostFunction<MyCostFunctor>();
+}
+
+TEST(DynamicAutoDiffCostFunctionTest, UniquePtr) {
+  (void)DynamicNumericDiffCostFunction<MyCostFunctor>(
+      std::make_unique<MyCostFunctor>());
 }
 
 }  // namespace ceres::internal

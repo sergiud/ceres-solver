@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2023 Google Inc. All rights reserved.
+// Copyright 2024 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #include <memory>
 #include <vector>
 
+#include "ceres/types.h"
 #include "gtest/gtest.h"
 
 namespace ceres::internal {
@@ -806,6 +807,16 @@ TEST(DynamicAutoDiffCostFunction,
 TEST(DynamicAutoDiffCostFunctionTest, DeductionTemplateCompilationTest) {
   // Ensure deduction guide to be working
   (void)DynamicAutoDiffCostFunction(new MyCostFunctor());
+  (void)DynamicAutoDiffCostFunction(new MyCostFunctor(), TAKE_OWNERSHIP);
+  (void)DynamicAutoDiffCostFunction(std::make_unique<MyCostFunctor>());
+}
+
+TEST(DynamicAutoDiffCostFunctionTest, ArgumentForwarding) {
+  (void)DynamicAutoDiffCostFunction<MyCostFunctor>();
+}
+
+TEST(DynamicAutoDiffCostFunctionTest, UniquePtr) {
+  (void)DynamicAutoDiffCostFunction(std::make_unique<MyCostFunctor>());
 }
 
 }  // namespace ceres::internal
