@@ -79,6 +79,19 @@ jobs:
           apt-get install -y nvidia-cuda-toolkit
           echo "CUDACXX=/usr/lib/nvidia-cuda-toolkit/bin/nvcc" >> $GITHUB_ENV
 
+      - name: Cache Mold
+        id: cache-mold
+        uses: actions/cache@v4
+        with:
+          path: mold-2.31.0-x86_64-linux/
+          key: mold-2.31.0
+
+      - name: Setup Mold
+        if: steps.cache-mold.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/rui314/mold/releases/download/v2.31.0/mold-2.31.0-x86_64-linux.tar.gz
+          tar xvf mold-2.31.0-x86_64-linux.tar.gz
+
       - name: Cache Build
         id: cache-build
         uses: actions/cache@v4
@@ -87,10 +100,14 @@ jobs:
           key: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}-${{github.run_id}}
           restore-keys: ${{matrix.os}}-ccache-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}-
 
-      - name: Setup Environment
+      - name: Setup Build Environment
         if: matrix.build_type == 'Release'
         run: |
           echo 'CXXFLAGS=-flto' >> $GITHUB_ENV
+
+      - name: Setup Runtime Environment
+        run: |
+          echo "${{github.workspace}}/mold-2.31.0-x86_64-linux/libexec/mold" >> $GITHUB_PATH
 
       - name: Configure
         run: |
