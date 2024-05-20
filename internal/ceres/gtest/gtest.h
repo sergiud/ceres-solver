@@ -1019,7 +1019,11 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #  define GTEST_API_ __declspec(dllexport)
 # endif
 #elif __GNUC__ >= 4 || defined(__clang__)
-# define GTEST_API_ __attribute__((visibility ("default")))
+# if !(GTEST_LINKED_AS_SHARED_LIBRARY) && defined(__MINGW32__)
+#   define GTEST_API_
+# else
+#   define GTEST_API_ __attribute__((visibility ("default")))
+# endif // !(GTEST_LINKED_AS_SHARED_LIBRARY) && defined(__MINGW32__)
 #endif  // _MSC_VER
 
 #endif  // GTEST_API_
