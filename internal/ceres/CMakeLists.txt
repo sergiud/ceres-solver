@@ -110,11 +110,7 @@ if (LAPACK_FOUND)
 endif (LAPACK_FOUND)
 
 if (CUDAToolkit_FOUND)
-  list (APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES
-       CUDA::cublas
-       CUDA::cudart
-       CUDA::cusolver
-       CUDA::cusparse)
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${CERES_CUDA_LIBRARIES})
   set_source_files_properties(cuda_kernels_vector_ops.cu.cc PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(cuda_kernels_bsm_to_crs.cu.cc PROPERTIES LANGUAGE CUDA)
   add_library(ceres_cuda_kernels STATIC cuda_kernels_vector_ops.cu.cc cuda_kernels_bsm_to_crs.cu.cc)
@@ -298,9 +294,13 @@ else()
   add_library(ceres_static ALIAS ceres)
 
   if (CUDAToolkit_FOUND)
-    target_link_libraries (ceres INTERFACE $<BUILD_INTERFACE:CUDA::cublas>)
+    target_link_libraries (ceres INTERFACE $<BUILD_INTERFACE:CUDA::cublas${CERES_CUDA_TARGET_SUFFIX}>)
   endif (CUDAToolkit_FOUND)
 endif()
+
+if (CUDAToolkit_FOUND)
+  target_link_libraries (ceres_internal PUBLIC CUDA::cudart${CERES_CUDA_TARGET_SUFFIX})
+endif (CUDAToolkit_FOUND)
 
 # Create a local alias target that matches the expected installed target.
 add_library(Ceres::Ceres ALIAS ceres)

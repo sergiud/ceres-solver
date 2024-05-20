@@ -107,7 +107,7 @@ option (BUILD_DOCUMENTATION "Build User's Guide (html)" OFF)
 option (BUILD_EXAMPLES "Build examples" ON)
 option (BUILD_SHARED_LIBS "Build Ceres as a shared library." OFF)
 option (WITH_BENCHMARK "Build Ceres benchmarking suite" ON)
-option (WITH_CUDA "Enable CUDA support" ON)
+set (WITH_CUDA default CACHE STRING "Enable use of CUDA linear algebra solvers")
 option (WITH_CUSTOM_BLAS "Use handcoded BLAS routines (usually faster) instead of Eigen." ON)
 # Enable the use of Eigen as a sparse linear algebra library for
 # solving the nonlinear least squares problems.
@@ -171,6 +171,12 @@ else (WITH_EIGENSPARSE)
   add_definitions(-DEIGEN_MPL2_ONLY)
 endif (WITH_EIGENSPARSE)
 
+if (CMAKE_VERSION VERSION_LESS 3.17)
+  set_property (CACHE WITH_CUDA PROPERTY STRINGS OFF default)
+else (CMAKE_VERSION VERSION_LESS 3.17)
+  set_property (CACHE WITH_CUDA PROPERTY STRINGS OFF default static)
+endif (CMAKE_VERSION VERSION_LESS 3.17)
+
 if (WITH_CUDA)
   check_language (CUDA)
 
@@ -180,11 +186,23 @@ if (WITH_CUDA)
 endif (WITH_CUDA)
 
 if (CMAKE_CUDA_COMPILER_LOADED)
+  set (CERES_CUDA_TARGET_SUFFIX "")
   set (CMAKE_CUDA_RUNTIME_LIBRARY NONE)
   # Support Maxwell, Pascal, Volta, Turing, and Ampere GPUs.
   set (CMAKE_CUDA_ARCHITECTURES "50;60;70;80")
 
+  if (WITH_CUDA STREQUAL "static")
+    set(CERES_CUDA_TARGET_SUFFIX "_static")
+  endif (WITH_CUDA STREQUAL "static")
+
   find_package (CUDAToolkit)
+
+  list (APPEND CERES_CUDA_LIBRARIES
+    CUDA::cublas${CERES_CUDA_TARGET_SUFFIX}
+    CUDA::cudart${CERES_CUDA_TARGET_SUFFIX}
+    CUDA::cusolver${CERES_CUDA_TARGET_SUFFIX}
+    CUDA::cusparse${CERES_CUDA_TARGET_SUFFIX})
+  set (CMAKE_CUDA_RUNTIME_LIBRARY NONE)
 else (CMAKE_CUDA_COMPILER_LOADED)
   list (APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
 endif (CMAKE_CUDA_COMPILER_LOADED)
