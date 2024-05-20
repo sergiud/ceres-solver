@@ -35,7 +35,7 @@ jobs:
       - name: Setup Dependencies
         run: |
           apt-get update
-          apt-get install -y \
+          apt-get install -y --no-install-suggests --no-install-recommends \
             build-essential \
             ccache \
             cmake \
@@ -69,14 +69,16 @@ jobs:
         if: matrix.gpu == 'cuda' && matrix.os != 'ubuntu:24.04'
         run: |
           apt-get update
-          apt-get install -y cuda
+          apt-get install -y --no-install-suggests --no-install-recommends \
+            cuda
           echo "CUDACXX=/usr/local/cuda/bin/nvcc" >> $GITHUB_ENV
 
       - name: Setup CUDA Toolkit (>=24.04)
         if: matrix.gpu == 'cuda' && matrix.os == 'ubuntu:24.04'
         run: |
           apt-get update
-          apt-get install -y nvidia-cuda-toolkit
+          apt-get install -y --no-install-suggests --no-install-recommends \
+            nvidia-cuda-toolkit
           echo "CUDACXX=/usr/lib/nvidia-cuda-toolkit/bin/nvcc" >> $GITHUB_ENV
 
       - name: Cache Build
