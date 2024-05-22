@@ -29,7 +29,7 @@
 # Authors: keir@google.com (Keir Mierle)
 #          alexs.mac@gmail.com (Alex Stewart)
 
-cmake_minimum_required(VERSION 3.18...3.27)
+cmake_minimum_required(VERSION 3.18...3.29)
 project(Ceres LANGUAGES C CXX VERSION 2.2.0)
 
 # NOTE: The following CMake variables must be applied consistently to all
