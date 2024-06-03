@@ -390,7 +390,8 @@ install(TARGETS ceres
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if (BUILD_TESTING)
-  find_package(GTest)
+  find_package(GTest REQUIRED COMPONENTS GTest GMock CONFIG)
+  include(GoogleTest)
 
   add_library(test_util STATIC
               evaluator_test_utils.cc

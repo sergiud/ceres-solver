@@ -139,6 +139,34 @@ jobs:
                 --config ${{matrix.build_type}} \
                 --target install
 
+      - name: Cache googletest
+        id: cache-googletest
+        uses: actions/cache@v4
+        with:
+          path: googletest/
+          key: NDK-${{matrix.os}}-googletest-1.14.0-${{matrix.abi}}-${{matrix.build_type}}-${{matrix.lib}}
+
+      - name: Download googletest
+        if: steps.cache-googletest.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+          unzip v1.14.0.zip
+
+      - name: Setup googletest
+        if: steps.cache-googletest.outputs.cache-hit != 'true'
+        run: |
+          cmake -S googletest-1.14.0 -B build-googletest \
+                -DBUILD_SHARED_LIBS=${{matrix.lib == 'shared'}} \
+                -DCMAKE_ANDROID_API=${{matrix.android_api_level}} \
+                -DCMAKE_ANDROID_ARCH_ABI=${{matrix.abi}} \
+                -DCMAKE_ANDROID_STL_TYPE=c++_shared \
+                -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+                -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/googletest \
+                -DCMAKE_SYSTEM_NAME=Android
+          cmake --build build-googletest \
+                --config ${{matrix.build_type}} \
+                --target install
+
       - name: Cache Build
         id: cache-build
         uses: actions/cache@v4
@@ -162,7 +190,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
                 -DCMAKE_C_COMPILER_LAUNCHER=$(which ccache) \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=$(which ccache) \
-                -DCMAKE_FIND_ROOT_PATH="${{github.workspace}}/eigen;${{github.workspace}}/gflags;${{github.workspace}}/glog" \
+                -DCMAKE_FIND_ROOT_PATH="${{github.workspace}}/eigen;${{github.workspace}}/gflags;${{github.workspace}}/glog;${{github.workspace}}/googletest" \
                 -DCMAKE_SYSTEM_NAME=Android
 
       - name: Build
