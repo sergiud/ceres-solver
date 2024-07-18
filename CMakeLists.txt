@@ -32,11 +32,27 @@
 cmake_minimum_required(VERSION 3.16...3.29)
 project(Ceres C CXX)
 
-# In the normal course of things, we would not need the following
-# constraint. However, if we do not set the standard, then
-# std::basic_string_view is not available, which absl depends on and
-# linking the test fails.
-set(CMAKE_CXX_STANDARD 17)
+# Abseil
+if (NOT EXISTS ${Ceres_SOURCE_DIR}/third_party/abseil-cpp/.git)
+  find_package (absl 20240116 REQUIRED)
+else (NOT EXISTS ${Ceres_SOURCE_DIR}/third_party/abseil-cpp/.git)
+  # In the normal course of things, we would not need the following
+  # constraint. However, if we do not set the standard, then
+  # std::basic_string_view is not available, which absl depends on and
+  # linking the test fails.
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_VISIBILITY_PRESET default)
+  # ABSL plans to enable this flag to be on by default in the future. If
+  # it is not set, then it issues a warning. We force enable it, both to
+  # silence the warning but to also be safe going forward.
+  set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "Use CMake C++ standard meta
+  features (e.g. cxx_std_14) that propagate to targets that link to
+  Abseil")
+  set(ABSL_ENABLE_INSTALL ON CACHE BOOL "Enable install rules")
+  add_subdirectory(third_party/abseil-cpp)
+  unset (CMAKE_CXX_STANDARD)
+  unset (CMAKE_CXX_VISIBILITY_PRESET)
+endif (NOT EXISTS ${Ceres_SOURCE_DIR}/third_party/abseil-cpp/.git)
 
 # NOTE: The following CMake variables must be applied consistently to all
 # targets in project to avoid visibility warnings by placing the variables at
@@ -159,22 +175,14 @@ endif (IOS)
 
 unset(CERES_COMPILE_OPTIONS)
 
-# Abseil
-#
-# TODO: We are currently adding the submodule unconditionally. Going
-# foward, this should be replaced with a more sophisticated logic,
-# where we use the system installed version of abseil if it is more
-# recent than the version we are tracking. This will also affect how
-# we are installing ceres.
-
-# ABSL plans to enable this flag to be on by default in the future. If
-# it is not set, then it issues a warning. We force enable it, both to
-# silence the warning but to also be safe going forward.
-set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "Use CMake C++ standard meta
-features (e.g. cxx_std_14) that propagate to targets that link to
-Abseil")
-add_subdirectory(third_party/abseil-cpp)
-
+if (BUILD_TESTING)
+  if (NOT EXISTS ${Ceres_SOURCE_DIR}/third_party/googletest/.git)
+    find_package (GTest 1.13 REQUIRED COMPONENTS GMock GTest NO_MODULE)
+  else (NOT EXISTS ${Ceres_SOURCE_DIR}/third_party/googletest/.git)
+    # set (GTEST_HAS_ABSL ON CACHE BOOL "Use ABSL when building gtest")
+    add_subdirectory(${Ceres_SOURCE_DIR}/third_party/googletest ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/googletest)
+  endif (NOT EXISTS ${Ceres_SOURCE_DIR}/third_party/googletest/.git)
+endif (BUILD_TESTING)
 
 # Eigen.
 # Eigen delivers Eigen3Config.cmake since v3.3.3
@@ -667,11 +675,9 @@ write_basic_package_version_file("${Ceres_BINARY_DIR}/CeresConfigVersion.cmake"
 # imported library targets for Ceres (with dependency relations) which can be
 # used in target_link_libraries() calls in the client project to use Ceres.
 #
-# TODO: Re-enable this
-#
-#install(EXPORT CeresExport
-#        NAMESPACE Ceres::
-#        DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR} FILE CeresTargets.cmake)
+install(EXPORT CeresExport
+        NAMESPACE Ceres::
+        DESTINATION ${RELATIVE_CMAKECONFIG_INSTALL_DIR} FILE CeresTargets.cmake)
 
 # Save the relative path from the installed CeresConfig.cmake file to the
 # install prefix.  We do not save an absolute path in case the installed package

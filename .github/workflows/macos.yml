@@ -29,9 +29,17 @@ jobs:
           - ios
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (iOS)
+        uses: actions/checkout@v4
+        if: matrix.target != 'host'
         with:
           submodules: recursive
+
+      - name: Checkout (Host)
+        uses: actions/checkout@v4
+        if: matrix.target == 'host'
+        with:
+          submodules: false
 
       - name: Setup Dependencies (iOS)
         if: matrix.target == 'ios'
@@ -45,9 +53,11 @@ jobs:
         if: matrix.target == 'host'
         run: |
           brew install \
+            abseil \
             ccache \
             eigen \
             google-benchmark \
+            googletest \
             metis \
             ninja \
             suite-sparse

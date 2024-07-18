@@ -30,6 +30,8 @@
 
 #include "ceres/cuda_block_structure.h"
 
+#include "absl/log/log.h"
+
 #ifndef CERES_NO_CUDA
 
 #include "absl/log/check.h"
