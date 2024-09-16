@@ -259,20 +259,21 @@ INSTANTIATE_TEST_SUITE_P(
 #endif
 
 #ifdef CERES_USE_EIGEN_SPARSE
+const auto Orderings = ::testing::Combine(
+    ::testing::Values(EIGEN_SPARSE),
+    ::testing::Values(false, true),
+#if defined(CERES_NO_EIGEN_METIS)
+    ::testing::Values(OrderingType::AMD, OrderingType::NATURAL),
+#else
+    ::testing::Values(
+        OrderingType::AMD, OrderingType::NATURAL, OrderingType::NESDIS),
+#endif  // defined(CERES_NO_EIGEN_METIS)
+    ::testing::Values(true, false));
+
 INSTANTIATE_TEST_SUITE_P(
     EigenSparseCholesky,
     SparseCholeskyTest,
-    ::testing::Combine(::testing::Values(EIGEN_SPARSE),
-                       ::testing::Values(false, true),
-#if defined(CERES_NO_EIGEN_METIS)
-                       ::testing::Values(OrderingType::AMD,
-                                         OrderingType::NATURAL),
-#else
-                       ::testing::Values(OrderingType::AMD,
-                                         OrderingType::NATURAL,
-                                         OrderingType::NESDIS),
-#endif  // defined(CERES_NO_EIGEN_METIS)
-                       ::testing::Values(true, false)),
+    Orderings,
     ParamInfoToString);
 #endif  // CERES_USE_EIGEN_SPARSE
 
