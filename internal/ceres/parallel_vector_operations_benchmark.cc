@@ -61,7 +61,7 @@ namespace ceres::internal {
       ->VECTOR_SIZES(8)     \
       ->VECTOR_SIZES(16)
 
-static void SetZero(benchmark::State& state) {
+static void BM_SetZero(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
   Vector x = Vector::Random(kVectorSize);
   for (auto _ : state) {
@@ -69,7 +69,7 @@ static void SetZero(benchmark::State& state) {
   }
   CHECK_EQ(x.squaredNorm(), 0.);
 }
-BENCHMARK(SetZero)->VECTOR_SIZES(1);
+BENCHMARK(BM_SetZero)->VECTOR_SIZES(1);
 
 static void SetZeroParallel(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
@@ -229,7 +229,7 @@ static void ClampParallel(benchmark::State& state) {
 }
 BENCHMARK(ClampParallel)->VECTOR_SIZE_THREADS;
 
-static void Norm(benchmark::State& state) {
+static void BM_Norm(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
   const Vector x = Vector::Random(kVectorSize);
 
@@ -239,7 +239,7 @@ static void Norm(benchmark::State& state) {
   }
   CHECK_GT(total, 0.);
 }
-BENCHMARK(Norm)->VECTOR_SIZES(1);
+BENCHMARK(BM_Norm)->VECTOR_SIZES(1);
 
 static void NormParallel(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
@@ -257,7 +257,7 @@ static void NormParallel(benchmark::State& state) {
 }
 BENCHMARK(NormParallel)->VECTOR_SIZE_THREADS;
 
-static void Dot(benchmark::State& state) {
+static void BM_Dot(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
   const Vector x = Vector::Random(kVectorSize);
   const Vector y = Vector::Random(kVectorSize);
@@ -268,7 +268,7 @@ static void Dot(benchmark::State& state) {
   }
   CHECK_NE(total, 0.);
 }
-BENCHMARK(Dot)->VECTOR_SIZES(1);
+BENCHMARK(BM_Dot)->VECTOR_SIZES(1);
 
 static void DotParallel(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
@@ -287,7 +287,7 @@ static void DotParallel(benchmark::State& state) {
 }
 BENCHMARK(DotParallel)->VECTOR_SIZE_THREADS;
 
-static void Axpby(benchmark::State& state) {
+static void BM_Axpby(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
   const Vector x = Vector::Random(kVectorSize);
   const Vector y = Vector::Random(kVectorSize);
@@ -300,7 +300,7 @@ static void Axpby(benchmark::State& state) {
   }
   CHECK_GT(z.squaredNorm(), 0.);
 }
-BENCHMARK(Axpby)->VECTOR_SIZES(1);
+BENCHMARK(BM_Axpby)->VECTOR_SIZES(1);
 
 static void AxpbyParallel(benchmark::State& state) {
   const int kVectorSize = static_cast<int>(state.range(0));
