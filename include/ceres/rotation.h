@@ -315,20 +315,28 @@ template <typename T>
 inline void AngleAxisToQuaternion(const T* angle_axis, T* quaternion) {
   using std::fpclassify;
   using std::hypot;
+
   const T& a0 = angle_axis[0];
   const T& a1 = angle_axis[1];
   const T& a2 = angle_axis[2];
 
   T k;
+  bool identity = true;
 
   // For points not at the origin, the full conversion is numerically stable.
   if (fpclassify(a0) != FP_ZERO || fpclassify(a1) != FP_ZERO ||
       fpclassify(a2) != FP_ZERO) {
     const T theta = hypot(a0, a1, a2);
-    const T half_theta = theta * T(0.5);
-    k = sin(half_theta) / theta;
-    quaternion[0] = cos(half_theta);
-  } else {
+
+    if (fpclassify(theta) != FP_ZERO) {
+      identity = false;
+      const T half_theta = theta * T(0.5);
+      k = sin(half_theta) / theta;
+      quaternion[0] = cos(half_theta);
+    }
+  }
+
+  if (identity) {
     // At the origin, sqrt() will produce NaN in the derivative since
     // the argument is zero.  By approximating with a Taylor series,
     // and truncating at one term, the value and first derivatives will be
@@ -346,36 +354,46 @@ template <typename T>
 inline void QuaternionToAngleAxis(const T* quaternion, T* angle_axis) {
   using std::fpclassify;
   using std::hypot;
+
   const T& q1 = quaternion[1];
   const T& q2 = quaternion[2];
   const T& q3 = quaternion[3];
 
   T k;
+  bool identity = true;
 
   // For quaternions representing non-zero rotation, the conversion
   // is numerically stable.
   if (fpclassify(q1) != FP_ZERO || fpclassify(q2) != FP_ZERO ||
       fpclassify(q3) != FP_ZERO) {
     const T sin_theta = hypot(q1, q2, q3);
-    const T& cos_theta = quaternion[0];
 
-    // If cos_theta is negative, theta is greater than pi/2, which
-    // means that angle for the angle_axis vector which is 2 * theta
-    // would be greater than pi.
-    //
-    // While this will result in the correct rotation, it does not
-    // result in a normalized angle-axis vector.
-    //
-    // In that case we observe that 2 * theta ~ 2 * theta - 2 * pi,
-    // which is equivalent saying
-    //
-    //   theta - pi = atan(sin(theta - pi), cos(theta - pi))
-    //              = atan(-sin(theta), -cos(theta))
-    //
-    const T sign = copysign(T(1), cos_theta);
-    const T two_theta = T(2.0) * atan2(sign * sin_theta, sign * cos_theta);
-    k = two_theta / sin_theta;
-  } else {
+    // Even though some of the coefficients are not zero, the norm
+    // might become zero due to underflow
+    if (fpclassify(sin_theta) != FP_ZERO) {
+      identity = false;
+      const T& cos_theta = quaternion[0];
+
+      // If cos_theta is negative, theta is greater than pi/2, which
+      // means that angle for the angle_axis vector which is 2 * theta
+      // would be greater than pi.
+      //
+      // While this will result in the correct rotation, it does not
+      // result in a normalized angle-axis vector.
+      //
+      // In that case we observe that 2 * theta ~ 2 * theta - 2 * pi,
+      // which is equivalent saying
+      //
+      //   theta - pi = atan(sin(theta - pi), cos(theta - pi))
+      //              = atan(-sin(theta), -cos(theta))
+      //
+      const T sign = copysign(T(1), cos_theta);
+      const T two_theta = T(2.0) * atan2(sign * sin_theta, sign * cos_theta);
+      k = two_theta / sin_theta;
+    }
+  }
+
+  if (identity) {
     // For zero rotation, sqrt() will produce NaN in the derivative since
     // the argument is zero.  By approximating with a Taylor series,
     // and truncating at one term, the value and first derivatives will be
@@ -456,31 +474,44 @@ void AngleAxisToRotationMatrix(
     const T* angle_axis, const MatrixAdapter<T, row_stride, col_stride>& R) {
   using std::fpclassify;
   using std::hypot;
-  static const T kOne = T(1.0);
-  const T theta = hypot(angle_axis[0], angle_axis[1], angle_axis[2]);
-  if (fpclassify(theta) != FP_ZERO) {
-    // We want to be careful to only evaluate the square root if the
-    // norm of the angle_axis vector is greater than zero. Otherwise
-    // we get a division by zero.
-    const T wx = angle_axis[0] / theta;
-    const T wy = angle_axis[1] / theta;
-    const T wz = angle_axis[2] / theta;
 
-    const T costheta = cos(theta);
-    const T sintheta = sin(theta);
+  const T kOne = T(1.0);
+  bool identity = true;
 
-    // clang-format off
-    R(0, 0) =     costheta   + wx*wx*(kOne -    costheta);
-    R(1, 0) =  wz*sintheta   + wx*wy*(kOne -    costheta);
-    R(2, 0) = -wy*sintheta   + wx*wz*(kOne -    costheta);
-    R(0, 1) =  wx*wy*(kOne - costheta)     - wz*sintheta;
-    R(1, 1) =     costheta   + wy*wy*(kOne -    costheta);
-    R(2, 1) =  wx*sintheta   + wy*wz*(kOne -    costheta);
-    R(0, 2) =  wy*sintheta   + wx*wz*(kOne -    costheta);
-    R(1, 2) = -wx*sintheta   + wy*wz*(kOne -    costheta);
-    R(2, 2) =     costheta   + wz*wz*(kOne -    costheta);
-    // clang-format on
-  } else {
+  if (fpclassify(angle_axis[0]) != FP_ZERO ||
+      fpclassify(angle_axis[1]) != FP_ZERO ||
+      fpclassify(angle_axis[2]) != FP_ZERO) {
+    const T theta = hypot(angle_axis[0], angle_axis[1], angle_axis[2]);
+
+    // Even though some of the coefficients are not zero, the norm
+    // might become zero due to underflow
+    if (fpclassify(theta) != FP_ZERO) {
+      identity = false;
+      // We want to be careful to only evaluate the square root if the
+      // norm of the angle_axis vector is greater than zero. Otherwise
+      // we get a division by zero.
+      const T wx = angle_axis[0] / theta;
+      const T wy = angle_axis[1] / theta;
+      const T wz = angle_axis[2] / theta;
+
+      const T costheta = cos(theta);
+      const T sintheta = sin(theta);
+
+      // clang-format off
+      R(0, 0) =     costheta   + wx*wx*(kOne -    costheta);
+      R(1, 0) =  wz*sintheta   + wx*wy*(kOne -    costheta);
+      R(2, 0) = -wy*sintheta   + wx*wz*(kOne -    costheta);
+      R(0, 1) =  wx*wy*(kOne - costheta)     - wz*sintheta;
+      R(1, 1) =     costheta   + wy*wy*(kOne -    costheta);
+      R(2, 1) =  wx*sintheta   + wy*wz*(kOne -    costheta);
+      R(0, 2) =  wy*sintheta   + wx*wz*(kOne -    costheta);
+      R(1, 2) = -wx*sintheta   + wy*wz*(kOne -    costheta);
+      R(2, 2) =     costheta   + wz*wz*(kOne -    costheta);
+      // clang-format on
+    }
+  }
+
+  if (identity) {
     // At zero, we switch to using the first order Taylor expansion.
     R(0, 0) = kOne;
     R(1, 0) = angle_axis[2];
@@ -797,39 +828,48 @@ inline void AngleAxisRotatePoint(const T angle_axis[3],
   using std::fpclassify;
   using std::hypot;
 
-  const T theta = hypot(angle_axis[0], angle_axis[1], angle_axis[2]);
+  bool identity = true;
 
-  if (fpclassify(theta) != FP_ZERO) {
-    // Away from zero, use the rodriguez formula
-    //
-    //   result = pt costheta +
-    //            (w x pt) * sintheta +
-    //            w (w . pt) (1 - costheta)
-    //
-    // We want to be careful to only evaluate the square root if the
-    // norm of the angle_axis vector is greater than zero. Otherwise
-    // we get a division by zero.
-    //
-    const T costheta = cos(theta);
-    const T sintheta = sin(theta);
-    const T theta_inverse = T(1.0) / theta;
+  if (fpclassify(angle_axis[0]) != FP_ZERO ||
+      fpclassify(angle_axis[1]) != FP_ZERO ||
+      fpclassify(angle_axis[2]) != FP_ZERO) {
+    const T theta = hypot(angle_axis[0], angle_axis[1], angle_axis[2]);
 
-    const T w[3] = {angle_axis[0] * theta_inverse,
-                    angle_axis[1] * theta_inverse,
-                    angle_axis[2] * theta_inverse};
+    if (fpclassify(theta) != FP_ZERO) {
+      identity = false;
+      // Away from zero, use the rodriguez formula
+      //
+      //   result = pt costheta +
+      //            (w x pt) * sintheta +
+      //            w (w . pt) (1 - costheta)
+      //
+      // We want to be careful to only evaluate the square root if the
+      // norm of the angle_axis vector is greater than zero. Otherwise
+      // we get a division by zero.
+      //
+      const T costheta = cos(theta);
+      const T sintheta = sin(theta);
+      const T theta_inverse = T(1.0) / theta;
 
-    // Explicitly inlined evaluation of the cross product for
-    // performance reasons.
-    const T w_cross_pt[3] = {w[1] * pt[2] - w[2] * pt[1],
-                             w[2] * pt[0] - w[0] * pt[2],
-                             w[0] * pt[1] - w[1] * pt[0]};
-    const T tmp =
-        (w[0] * pt[0] + w[1] * pt[1] + w[2] * pt[2]) * (T(1.0) - costheta);
+      const T w[3] = {angle_axis[0] * theta_inverse,
+                      angle_axis[1] * theta_inverse,
+                      angle_axis[2] * theta_inverse};
 
-    result[0] = pt[0] * costheta + w_cross_pt[0] * sintheta + w[0] * tmp;
-    result[1] = pt[1] * costheta + w_cross_pt[1] * sintheta + w[1] * tmp;
-    result[2] = pt[2] * costheta + w_cross_pt[2] * sintheta + w[2] * tmp;
-  } else {
+      // Explicitly inlined evaluation of the cross product for
+      // performance reasons.
+      const T w_cross_pt[3] = {w[1] * pt[2] - w[2] * pt[1],
+                               w[2] * pt[0] - w[0] * pt[2],
+                               w[0] * pt[1] - w[1] * pt[0]};
+      const T tmp =
+          (w[0] * pt[0] + w[1] * pt[1] + w[2] * pt[2]) * (T(1.0) - costheta);
+
+      result[0] = pt[0] * costheta + w_cross_pt[0] * sintheta + w[0] * tmp;
+      result[1] = pt[1] * costheta + w_cross_pt[1] * sintheta + w[1] * tmp;
+      result[2] = pt[2] * costheta + w_cross_pt[2] * sintheta + w[2] * tmp;
+    }
+  }
+
+  if (identity) {
     // At zero, the first order Taylor approximation of the rotation
     // matrix R corresponding to a vector w and angle theta is
     //
