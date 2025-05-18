@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     name: ${{matrix.os}}-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.host}}
     container: ${{matrix.os}}
     defaults:
       run:
@@ -17,6 +17,9 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
+        host:
+          - ubuntu-24.04
+          - ubunut-24.04-arm
         os:
           - ubuntu:22.04
           - ubuntu:24.04
@@ -28,6 +31,15 @@ jobs:
         gpu:
           - cuda
           - no-cuda
+        include:
+          - host: ubuntu-24.04
+            os: ubuntu:22.04
+          - host: ubuntu-24.04
+            os: ubuntu:24.04
+          - host: ubuntu-24.04-arm
+            os: ubuntu:22.04
+          - host: ubuntu-24.04-arm
+            os: ubuntu:24.04
 
     steps:
       - name: Setup Dependencies

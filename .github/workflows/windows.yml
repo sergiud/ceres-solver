@@ -109,6 +109,10 @@ jobs:
             os: windows-2025
             generator: 'Visual Studio 17 2022'
             marker: vc17
+          - msvc: VS-17-2022-arm
+            os: windows-11-arm
+            generator: 'Visual Studio 17 2022'
+            marker: vc17
 
     steps:
       - uses: actions/checkout@v4
