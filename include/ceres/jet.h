@@ -167,6 +167,7 @@
 #include <type_traits>
 
 #include "Eigen/Core"
+#include "ceres/accurate_norm.h"
 #include "ceres/internal/jet_traits.h"
 #include "ceres/internal/port.h"
 #include "ceres/jet_fwd.h"
@@ -526,6 +527,50 @@ inline bool IsNormal(double x)   { return std::isnormal(x); }
 template <typename T, int N>
 inline Jet<T, N> abs(const Jet<T, N>& f) {
   return Jet<T, N>(abs(f.a), copysign(T(1), f.a) * f.v);
+}
+
+template <typename T, int N>
+constexpr decltype(auto) By(const Jet<T, N>& value, T den) {
+  return value.a / den * value.v;
+}
+
+template <typename T, int N, typename... Args>
+inline Jet<T, N> AccurateNorm(const Jet<T, N>& x,
+                              const Jet<T, N>& y,
+                              Args&&... args) {
+  // d/da sqrt(a) = 0.5 / sqrt(a)
+  // d/dx x^2 + y^2 + ... = 2x
+  // So by the chain rule:
+  // d/dx sqrt(x^2 + y^2 + z^2)
+  //    = 0.5 / sqrt(x^2 + y^2 + z^2) * 2x
+  //    = x / sqrt(x^2 + y^2 + z^2)
+  // d/dy sqrt(x^2 + y^2 + z^2) = y / sqrt(x^2 + y^2 + z^2)
+  // and so on.
+  const T tmp = AccurateNorm(x.a, y.a, std::forward<Args>(args).a...);
+  return Jet<T, N>(tmp,
+                   x.a / tmp * x.v + y.a / tmp * y.v +
+                       (By(std::forward<Args>(args), tmp) + ... +
+                        Eigen::Vector<T, N>::Zero()));
+}
+
+template <typename T, int N, typename... Args>
+inline Jet<T, N> AccurateRNorm(const Jet<T, N>& x,
+                               const Jet<T, N>& y,
+                               Args&&... args) {
+  // d/da 1/sqrt(a) = -0.5 / a^3/2
+  // d/dx x^2 + y^2 + ... = 2x
+  // So by the chain rule:
+  // d/dx 1/sqrt(x^2 + y^2 + ...)
+  //    = -0.5 / (x^2 + y^2 + ...)^3/2 * 2x
+  //    = -x / (x^2 + y^2 + z^2)^3/2
+  // d/dy 1/sqrt(x^2 + y^2 + ...) = -y / (x^2 + y^2 + ...)^3/2
+  // and so on.
+  const T tmp = AccurateRNorm(x.a, y.a, std::forward<Args>(args).a...);
+  const T den = tmp * tmp * tmp;
+  return Jet<T, N>(tmp,
+                   -x.a / den * x.v - y.a / den * y.v -
+                       (By(std::forward<Args>(args), den) + ... +
+                        Eigen::Vector<T, N>::Zero()));
 }
 
 // copysign(a, b) composes a float with the magnitude of a and the sign of b.
