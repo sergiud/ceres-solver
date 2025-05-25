@@ -42,7 +42,7 @@
 #include "ceres/sparse_matrix.h"
 #include "ceres/trust_region_strategy.h"
 #include "ceres/types.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

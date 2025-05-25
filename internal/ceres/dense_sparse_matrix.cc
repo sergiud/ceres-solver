@@ -36,7 +36,7 @@
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
 #include "ceres/triplet_sparse_matrix.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

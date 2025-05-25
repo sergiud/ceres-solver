@@ -36,9 +36,9 @@
 #include <thread>
 
 #include "ceres/internal/config.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

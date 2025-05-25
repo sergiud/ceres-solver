@@ -32,8 +32,8 @@
 
 #include "Eigen/Core"
 #include "ceres/block_structure.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 namespace internal {

@@ -35,10 +35,10 @@
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_solver.h"
 #include "ceres/trust_region_strategy.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gmock/mock-log.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 using testing::_;
 using testing::AllOf;
@@ -144,7 +144,7 @@ TEST(LevenbergMarquardtStrategy, CorrectDiagonalToLinearSolver) {
     ScopedMockLog log;
     EXPECT_CALL(log, Log(_, _, _)).Times(AnyNumber());
     // This using directive is needed get around the fact that there
-    // are versions of glog which are not in the google namespace.
+    // are versions of ng-log which are not in the google namespace.
     using namespace google;
 
 #if defined(GLOG_NO_ABBREVIATED_SEVERITIES)
@@ -154,7 +154,7 @@ TEST(LevenbergMarquardtStrategy, CorrectDiagonalToLinearSolver) {
                 Log(GLOG_WARNING, _, HasSubstr("Failed to compute a step")));
 #else
     EXPECT_CALL(log,
-                Log(google::WARNING, _, HasSubstr("Failed to compute a step")));
+                Log(nglog::WARNING, _, HasSubstr("Failed to compute a step")));
 #endif
 
     TrustRegionStrategy::Summary summary =

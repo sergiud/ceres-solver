@@ -44,7 +44,7 @@
 #include "ceres/internal/export.h"
 #include "ceres/program_evaluator.h"
 #include "ceres/scratch_evaluate_preparer.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

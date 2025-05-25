@@ -37,7 +37,7 @@
 #include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/export.h"
 #include "ceres/stringprintf.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

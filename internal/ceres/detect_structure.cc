@@ -31,7 +31,7 @@
 #include "ceres/detect_structure.h"
 
 #include "ceres/internal/eigen.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

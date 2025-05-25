@@ -46,7 +46,7 @@
 #include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
 #include "ceres/types.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

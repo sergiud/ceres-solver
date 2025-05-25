@@ -50,7 +50,7 @@
 
 #include "ceres/constants.h"
 #include "ceres/internal/euler_angles.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

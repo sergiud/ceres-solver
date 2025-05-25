@@ -37,9 +37,9 @@
 
 #include "ceres/stringprintf.h"
 #include "ceres/test_util.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 // The floating-point environment access and modification is only meaningful
 // with the following pragma.

@@ -134,7 +134,7 @@
 #include "ceres/ceres.h"
 #include "ceres/dynamic_autodiff_cost_function.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 DEFINE_double(corridor_length,
               30.0,
@@ -284,7 +284,7 @@ void PrintState(const std::vector<double>& odometry_readings,
 }  // namespace
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   // Make sure that the arguments parsed are all positive.
   CHECK_GT(CERES_GET_FLAG(FLAGS_corridor_length), 0.0);

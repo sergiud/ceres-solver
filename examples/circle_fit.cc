@@ -55,7 +55,7 @@
 
 #include "ceres/ceres.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 DEFINE_double(robust_threshold,
               0.0,
@@ -103,7 +103,7 @@ class DistanceFromCircleCost {
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   double x, y, r;
   if (scanf("%lg %lg %lg", &x, &y, &r) != 3) {

@@ -40,7 +40,7 @@
 #include <vector>
 
 #include "ceres/ceres.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 // Data generated with the following Python code.
 //   import numpy as np
@@ -379,7 +379,7 @@ static bool SolveWithFullReport(ceres::Solver::Options options,
 }
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   // Problem configuration.
   const int num_segments = 151;

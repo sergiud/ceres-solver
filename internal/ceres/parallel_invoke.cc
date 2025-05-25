@@ -39,7 +39,7 @@
 #include "ceres/internal/config.h"
 #include "ceres/parallel_for.h"
 #include "ceres/parallel_vector_ops.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

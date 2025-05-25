@@ -116,7 +116,7 @@ typedef unsigned __int32 uint32_t;
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 using Mat3 = Eigen::Matrix<double, 3, 3>;
 using Vec6 = Eigen::Matrix<double, 6, 1>;
@@ -792,7 +792,7 @@ void EuclideanBundleCommonIntrinsics(const std::vector<Marker>& all_markers,
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   if (CERES_GET_FLAG(FLAGS_input).empty()) {
     LOG(ERROR) << "Usage: libmv_bundle_adjuster --input=blender_problem";

@@ -46,9 +46,9 @@
 #include "ceres/jet.h"
 #include "ceres/stringprintf.h"
 #include "ceres/test_util.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 namespace internal {

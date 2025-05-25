@@ -83,7 +83,7 @@
 #include "ceres/tiny_solver.h"
 #include "ceres/tiny_solver_cost_function_adapter.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 DEFINE_bool(use_tiny_solver, false, "Use TinySolver instead of Ceres::Solver");
 DEFINE_string(nist_data_dir,
@@ -710,7 +710,7 @@ void SolveNISTProblems() {
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
   ceres::examples::SolveNISTProblems();
   return 0;
 }

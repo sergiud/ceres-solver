@@ -36,7 +36,7 @@
 #include <queue>
 #include <thread>
 
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

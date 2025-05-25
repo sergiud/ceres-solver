@@ -63,7 +63,7 @@
 #include "bal_problem.h"
 #include "ceres/ceres.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 #include "snavely_reprojection_error.h"
 
 // clang-format makes the gflags definitions too verbose
@@ -380,7 +380,7 @@ void SolveProblem(const char* filename) {
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
   if (CERES_GET_FLAG(FLAGS_input).empty()) {
     LOG(ERROR) << "Usage: bundle_adjuster --input=bal_problem";
     return 1;

@@ -42,7 +42,7 @@
 #include "ceres/internal/export.h"
 #include "ceres/parallel_for.h"
 #include "ceres/triplet_sparse_matrix.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 namespace {

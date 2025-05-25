@@ -63,7 +63,7 @@
 #include "Eigen/OrderingMethods"
 #endif
 
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

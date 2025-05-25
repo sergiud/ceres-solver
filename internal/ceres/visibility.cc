@@ -42,7 +42,7 @@
 #include "ceres/block_structure.h"
 #include "ceres/graph.h"
 #include "ceres/pair_hash.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

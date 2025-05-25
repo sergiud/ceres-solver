@@ -39,7 +39,7 @@
 #include <type_traits>
 
 #include "ceres/internal/memory.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

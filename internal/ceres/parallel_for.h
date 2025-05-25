@@ -40,7 +40,7 @@
 #include "ceres/internal/export.h"
 #include "ceres/parallel_invoke.h"
 #include "ceres/partition_range_for_parallel_for.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

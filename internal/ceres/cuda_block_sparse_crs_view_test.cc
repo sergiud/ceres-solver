@@ -30,8 +30,8 @@
 
 #include "ceres/cuda_block_sparse_crs_view.h"
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
+#include <ng-log/logging.h>
 
 #include <numeric>
 

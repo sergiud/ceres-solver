@@ -44,7 +44,7 @@
 #include "ceres/problem.h"
 #include "ceres/solver.h"
 #include "ceres/types.h"  // for std
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 using ceres::Problem;
 
@@ -52,7 +52,7 @@ void ceres_init() {
   // This is not ideal, but it's not clear what to do if there is no gflags and
   // no access to command line arguments.
   char message[] = "<unknown>";
-  google::InitGoogleLogging(message);
+  nglog::InitializeLogging(message);
 }
 
 ceres_problem_t* ceres_create_problem() {

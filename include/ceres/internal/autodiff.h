@@ -151,7 +151,7 @@
 #include "ceres/internal/variadic_evaluate.h"
 #include "ceres/jet.h"
 #include "ceres/types.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 // If the number of parameters exceeds this values, the corresponding jets are
 // placed on the heap. This will reduce performance by a factor of 2-5 on

@@ -84,10 +84,10 @@ endif (WITH_SCHUR_SPECIALIZATIONS)
 set_source_files_properties(${CERES_INTERNAL_SCHUR_FILES} PROPERTIES
   SKIP_UNITY_BUILD_INCLUSION ON)
 
-if (glog_FOUND)
+if (ng-log_FOUND)
   # Public export to allow the user to call InitGoogleLogging.
-  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES glog::glog)
-endif (glog_FOUND)
+  list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES ng-log::ng-log)
+endif (ng-log_FOUND)
 
 if (SuiteSparse_FOUND)
   # Define version information for use in Solver::FullReport.
@@ -255,9 +255,9 @@ endif (METIS_FOUND)
 
 # Primarily for Android, but optionally for others, compile the minimal
 # glog implementation into Ceres.
-if (NOT glog_FOUND)
+if (NOT ng-log_FOUND)
   list(APPEND CERES_LIBRARY_SOURCE miniglog/glog/logging.cc)
-endif (NOT glog_FOUND)
+endif (NOT ng-log_FOUND)
 
 # Ceres C++ compiler flags can be too strict for an external library code
 # which we do not maintain.

@@ -41,8 +41,8 @@
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_least_squares_problems.h"
 #include "ceres/sparse_matrix.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 namespace internal {

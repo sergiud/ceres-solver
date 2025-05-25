@@ -50,7 +50,7 @@
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
 #include "ceres/wall_time.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 // Helper macro to simplify some of the control flow.
 #define RETURN_IF_ERROR_AND_LOG(expr)                            \

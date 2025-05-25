@@ -40,7 +40,7 @@
 #include "ceres/partition_range_for_parallel_for.h"
 #include "ceres/partitioned_matrix_view.h"
 #include "ceres/small_blas.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

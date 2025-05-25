@@ -30,7 +30,7 @@
 
 #include "ceres/linear_operator.h"
 
-#include <glog/logging.h>
+#include <ng-log/logging.h>
 
 namespace ceres::internal {
 

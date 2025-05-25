@@ -40,8 +40,8 @@
 #include "ceres/cuda_buffer.h"
 #include "ceres/internal/config.h"
 #include "ceres/internal/eigen.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 namespace internal {

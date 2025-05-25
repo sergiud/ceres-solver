@@ -37,7 +37,7 @@
 #include <vector>
 
 #include "ceres/internal/export.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

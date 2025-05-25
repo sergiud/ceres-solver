@@ -37,7 +37,7 @@
 
 #include "ceres/internal/eigen.h"
 #include "ceres/internal/export.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 #include "small_blas_generic.h"
 
 namespace ceres::internal {

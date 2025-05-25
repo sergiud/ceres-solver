@@ -46,7 +46,7 @@
 #include "ceres/linear_solver.h"
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

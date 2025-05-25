@@ -45,7 +45,7 @@
 #include "ceres/internal/export.h"
 #include "ceres/internal/fixed_array.h"
 #include "ceres/manifold.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

@@ -57,7 +57,7 @@
 
 #include "ceres/ceres.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 DEFINE_string(problem, "all", "Which problem to solve");
 DEFINE_bool(use_numeric_diff,
@@ -585,7 +585,7 @@ bool Solve(bool is_constrained, int trial) {
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
   using ceres::examples::Solve;
 
   int unconstrained_problems = 0;

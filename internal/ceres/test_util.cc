@@ -40,8 +40,8 @@
 #include "ceres/stringprintf.h"
 #include "ceres/types.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 DECLARE_string(test_srcdir);
 

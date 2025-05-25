@@ -67,7 +67,7 @@
 #include "ceres/small_blas.h"
 #include "ceres/stl_util.h"
 #include "ceres/thread_token_provider.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

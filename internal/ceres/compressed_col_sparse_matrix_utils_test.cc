@@ -37,8 +37,8 @@
 #include "Eigen/SparseCore"
 #include "ceres/internal/export.h"
 #include "ceres/triplet_sparse_matrix.h"
-#include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

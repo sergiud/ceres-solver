@@ -148,11 +148,11 @@ find_package (AccelerateSparse)
 find_package (benchmark 1.3)
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package (gflags 2.2.1)
-find_package (glog 0.6.0)
 find_package (LAPACK)
 find_package (METIS)
-find_package (Threads REQUIRED)
+find_package (ng-log 0.8.0)
 find_package (SuiteSparse 4.5.6 COMPONENTS CHOLMOD SPQR OPTIONAL_COMPONENTS Partition)
+find_package (Threads REQUIRED)
 
 # IOS is defined iff using the iOS.cmake CMake toolchain to build a static
 # library for iOS.
@@ -271,14 +271,14 @@ if (gflags_FOUND)
 endif (gflags_FOUND)
 
 # MiniGLog.
-if (NOT glog_FOUND)
+if (NOT ng-log_FOUND)
   set(glog_INCLUDE_DIRS internal/ceres/miniglog)
   set(MINIGLOG_MAX_LOG_LEVEL 2 CACHE STRING "The maximum message severity level to be logged")
   add_definitions("-DMAX_LOG_LEVEL=${MINIGLOG_MAX_LOG_LEVEL}")
-else (NOT glog_FOUND)
+else (NOT ng-log_FOUND)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
   set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION} NO_MODULE)")
-endif (NOT glog_FOUND)
+endif (NOT ng-log_FOUND)
 
 if (NOT WITH_SCHUR_SPECIALIZATIONS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_RESTRICT_SCHUR_SPECIALIZATION)
@@ -429,12 +429,12 @@ install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
 install(DIRECTORY ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if (NOT glog_FOUND)
+if (NOT ng-log_FOUND)
   # Install miniglog header if being used as logging #includes appear in
   # installed public Ceres headers.
   install(FILES ${Ceres_SOURCE_DIR}/internal/ceres/miniglog/glog/logging.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal/miniglog/glog)
-endif (NOT glog_FOUND)
+endif (NOT ng-log_FOUND)
 
 # Add an uninstall target to remove all installed files.
 add_custom_target(uninstall

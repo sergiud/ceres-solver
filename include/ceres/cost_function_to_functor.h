@@ -96,7 +96,7 @@
 #include "ceres/dynamic_cost_function_to_functor.h"
 #include "ceres/internal/parameter_dims.h"
 #include "ceres/types.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

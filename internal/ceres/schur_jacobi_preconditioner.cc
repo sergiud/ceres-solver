@@ -38,7 +38,7 @@
 #include "ceres/block_sparse_matrix.h"
 #include "ceres/linear_solver.h"
 #include "ceres/schur_eliminator.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

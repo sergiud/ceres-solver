@@ -33,7 +33,7 @@
 #include <list>
 
 #include "ceres/internal/eigen.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

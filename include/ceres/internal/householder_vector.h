@@ -32,7 +32,7 @@
 #define CERES_PUBLIC_INTERNAL_HOUSEHOLDER_VECTOR_H_
 
 #include "Eigen/Core"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

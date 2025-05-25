@@ -48,7 +48,7 @@
 
 #include "Eigen/Core"
 #include "ceres/ceres.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 // Data generated using the following octave code.
 //   randn('seed', 23497);
@@ -224,7 +224,7 @@ class CostAndJacobianCopyingCostFunction
 };
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   const double initial_m = 0.0;
   const double initial_c = 0.0;

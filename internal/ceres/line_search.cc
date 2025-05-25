@@ -46,7 +46,7 @@
 #include "ceres/polynomial.h"
 #include "ceres/stringprintf.h"
 #include "ceres/wall_time.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

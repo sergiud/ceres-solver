@@ -40,7 +40,7 @@
 
 #include "Eigen/Core"
 #include "ceres/rotation.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::examples {
 namespace {

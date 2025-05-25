@@ -35,7 +35,7 @@
 #include <string>
 
 #include "ceres/internal/config.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

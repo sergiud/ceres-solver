@@ -48,7 +48,7 @@
 
 #include "ceres/ceres.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 struct F1 {
   template <typename T>
@@ -92,7 +92,7 @@ DEFINE_string(minimizer,
 
 int main(int argc, char** argv) {
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   double x1 = 3.0;
   double x2 = -1.0;

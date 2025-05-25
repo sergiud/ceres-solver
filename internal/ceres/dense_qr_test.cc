@@ -39,9 +39,9 @@
 #include "Eigen/Dense"
 #include "ceres/internal/eigen.h"
 #include "ceres/linear_solver.h"
-#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

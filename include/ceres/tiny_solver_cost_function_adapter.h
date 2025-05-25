@@ -33,7 +33,7 @@
 
 #include "Eigen/Core"
 #include "ceres/cost_function.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

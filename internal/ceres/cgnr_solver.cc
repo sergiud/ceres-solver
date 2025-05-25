@@ -41,7 +41,7 @@
 #include "ceres/linear_solver.h"
 #include "ceres/subset_preconditioner.h"
 #include "ceres/wall_time.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

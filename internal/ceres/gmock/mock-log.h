@@ -33,7 +33,7 @@
 // Framework), which is convenient for testing code that uses LOG().
 //
 // NOTE(keir): This is a fork until Google Log exports the scoped mock log
-// class; see: http://code.google.com/p/google-glog/issues/detail?id=88
+// class; see: http://code.google.com/p/google-ng-log/issues/detail?id=88
 
 #ifndef GOOGLE_CERES_INTERNAL_MOCK_LOG_H_
 #define GOOGLE_CERES_INTERNAL_MOCK_LOG_H_
@@ -42,7 +42,7 @@
 
 #include <gmock/gmock.h>
 
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace testing {
 
@@ -64,7 +64,7 @@ namespace testing {
 //
 //     Foo();  // Exercises the code under test.
 //   }
-class ScopedMockLog : public google::LogSink {
+class ScopedMockLog : public nglog::LogSink {
  public:
   // When a ScopedMockLog object is constructed, it starts to
   // intercept logs.
@@ -86,7 +86,7 @@ class ScopedMockLog : public google::LogSink {
   // for messages from different threads. In fact, if the same or multiple
   // expectations are matched on two threads concurrently, their actions will
   // be executed concurrently as well and may interleave.
-  MOCK_METHOD3(Log, void(google::LogSeverity severity,
+  MOCK_METHOD3(Log, void(nglog::LogSeverity severity,
                          const std::string& file_path,
                          const std::string& message));
 
@@ -112,9 +112,9 @@ class ScopedMockLog : public google::LogSink {
   // be running simultaneously, we ensure thread-safety of the exchange between
   // send() and WaitTillSent(), and that for each message, LOG(), send(),
   // WaitTillSent() and Log() are executed in the same thread.
-  void send(google::LogSeverity severity,
+  void send(nglog::LogSeverity severity,
                     const char* full_filename,
-                    const char* base_filename, int line, const google::LogMessageTime& t,
+                    const char* base_filename, int line, const nglog::LogMessageTime& t,
                     const char* message, size_t message_len) override {
     // We are only interested in the log severity, full file name, and
     // log message.
@@ -141,7 +141,7 @@ class ScopedMockLog : public google::LogSink {
   // All relevant information about a logged message that needs to be passed
   // from send() to WaitTillSent().
   struct MessageInfo {
-    google::LogSeverity severity;
+    nglog::LogSeverity severity;
     std::string file_path;
     std::string message;
   };

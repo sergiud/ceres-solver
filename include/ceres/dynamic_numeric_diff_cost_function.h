@@ -46,7 +46,7 @@
 #include "ceres/internal/parameter_dims.h"
 #include "ceres/numeric_diff_options.h"
 #include "ceres/types.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres {
 

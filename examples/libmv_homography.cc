@@ -63,7 +63,7 @@
 #include <utility>
 
 #include "ceres/ceres.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 using EigenDouble = Eigen::NumTraits<double>;
 
@@ -358,7 +358,7 @@ bool EstimateHomography2DFromCorrespondences(
 }  // namespace
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   Mat x1(2, 100);
   for (int i = 0; i < x1.cols(); ++i) {

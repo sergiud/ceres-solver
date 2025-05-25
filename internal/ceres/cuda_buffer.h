@@ -39,7 +39,7 @@
 #include <vector>
 
 #include "cuda_runtime.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 // An encapsulated buffer to maintain GPU memory, and handle transfers between

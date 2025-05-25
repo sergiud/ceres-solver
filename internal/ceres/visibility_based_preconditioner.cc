@@ -50,7 +50,7 @@
 #include "ceres/schur_eliminator.h"
 #include "ceres/single_linkage_clustering.h"
 #include "ceres/visibility.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

@@ -50,7 +50,7 @@
 #include "ceres/types.h"
 #include "ceres/visibility_based_preconditioner.h"
 #include "ceres/wall_time.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

@@ -35,7 +35,7 @@
 #include "ceres/ceres.h"
 #include "common/read_g2o.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 #include "pose_graph_3d_error_term.h"
 #include "types.h"
 
@@ -135,7 +135,7 @@ bool OutputPoses(const std::string& filename, const MapOfPoses& poses) {
 }  // namespace ceres::examples
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
 
   CHECK(FLAGS_input != "") << "Need to specify the filename to read.";

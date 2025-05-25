@@ -48,7 +48,7 @@
 #include "ceres/internal/export.h"
 #include "ceres/linear_solver.h"
 #include "ceres/small_blas.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 namespace ceres::internal {
 

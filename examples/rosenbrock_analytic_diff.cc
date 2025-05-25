@@ -33,7 +33,7 @@
 // GradientProblemSolver using analytic derivatives.
 
 #include "ceres/ceres.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 // f(x,y) = (1-x)^2 + 100(y - x^2)^2;
 class Rosenbrock final : public ceres::FirstOrderFunction {
@@ -58,7 +58,7 @@ class Rosenbrock final : public ceres::FirstOrderFunction {
 };
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   double parameters[2] = {-1.2, 1.0};
 

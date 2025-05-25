@@ -44,7 +44,7 @@
 #include "ceres/parallel_vector_ops.h"
 #include "ceres/small_blas.h"
 #include "ceres/triplet_sparse_matrix.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 
 #ifndef CERES_NO_CUDA
 #include "cuda_runtime.h"

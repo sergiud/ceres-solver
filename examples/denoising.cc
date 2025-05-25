@@ -49,7 +49,7 @@
 #include "ceres/ceres.h"
 #include "fields_of_experts.h"
 #include "gflags/gflags.h"
-#include "glog/logging.h"
+#include "ng-log/logging.h"
 #include "pgm_image.h"
 
 DEFINE_string(input, "", "File to which the output image should be written");
@@ -256,7 +256,7 @@ void SolveProblem(Problem* problem, PGMImage<double>* solution) {
 int main(int argc, char** argv) {
   using namespace ceres::examples;
   GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  nglog::InitializeLogging(argv[0]);
 
   if (CERES_GET_FLAG(FLAGS_input).empty()) {
     std::cerr << "Please provide an image file name using -input.\n";

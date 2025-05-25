@@ -32,8 +32,8 @@
 
 #include <cmath>
 
-#include "glog/logging.h"
 #include "gtest/gtest.h"
+#include "ng-log/logging.h"
 
 // Duplicated from curve_fitting.cc.
 int num_observations = 67;

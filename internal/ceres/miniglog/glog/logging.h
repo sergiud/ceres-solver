@@ -237,10 +237,10 @@ class CERES_EXPORT MessageLogger {
     localtime_r(&rawtime, &timeinfo);
 #endif
 
-    std::set<google::LogSink*>::iterator iter;
+    std::set<nglog::LogSink*>::iterator iter;
     // Send the log message to all sinks.
-    for (iter = google::log_sinks_global.begin();
-         iter != google::log_sinks_global.end();
+    for (iter = nglog::log_sinks_global.begin();
+         iter != nglog::log_sinks_global.end();
          ++iter) {
       (*iter)->send(severity,
                     file_.c_str(),
@@ -254,11 +254,11 @@ class CERES_EXPORT MessageLogger {
 
   void WaitForSinks() {
     // TODO(settinger): Add locks for thread safety.
-    std::set<google::LogSink*>::iterator iter;
+    std::set<nglog::LogSink*>::iterator iter;
 
     // Call WaitTillSent() for all sinks.
-    for (iter = google::log_sinks_global.begin();
-         iter != google::log_sinks_global.end();
+    for (iter = nglog::log_sinks_global.begin();
+         iter != nglog::log_sinks_global.end();
          ++iter) {
       (*iter)->WaitTillSent();
     }
