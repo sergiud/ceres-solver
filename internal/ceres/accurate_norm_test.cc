@@ -33,8 +33,91 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
+#include <utility>
 
 #include "gtest/gtest.h"
+
+namespace {
+
+// Compute two values s, t that satisfy s + t = x + y exactly where s is the sum
+// nearest to x + y and t is the round-off error.
+template <typename T>
+std::pair<T, T> Fast2Sum(T x, T y) {
+  const T s = x + y;
+  const T z = s - x;
+  const T t = y - z;
+  return std::make_pair(s, t);
+}
+
+#if 0
+template <typename T>
+auto KahanSum1(T a, T b)
+    -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
+  using std::fmax;
+  using std::fmin;
+
+  const T x = fmax(a, b);
+  const T y = fmin(a, b);
+
+  return Fast2Sum(x, y);
+}
+
+template <typename T>
+auto KahanSum1(T a, const std::pair<T, T>& st)
+    -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
+  const auto& [s, t] = st;
+  return Fast2Sum(a - t, s);
+}
+
+template<typename T>
+auto KahanSum1(T a) -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>>
+{
+    return std::make_pair(a, T(0));
+}
+
+template<typename T, typename ...Ts>
+auto KahanSum(T a, T b, Ts&& ...args) -> std::enable_if_t<(std::is_same_v<T, std::decay_t<Ts>> && ... && true), T>
+{
+    return KahanSum1(a, KahanSum1(b,  std::forward<Ts>(args)...)).first;
+}
+#endif
+
+template <typename T>
+T FloatDistance(T a, T b) {
+  using std::fabs;
+  using std::fmax;
+  using std::fmin;
+  using std::ilogb;
+  using std::scalbn;
+
+  const T x = fmax(a, b);
+  const T y = fmin(a, b);
+
+  int e1 = ilogb(x) + 1;
+  const T upper1 = scalbn(T(1), e1);
+
+  T result{0};
+
+  if (y > upper1) {
+    const int e2 = ilogb(y);
+    const T upper2 = scalbn(T(1), e2);
+
+    result = FloatDistance(upper2, y) +
+             scalbn(e2 - e1, std::numeric_limits<T>::digits - 1);
+  }
+
+  e1 = std::numeric_limits<T>::digits - e1;
+
+  const T mb = -fmin(upper1, y);
+
+  const auto [s, t] = Fast2Sum(x, mb);
+  const T xx = s;
+  const T yy = Fast2Sum(y, mb - t).first;
+
+  return result + scalbn(xx, e1) + scalbn(yy, e1);
+}
+
+}  // namespace
 
 TEST(AccurateNorm, Promote) {
   static_assert(std::is_same_v<ceres::internal::Promote_t<int>, double>,
@@ -123,6 +206,13 @@ TYPED_TEST(AccurateNormTest, RNorm) {
   EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, this->kHuge), 1 / this->kHuge);
 
   EXPECT_TRUE(std::isnan(ceres::AccurateRNorm(0, 0)));
+
+  const auto large = std::sqrt(this->kHuge / 2);
+  const auto a = ceres::AccurateRNorm(large, large);
+  const auto expected = 1 / std::sqrt(this->kHuge);
+
+  const auto d = FloatDistance(a, expected);
+  EXPECT_LE(d, 1);
 
   EXPECT_EQ(ceres::AccurateRNorm(+std::numeric_limits<Scalar>::infinity(), 0),
             0);
