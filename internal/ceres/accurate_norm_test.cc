@@ -88,6 +88,7 @@ T FloatDistance(T a, T b) {
   using std::fmax;
   using std::fmin;
   using std::ilogb;
+  using std::isgreater;
   using std::scalbn;
 
   const T x = fmax(a, b);
@@ -98,7 +99,7 @@ T FloatDistance(T a, T b) {
 
   T result{0};
 
-  if (y > upper1) {
+  if (isgreater(y, upper1)) {
     const int e2 = ilogb(y);
     const T upper2 = scalbn(T(1), e2);
 
