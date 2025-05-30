@@ -85,6 +85,7 @@ constexpr auto FloatDistance(T a, T b)
   using std::scalbn;
   using std::signbit;
 
+  // FIXME a, b Inf -> stackoverflow
   if (isgreater(a, b)) {
     return -FloatDistance(b, a);
   }
@@ -177,12 +178,10 @@ TYPED_TEST(AccurateNormTest, Ulp) {
 
   EXPECT_TRUE(std::isnan(
       ceres::internal::Ulp(std::numeric_limits<Scalar>::quiet_NaN())));
-  EXPECT_EQ(std::fpclassify(
-                ceres::internal::Ulp(+std::numeric_limits<Scalar>::infinity())),
-            FP_INFINITE);
-  EXPECT_EQ(std::fpclassify(
-                ceres::internal::Ulp(-std::numeric_limits<Scalar>::infinity())),
-            FP_INFINITE);
+  EXPECT_TRUE(std::isinf(
+      ceres::internal::Ulp(+std::numeric_limits<Scalar>::infinity())));
+  EXPECT_TRUE(std::isinf(
+      ceres::internal::Ulp(-std::numeric_limits<Scalar>::infinity())));
   EXPECT_EQ(ceres::internal::Ulp(Scalar{0}),
             std::numeric_limits<Scalar>::min());
 
@@ -239,6 +238,26 @@ TYPED_TEST(AccurateNormTest, RNorm) {
   EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, this->kTiny), 1 / this->kTiny);
   EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, Scalar{0}, this->kTiny),
             1 / this->kTiny);
+
+  const auto aa = ceres::AccurateRNorm(this->kTiny, this->kTiny);
+  const auto expected1 = 1 / (std::sqrt(Scalar{2}) * this->kTiny);
+  const auto d1 = FloatDistance(aa, expected1);
+  EXPECT_LE(d1, 1);
+
+  const auto tiny3 = std::sqrt(this->kTiny) / Scalar{3};
+  const auto bb = ceres::AccurateRNorm(tiny3, tiny3, tiny3);
+  const auto expected2 = 1 / std::sqrt(this->kTiny);
+  // EXPECT_EQ(bb, expected2);
+  const auto d2 = FloatDistance(bb, expected2);
+  EXPECT_LE(d2, 1);
+
+  const auto tiny4 = std::sqrt(this->kTiny) / Scalar{4};
+
+  const auto cc = ceres::AccurateRNorm(tiny4, tiny4, tiny4, tiny4);
+  const auto expected3 = 1 / std::sqrt(this->kTiny);
+  // EXPECT_EQ(bb, expected2);
+  const auto d3 = FloatDistance(cc, expected3);
+  EXPECT_LE(d3, 1);
 
   EXPECT_EQ(ceres::AccurateRNorm(this->kHuge, Scalar{0}), 1 / this->kHuge);
   EXPECT_EQ(ceres::AccurateRNorm(this->kHuge, Scalar{0}, Scalar{0}),

@@ -137,11 +137,6 @@ struct AccurateNormTraits {
     return sqrt(std::numeric_limits<T>::epsilon() / 2);
   }
 
-  static constexpr T Scale() noexcept {
-    using std::sqrt;
-    return Ulp(sqrt(std::numeric_limits<T>::min()));
-  }
-
   static constexpr T Huge() noexcept {
     using std::sqrt;
     return sqrt(std::numeric_limits<T>::max() / 2);
@@ -151,6 +146,8 @@ struct AccurateNormTraits {
     using std::sqrt;
     return sqrt(std::numeric_limits<T>::min());
   }
+
+  static constexpr T Scale() noexcept { return Ulp(Tiny()); }
 };
 
 // Unless Ceres is compiled with extended constexpr support for cmath introduced
@@ -161,10 +158,14 @@ template <>
 struct AccurateNormTraits<
     double,
     std::enable_if<std::numeric_limits<double>::is_iec559>> {
+  // ulp(√ε/2)
   static constexpr double Varying() noexcept { return 0x1.6a09e667f3bcdp-27; }
-  static constexpr double Scale() noexcept { return 0x1p-563; }
+  // √F_max/2
   static constexpr double Huge() noexcept { return 0x1.6a09e667f3bccp+511; }
+  // √F_min
   static constexpr double Tiny() noexcept { return 0x1p-511; }
+  // ulp(√F_min)
+  static constexpr double Scale() noexcept { return 0x1p-563; }
 };
 #endif  // !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
 
@@ -364,6 +365,8 @@ constexpr auto AccurateRNorm(T a, T b, Args&&... args)
     -> std::enable_if_t<(sizeof...(Args) > 0 &&
                          (std::is_same_v<T, std::decay_t<Args>> && ...)),
                         T> {
+  // Note that we compose the reciprocal hypotenuse with the regular one as this
+  // is the convention of the arguments.
   return AccurateRNorm(a, AccurateNorm(b, std::forward<Args>(args)...));
 }
 
