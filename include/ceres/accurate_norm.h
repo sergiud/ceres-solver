@@ -364,7 +364,7 @@ constexpr auto AccurateRNorm(T a, T b, Args&&... args)
     -> std::enable_if_t<(sizeof...(Args) > 0 &&
                          (std::is_same_v<T, std::decay_t<Args>> && ...)),
                         T> {
-  return AccurateRNorm(a, AccurateRNorm(b, std::forward<Args>(args)...));
+  return AccurateRNorm(a, AccurateNorm(b, std::forward<Args>(args)...));
 }
 
 template <typename T, typename U, typename... Args>

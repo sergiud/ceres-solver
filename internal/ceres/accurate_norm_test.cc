@@ -196,10 +196,18 @@ TYPED_TEST(AccurateNormTest, Norm) {
   using Scalar = TypeParam;
 
   EXPECT_EQ(ceres::AccurateNorm(this->kTiny, Scalar{0}), this->kTiny);
+  EXPECT_EQ(ceres::AccurateNorm(this->kTiny, Scalar{0}, Scalar{0}),
+            this->kTiny);
   EXPECT_EQ(ceres::AccurateNorm(Scalar{0}, this->kTiny), this->kTiny);
+  EXPECT_EQ(ceres::AccurateNorm(Scalar{0}, Scalar{0}, this->kTiny),
+            this->kTiny);
 
   EXPECT_EQ(ceres::AccurateNorm(this->kHuge, Scalar{0}), this->kHuge);
+  EXPECT_EQ(ceres::AccurateNorm(this->kHuge, Scalar{0}, Scalar{0}),
+            this->kHuge);
   EXPECT_EQ(ceres::AccurateNorm(Scalar{0}, this->kHuge), this->kHuge);
+  EXPECT_EQ(ceres::AccurateNorm(Scalar{0}, Scalar{0}, this->kHuge),
+            this->kHuge);
 
   EXPECT_EQ(ceres::AccurateNorm(this->kTiny, this->kTiny),
             this->kTiny * std::sqrt(Scalar{2}));
@@ -226,10 +234,18 @@ TYPED_TEST(AccurateNormTest, RNorm) {
   using Scalar = TypeParam;
 
   EXPECT_EQ(ceres::AccurateRNorm(this->kTiny, Scalar{0}), 1 / this->kTiny);
+  EXPECT_EQ(ceres::AccurateRNorm(this->kTiny, Scalar{0}, Scalar{0}),
+            1 / this->kTiny);
   EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, this->kTiny), 1 / this->kTiny);
+  EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, Scalar{0}, this->kTiny),
+            1 / this->kTiny);
 
   EXPECT_EQ(ceres::AccurateRNorm(this->kHuge, Scalar{0}), 1 / this->kHuge);
+  EXPECT_EQ(ceres::AccurateRNorm(this->kHuge, Scalar{0}, Scalar{0}),
+            1 / this->kHuge);
   EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, this->kHuge), 1 / this->kHuge);
+  EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, Scalar{0}, this->kHuge),
+            1 / this->kHuge);
 
   EXPECT_TRUE(std::isnan(ceres::AccurateRNorm(0, 0)));
 
