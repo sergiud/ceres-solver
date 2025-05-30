@@ -42,7 +42,8 @@ namespace {
 // Compute two values s, t that satisfy s + t = x + y exactly where s is the sum
 // nearest to x + y and t is the round-off error.
 template <typename T>
-std::pair<T, T> Fast2Sum(T x, T y) {
+auto Fast2Sum(T x, T y)
+    -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
   const T s = x + y;
   const T z = s - x;
   const T t = y - z;
@@ -84,38 +85,70 @@ auto KahanSum(T a, T b, Ts&& ...args) -> std::enable_if_t<(std::is_same_v<T, std
 
 template <typename T>
 T FloatDistance(T a, T b) {
+  using std::copysign;
   using std::fabs;
-  using std::fmax;
   using std::fmin;
+  using std::fpclassify;
   using std::ilogb;
   using std::isgreater;
+  using std::isless;
   using std::scalbn;
+  using std::signbit;
 
-  const T x = fmax(a, b);
-  const T y = fmin(a, b);
+  if (isgreater(a, b)) {
+    return -FloatDistance(b, a);
+  }
 
-  int e1 = ilogb(x) + 1;
-  const T upper1 = scalbn(T(1), e1);
+  if (fpclassify(a - b) == FP_ZERO) {
+    return T{0};
+  }
+
+  if (fpclassify(a) == FP_ZERO) {
+    return T{1} + fabs(FloatDistance(
+                      copysign(std::numeric_limits<T>::denorm_min(), b), b));
+  }
+
+  if (fpclassify(b) == FP_ZERO) {
+    return T{1} + fabs(FloatDistance(
+                      copysign(std::numeric_limits<T>::denorm_min(), a), a));
+  }
+
+  if (signbit(a) != signbit(b)) {
+    return T{2} +
+           fabs(FloatDistance(copysign(std::numeric_limits<T>::denorm_min(), b),
+                              b)) +
+           fabs(FloatDistance(copysign(std::numeric_limits<T>::denorm_min(), a),
+                              a));
+  }
+
+  // a, b are either both positive or both negative. Above we already ensure a <
+  // b.
+  if (isless(a, 0)) {
+    return FloatDistance(-b, -a);
+  }
+
+  int e1 = ilogb(a) + 1;
+  const T upper1 = scalbn(T{1}, e1);
 
   T result{0};
 
-  if (isgreater(y, upper1)) {
-    const int e2 = ilogb(y);
-    const T upper2 = scalbn(T(1), e2);
+  if (isgreater(b, upper1)) {
+    const int e2 = ilogb(b);
+    const T upper2 = scalbn(T{1}, e2);
 
-    result = FloatDistance(upper2, y) +
+    result = FloatDistance(upper2, b) +
              scalbn(e2 - e1, std::numeric_limits<T>::digits - 1);
   }
 
   e1 = std::numeric_limits<T>::digits - e1;
 
-  const T mb = -fmin(upper1, y);
+  const T mb = -fmin(upper1, b);
 
-  const auto [s, t] = Fast2Sum(x, mb);
-  const T xx = s;
-  const T yy = Fast2Sum(y, mb - t).first;
+  const auto [s, t] = Fast2Sum(a, mb);
+  const T x = s;
+  const T y = Fast2Sum(b, mb - t).first;
 
-  return result + scalbn(xx, e1) + scalbn(yy, e1);
+  return result + scalbn(fabs(x), e1) + scalbn(fabs(y), e1);
 }
 
 }  // namespace
