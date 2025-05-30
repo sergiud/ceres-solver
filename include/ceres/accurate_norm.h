@@ -295,12 +295,11 @@ constexpr auto AccurateRNorm(T a, T b)
 
   CERES_CONSTEXPR26 T scale = AccurateNormTraits<T>::Scale();
 
-  // The rescaling differs from the one used to AccurateNorm because scaling the
-  // arguments x' and y' of a reciprocal hypotenuse yields
+  // The rescaling differs from the one used in AccurateNorm because scaling the
+  // arguments x and y of a reciprocal hypotenuse yields
   //
   //     1/sqrt(x'^2+y'^2)
   // <=> 1/sqrt((x*s)^2+(y*s)^2)
-  // <=> 1/sqrt(s^2(x^2+y^2))
   // <=> 1/(s*sqrt(x^2+y^2))
   //
   // i.e., to cancel the scale, we need reapply it to the result.
