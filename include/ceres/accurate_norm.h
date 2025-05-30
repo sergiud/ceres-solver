@@ -81,7 +81,7 @@ constexpr auto Ulp(T x) -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   }
 
   if (cls == FP_INFINITE) {
-    // Always return ∞ for ±∞
+    // Return ∞ for ±∞ since ulp(-x) = ulp(x)
     return std::numeric_limits<T>::infinity();
   }
 
@@ -113,18 +113,21 @@ constexpr auto Ulp(T x)
 // constexpr cmath using builtin functions without raising the C++ standard to
 // C++26. The constexpr cmath support is available unless the code is built
 // using -fno-builtin.
-#if !defined(CERES_HAS_CONSTEXPR_CMATH26)
 #if (defined(__GNUG__) && !defined(__clang__)) && defined(__has_builtin)
 #if __has_builtin(sqrt) && __has_builtin(scalbn) && __has_builtin(ilogb)
-#define CERES_HAS_CONSTEXPR_CMATH26
-#endif
+#define CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS
 #endif
 #endif
 
-#if defined(CERES_HAS_CONSTEXPR_CMATH26)
-#define CERES_CONSTEXPR26 constexpr
+#if defined(CERES_HAS_CONSTEXPR_CMATH26) && \
+    !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
+#define CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS
+#endif
+
+#if defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
+#define CERES_ACCURATENORM_CONSTEXPR constexpr
 #else
-#define CERES_CONSTEXPR26 const
+#define CERES_ACCURATENORM_CONSTEXPR const
 #endif
 
 template <typename T, typename Enable = void>
@@ -153,7 +156,7 @@ struct AccurateNormTraits {
 // Unless Ceres is compiled with extended constexpr support for cmath introduced
 // in C++26, provide a specialization for IEEE-754 double arithmetic that avoids
 // computing the thresholds at runtime.
-#if !defined(CERES_HAS_CONSTEXPR_CMATH26)
+#if !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
 template <>
 struct AccurateNormTraits<
     double,
@@ -163,11 +166,11 @@ struct AccurateNormTraits<
   static constexpr double Huge() noexcept { return 0x1.6a09e667f3bccp+511; }
   static constexpr double Tiny() noexcept { return 0x1p-511; }
 };
-#endif  // !defined(CERES_HAS_CONSTEXPR_CMATH26)
+#endif  // !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
 
 // Compute two values s, t that satisfy s + t = x + y exactly where s is the sum
 // nearest to x + y and t is the round-off error. The algorithm assumes the
-// round-to-nearest mode which is the default.
+// round-to-nearest (RN) mode which is the default.
 template <typename T>
 constexpr auto Fast2Sum(T x, T y)
     -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
@@ -258,7 +261,7 @@ constexpr auto AccurateNorm(T a, T b)
 
   using internal::UnscaledAccurateNorm;
 
-  CERES_CONSTEXPR26 T scale = AccurateNormTraits<T>::Scale();
+  CERES_ACCURATENORM_CONSTEXPR T scale = AccurateNormTraits<T>::Scale();
 
   if (x > AccurateNormTraits<T>::Huge()) {
     // Scale x to prevent an overflow
@@ -331,7 +334,7 @@ constexpr auto AccurateRNorm(T a, T b)
 
   using internal::UnscaledAccurateRNorm;
 
-  CERES_CONSTEXPR26 T scale = AccurateNormTraits<T>::Scale();
+  CERES_ACCURATENORM_CONSTEXPR T scale = AccurateNormTraits<T>::Scale();
 
   // The rescaling differs from the one used in AccurateNorm because scaling the
   // arguments x and y of a reciprocal hypotenuse yields

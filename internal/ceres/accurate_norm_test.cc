@@ -73,7 +73,8 @@ auto KahanSum(T a, T b, Ts&& ...args) -> std::enable_if_t<(std::is_same_v<T, std
 #endif
 
 template <typename T>
-T FloatDistance(T a, T b) {
+constexpr auto FloatDistance(T a, T b)
+    -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   using std::copysign;
   using std::fabs;
   using std::fmin;
