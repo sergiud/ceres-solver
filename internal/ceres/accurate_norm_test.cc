@@ -39,17 +39,6 @@
 
 namespace {
 
-// Compute two values s, t that satisfy s + t = x + y exactly where s is the sum
-// nearest to x + y and t is the round-off error.
-template <typename T>
-auto Fast2Sum(T x, T y)
-    -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
-  const T s = x + y;
-  const T z = s - x;
-  const T t = y - z;
-  return std::make_pair(s, t);
-}
-
 #if 0
 template <typename T>
 auto KahanSum1(T a, T b)
@@ -143,6 +132,8 @@ T FloatDistance(T a, T b) {
   e1 = std::numeric_limits<T>::digits - e1;
 
   const T mb = -fmin(upper1, b);
+
+  using ceres::internal::Fast2Sum;
 
   const auto [s, t] = Fast2Sum(a, mb);
   const T x = s;

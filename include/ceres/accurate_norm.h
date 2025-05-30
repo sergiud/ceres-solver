@@ -27,6 +27,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Author: sergiu.deitsch@gmail.com (Sergiu Deitsch)
+//
+// [1] Borges, C. F. (2021). Fast Compensated Algorithms for the Reciprocal
+//     Square Root, the Reciprocal Hypotenuse, and Givens Rotations.
+//     http://arxiv.org/abs/2103.08694
+//
+// [2] Borges, C. F. (2021). Algorithm 1014: An Improved Algorithm for
+//     hypot(x,y). ACM Transactions on Mathematical Software, 47(1), 1–12.
+//     https://doi.org/10.1145/3428446
 
 #ifndef CERES_PUBLIC_ACCURATE_NORM_
 #define CERES_PUBLIC_ACCURATE_NORM_
@@ -34,6 +42,7 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
+#include <utility>
 
 namespace ceres {
 
@@ -86,6 +95,8 @@ constexpr auto Ulp(T x) -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   return std::numeric_limits<T>::min();
 }
 
+// Compute the ulp while promoting the argument type to floating-point, e.g., if
+// the function is called as Ulp(0) where 0 is integer literal.
 template <typename T>
 constexpr auto Ulp(T x)
     -> std::enable_if_t<!std::is_floating_point_v<T>, Promote_t<T>> {
@@ -139,6 +150,9 @@ struct AccurateNormTraits {
   }
 };
 
+// Unless Ceres is compiled with extended constexpr support for cmath introduced
+// in C++26, provide a specialization for IEEE-754 double arithmetic that avoids
+// computing the thresholds at runtime.
 #if !defined(CERES_HAS_CONSTEXPR_CMATH26)
 template <>
 struct AccurateNormTraits<
@@ -151,35 +165,57 @@ struct AccurateNormTraits<
 };
 #endif  // !defined(CERES_HAS_CONSTEXPR_CMATH26)
 
+// Compute two values s, t that satisfy s + t = x + y exactly where s is the sum
+// nearest to x + y and t is the round-off error. The algorithm assumes the
+// round-to-nearest mode which is the default.
 template <typename T>
-constexpr T UnscaledAccurateNorm(T x, T y) {
+constexpr auto Fast2Sum(T x, T y)
+    -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
+  const T s = x + y;
+  const T z = s - x;
+  const T t = y - z;
+  return std::make_pair(s, t);
+}
+
+template <typename T>
+constexpr auto UnscaledAccurateNormWithError(T x, T y)
+    -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
   using std::fma;
   using std::sqrt;
 
   const T x_sq = x * x;
   const T y_sq = y * y;
-  const T sigma = x_sq + y_sq;
-  // Use the Fast2Sum algorithm to recover the rounding error of the
-  // floating-point addition of both squares given |x| ≥ |y|. The algorithm
-  // assumes the round-to-nearest mode which is the default.
-  const T sigma_e = (sigma - x_sq) - y_sq;
-  const T h = sqrt(sigma);
+  // Recover the rounding error of the floating-point addition of both squares.
+  const auto [sigma, sigma_e] = Fast2Sum(x_sq, y_sq);
   // Use the 2MultFMA algorithm to recover the rounding error due to squaring x
   // and y.
-  const T tau =
-      fma(y, y, -y_sq) + fma(x, x, -x_sq) - sigma_e + fma(-h, h, sigma);
+  return std::make_pair(sigma, sigma_e + fma(y, y, -y_sq) + fma(x, x, -x_sq));
+}
+
+// Computes the hypotenuse of x and y without checking the arguments and
+// ensuring invariants. Not intended to be invoked by users.
+//
+// The functions assumes the arguments to be finite, scaled correctly to avoid
+// an under-/overflow and passed in the correct order ensuring |x| ≥ |y|.
+template <typename T>
+constexpr auto UnscaledAccurateNorm(T x, T y)
+    -> std::enable_if_t<std::is_floating_point_v<T>, T> {
+  using std::fma;
+  using std::sqrt;
+
+  const auto [sigma, sigma_e] = UnscaledAccurateNormWithError(x, y);
+  const T h = sqrt(sigma);
+  const T tau = sigma_e + fma(-h, h, sigma);
   return fma(tau / h, T(0.5), h);
 }
 
 template <typename T>
-constexpr T UnscaledAccurateRNorm(T x, T y) {
+constexpr auto UnscaledAccurateRNorm(T x, T y)
+    -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   using std::fma;
   using std::sqrt;
 
-  const T x_sq = x * x;
-  const T y_sq = y * y;
-  T sigma = x_sq + y_sq;
-  const T sigma_e = y_sq - (sigma - x_sq) + fma(x, x, -x_sq) + fma(y, y, -y_sq);
+  auto [sigma, sigma_e] = UnscaledAccurateNormWithError(x, y);
   const T r = T(1) / sigma;
   sigma = fma(-r, sigma_e, fma(-r, sigma, T(1)));
   const T rho = sqrt(r);
@@ -225,10 +261,12 @@ constexpr auto AccurateNorm(T a, T b)
   CERES_CONSTEXPR26 T scale = AccurateNormTraits<T>::Scale();
 
   if (x > AccurateNormTraits<T>::Huge()) {
+    // Scale x to prevent an overflow
     return UnscaledAccurateNorm(x * scale, y * scale) / scale;
   }
 
   if (y < AccurateNormTraits<T>::Tiny()) {
+    // Scale y to prevent an underflow
     return UnscaledAccurateNorm(x / scale, y / scale) * scale;
   }
 
@@ -305,10 +343,12 @@ constexpr auto AccurateRNorm(T a, T b)
   // i.e., to cancel the scale, we need reapply it to the result.
 
   if (x > AccurateNormTraits<T>::Huge()) {
+    // Scale x to prevent an overflow
     return UnscaledAccurateRNorm(x * scale, y * scale) * scale;
   }
 
   if (y < AccurateNormTraits<T>::Tiny()) {
+    // Scale y to prevent an underflow
     return UnscaledAccurateRNorm(x / scale, y / scale) / scale;
   }
 
