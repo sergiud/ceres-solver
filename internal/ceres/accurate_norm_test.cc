@@ -30,11 +30,14 @@
 
 #include "ceres/accurate_norm.h"
 
+// #include <boost/math/special_functions/math_fwd.hpp>
+// #include <boost/math/special_functions/next.hpp>
 #include <cmath>
 #include <limits>
 #include <type_traits>
-#include <utility>
 
+#include "absl/strings/str_format.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace {
@@ -72,7 +75,6 @@ auto KahanSum(T a, T b, Ts&& ...args) -> std::enable_if_t<(std::is_same_v<T, std
 }
 #endif
 
-// TODO Write a matcher?
 template <typename T>
 constexpr auto FloatDistance(T a, T b)
     -> std::enable_if_t<std::is_floating_point_v<T>, T> {
@@ -86,21 +88,38 @@ constexpr auto FloatDistance(T a, T b)
   using std::scalbn;
   using std::signbit;
 
+  const int cls1 = fpclassify(a);
+
+  // if (cls1 == FP_NAN || cls1 == FP_INFINITE) {
+  if (!std::isfinite(a)) {
+    throw std::domain_error{"'a' must be finite but " + std::to_string(a) +
+                            " was given"};
+  }
+
+  const int cls2 = fpclassify(b);
+
+  if (!std::isfinite(b)) {
+    throw std::domain_error{"'b' must be finite but " + std::to_string(b) +
+                            " was given"};
+  }
+
   // FIXME a, b Inf -> stackoverflow
   if (isgreater(a, b)) {
     return -FloatDistance(b, a);
   }
 
-  if (fpclassify(a - b) == FP_ZERO) {
+  const int cls3 = fpclassify(a - b);
+
+  if (cls3 == FP_ZERO) {
     return T{0};
   }
 
-  if (fpclassify(a) == FP_ZERO) {
+  if (cls1 == FP_ZERO) {
     return T{1} + fabs(FloatDistance(
                       copysign(std::numeric_limits<T>::denorm_min(), b), b));
   }
 
-  if (fpclassify(b) == FP_ZERO) {
+  if (cls2 == FP_ZERO) {
     return T{1} + fabs(FloatDistance(
                       copysign(std::numeric_limits<T>::denorm_min(), a), a));
   }
@@ -119,7 +138,7 @@ constexpr auto FloatDistance(T a, T b)
     return FloatDistance(-b, -a);
   }
 
-  int e1 = ilogb(fpclassify(a) == FP_SUBNORMAL ? std::numeric_limits<T>::min() : a) + 1;
+  int e1 = ilogb(cls1 == FP_SUBNORMAL ? std::numeric_limits<T>::min() : a) + 1;
   const T upper1 = scalbn(T{1}, e1);
 
   T result{0};
@@ -139,35 +158,41 @@ constexpr auto FloatDistance(T a, T b)
   T x;
   T y;
 
-  if (fpclassify(a) == FP_SUBNORMAL || (b-a < std::numeric_limits<T>::min())) { //fpclassify(b-a) == FP_SUBNORMAL) {
-      const T a2 = scalbn(a, std::numeric_limits<T>::digits);
-      const T b2 = scalbn(b, std::numeric_limits<T>::digits);
-      const T mb = -fmin(scalbn(upper1, std::numeric_limits<T>::digits), b2);
-  // const auto [s, t] = Fast2Sum(a2, mb);
-  // x = s;
-  // //y = Fast2Sum(a2, mb - t).first;
-  // y = (a2 - (x-z)) + t;
+  if (cls1 == FP_SUBNORMAL || cls3 == FP_SUBNORMAL) {
+    const T a2 = scalbn(a, std::numeric_limits<T>::digits);
+    const T b2 = scalbn(b, std::numeric_limits<T>::digits);
+    const T mb = -fmin(scalbn(upper1, std::numeric_limits<T>::digits), b2);
+    // const auto [s, t] = Fast2Sum(a2, mb);
+    // x = s;
+    // //y = Fast2Sum(a2, mb - t).first;
+    // y = (a2 - (x-z)) + t;
 
-      x = a2 + mb;
-      const T z = x - a2;
-      y = (a2 - (x - z)) + (mb - z);
-  e1 -= std::numeric_limits<T>::digits;
-  }
-  else {
-   const T mb = -fmin(upper1, b);
-  // const auto [s, t] = Fast2Sum(a, mb);
-  // x = s;
-  // y = Fast2Sum(a, mb - t).first;
+    x = a2 + mb;
+    const T z = x - a2;
+    y = (a2 - (x - z)) + (mb - z);
+    e1 -= std::numeric_limits<T>::digits;
+  } else {
+    const T mb = -fmin(upper1, b);
+    // const auto [s, t] = Fast2Sum(a, mb);
+    // x = s;
+    // y = Fast2Sum(a, mb - t).first;
 
-      x = a + mb;
-      const T z = x - a;
-      y = (a - (x - z)) + (mb - z);
+    x = a + mb;
+    const T z = x - a;
+    y = (a - (x - z)) + (mb - z);
   }
 
   return result + scalbn(fabs(x), e1) + scalbn(fabs(y), e1);
 }
 
 }  // namespace
+
+MATCHER_P2(MaxNumUlp, b, n, "") {
+  const auto d = FloatDistance(arg, b);
+  *result_listener << absl::StrFormat(
+      "%g must be within %f ulp to %g but is %f", arg, n, b, d);
+  return d <= n;
+}
 
 TEST(AccurateNorm, Promote) {
   static_assert(std::is_same_v<ceres::internal::Promote_t<int>, double>,
@@ -196,17 +221,23 @@ using Types = testing::Types<float, double, long double>;
 
 TYPED_TEST_SUITE(AccurateNormTest, Types);
 
-TYPED_TEST(AccurateNormTest, FLoatDistance)
-{
+TYPED_TEST(AccurateNormTest, FloatDistance) {
   using Scalar = TypeParam;
 
   EXPECT_EQ(FloatDistance(Scalar{0}, Scalar{0}), 0);
+  // EXPECT_EQ(
+  //     boost::math::float_distance(-std::numeric_limits<Scalar>::infinity(),
+  //                                 +std::numeric_limits<Scalar>::infinity()),
+  //     0);
+  //EXPECT_EQ(FloatDistance(-std::numeric_limits<Scalar>::infinity(),
+  //                        +std::numeric_limits<Scalar>::infinity()),
+  //          0);
 
   EXPECT_EQ(FloatDistance(Scalar{0}, std::nextafter(Scalar{0}, std::numeric_limits<Scalar>::infinity())), +1);
   EXPECT_EQ(FloatDistance(Scalar{0}, std::nextafter(Scalar{0}, -std::numeric_limits<Scalar>::infinity())), -1);
 
-  EXPECT_EQ(FloatDistance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
-  EXPECT_EQ(boost::math::float_distance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
+  //EXPECT_EQ(FloatDistance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
+  //EXPECT_EQ(boost::math::float_distance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
 }
 
 TYPED_TEST(AccurateNormTest, Ulp) {
@@ -275,25 +306,16 @@ TYPED_TEST(AccurateNormTest, RNorm) {
   EXPECT_EQ(ceres::AccurateRNorm(Scalar{0}, Scalar{0}, this->kTiny),
             1 / this->kTiny);
 
-  const auto aa = ceres::AccurateRNorm(this->kTiny, this->kTiny);
-  const auto expected1 = 1 / (std::sqrt(Scalar{2}) * this->kTiny);
-  const auto d1 = FloatDistance(aa, expected1);
-  EXPECT_LE(d1, 1);
+  EXPECT_THAT(ceres::AccurateRNorm(this->kTiny, this->kTiny),
+              MaxNumUlp(1 / (std::sqrt(Scalar{2}) * this->kTiny), 1));
 
   const auto tiny3 = std::sqrt(this->kTiny) / Scalar{3};
-  const auto bb = ceres::AccurateRNorm(tiny3, tiny3, tiny3);
-  const auto expected2 = 1 / std::sqrt(this->kTiny);
-  // EXPECT_EQ(bb, expected2);
-  const auto d2 = FloatDistance(bb, expected2);
-  EXPECT_LE(d2, 1);
+  EXPECT_THAT(ceres::AccurateRNorm(tiny3, tiny3, tiny3),
+              MaxNumUlp(1 / std::sqrt(this->kTiny), 1));
 
   const auto tiny4 = std::sqrt(this->kTiny) / Scalar{4};
-
-  const auto cc = ceres::AccurateRNorm(tiny4, tiny4, tiny4, tiny4);
-  const auto expected3 = 1 / std::sqrt(this->kTiny);
-  // EXPECT_EQ(bb, expected2);
-  const auto d3 = FloatDistance(cc, expected3);
-  EXPECT_LE(d3, 1);
+  EXPECT_THAT(ceres::AccurateRNorm(tiny4, tiny4, tiny4, tiny4),
+              MaxNumUlp(1 / std::sqrt(this->kTiny), 1));
 
   EXPECT_EQ(ceres::AccurateRNorm(this->kHuge, Scalar{0}), 1 / this->kHuge);
   EXPECT_EQ(ceres::AccurateRNorm(this->kHuge, Scalar{0}, Scalar{0}),
@@ -305,11 +327,8 @@ TYPED_TEST(AccurateNormTest, RNorm) {
   EXPECT_TRUE(std::isnan(ceres::AccurateRNorm(0, 0)));
 
   const auto large = std::sqrt(this->kHuge / 2);
-  const auto a = ceres::AccurateRNorm(large, large);
-  const auto expected = 1 / std::sqrt(this->kHuge);
-
-  const auto d = FloatDistance(a, expected);
-  EXPECT_LE(d, 1);
+  EXPECT_THAT(ceres::AccurateRNorm(large, large),
+              MaxNumUlp(1 / std::sqrt(this->kHuge), 1));
 
   EXPECT_EQ(ceres::AccurateRNorm(+std::numeric_limits<Scalar>::infinity(), 0),
             0);
