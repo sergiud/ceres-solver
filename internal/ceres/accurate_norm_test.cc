@@ -120,9 +120,9 @@ constexpr auto UlpDistance(T a, T b)
 
   if (cls1 == FP_ZERO || cls2 == FP_ZERO ||
       cls1 != FP_ZERO && cls2 != FP_ZERO && s1 != s2) {
-      // Either of the operands is zero. Cannot compute the logarithm at zero.
-      // Split the computation and compute the distance from the denormalized minimum with
-      // the sign of the operand in the direction of the operand.
+    // Either of the operands is zero. Cannot compute the logarithm at zero.
+    // Split the computation and compute the distance from the denormalized
+    // minimum with the sign of the operand in the direction of the operand.
     T result{0};
 
     for (const auto [use, value] :
@@ -147,8 +147,8 @@ constexpr auto UlpDistance(T a, T b)
     return UlpDistance(-b, -a);
   }
 
-  int e1 =
-      cls1 == FP_SUBNORMAL ? std::numeric_limits<T>::min_exponent : ilogb(a) + 1;
+  int e1 = cls1 == FP_SUBNORMAL ? std::numeric_limits<T>::min_exponent
+                                : ilogb(a) + 1;
   const T upper1 = scalbn(T{1}, e1);
 
   if (isgreater(b, upper1)) {
@@ -175,10 +175,10 @@ constexpr auto UlpDistance(T a, T b)
     std::tie(x, y) = Fast2Sum(-mb, a2);
     e1 -= std::numeric_limits<T>::digits;
   } else {
-      // compute a - mb and its error
-      // Boost additionally compensates the error in the reverse direction.
-      // However, this is probably done because the Fast2Sum are ordered
-      // incorrectly, i.e., not by their magnatitude.
+    // compute a - mb and its error
+    // Boost additionally compensates the error in the reverse direction.
+    // However, this is probably done because the Fast2Sum are ordered
+    // incorrectly, i.e., not by their magnatitude.
     const T mb = fmin(upper1, b);
     std::tie(x, y) = Fast2Sum(-mb, a);
   }
