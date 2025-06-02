@@ -75,8 +75,9 @@ auto KahanSum(T a, T b, Ts&& ...args) -> std::enable_if_t<(std::is_same_v<T, std
 }
 #endif
 
+// TODO Provide base 2 C++20 std::bit_cast fast version.
 template <typename T>
-constexpr auto FloatDistance(T a, T b)
+constexpr auto UlpDistance(T a, T b)
     -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   using std::copysign;
   using std::fabs;
@@ -84,7 +85,6 @@ constexpr auto FloatDistance(T a, T b)
   using std::fpclassify;
   using std::ilogb;
   using std::isgreater;
-  using std::isless;
   using std::scalbn;
   using std::signbit;
 
@@ -105,7 +105,7 @@ constexpr auto FloatDistance(T a, T b)
 
   // FIXME a, b Inf -> stackoverflow
   if (isgreater(a, b)) {
-    return -FloatDistance(b, a);
+    return -UlpDistance(b, a);
   }
 
   const int cls3 = fpclassify(a - b);
@@ -114,41 +114,48 @@ constexpr auto FloatDistance(T a, T b)
     return T{0};
   }
 
-  if (cls1 == FP_ZERO) {
-    return T{1} + fabs(FloatDistance(
-                      copysign(std::numeric_limits<T>::denorm_min(), b), b));
+  const bool s1 = signbit(a);
+  const bool s2 = signbit(b);
+
+  if (cls1 == FP_ZERO || cls2 == FP_ZERO ||
+      cls1 != FP_ZERO && cls2 != FP_ZERO && s1 != s2) {
+      // Either of the operands is zero. Cannot compute the logarithm at zero.
+      // Split the computation and compute the distance from the denormalized minimum with
+      // the sign of the operand in the direction of the operand.
+    T result{0};
+
+    if (cls1 == FP_ZERO || cls2 != FP_ZERO && s1 != s2) {
+      result +=
+          T{1} + fabs(UlpDistance(
+                     copysign(std::numeric_limits<T>::denorm_min(), b), b));
+    }
+
+    if (cls2 == FP_ZERO || cls1 != FP_ZERO && s1 != s2) {
+      result +=
+          T{1} + fabs(UlpDistance(
+                     copysign(std::numeric_limits<T>::denorm_min(), a), a));
+    }
+
+    return result;
   }
 
-  if (cls2 == FP_ZERO) {
-    return T{1} + fabs(FloatDistance(
-                      copysign(std::numeric_limits<T>::denorm_min(), a), a));
-  }
-
-  if (signbit(a) != signbit(b)) {
-    return T{2} +
-           fabs(FloatDistance(copysign(std::numeric_limits<T>::denorm_min(), b),
-                              b)) +
-           fabs(FloatDistance(copysign(std::numeric_limits<T>::denorm_min(), a),
-                              a));
-  }
+  T result{0};
 
   // a, b are either both positive or both negative. Above we already ensure a <
   // b.
-  if (isless(a, 0)) {
-    return FloatDistance(-b, -a);
+  if (s1) {
+    return UlpDistance(-b, -a);
   }
 
   int e1 =
       cls1 == FP_SUBNORMAL ? std::numeric_limits<T>::min_exponent : ilogb(a) + 1;
   const T upper1 = scalbn(T{1}, e1);
 
-  T result{0};
-
   if (isgreater(b, upper1)) {
     const int e2 = ilogb(b);
     const T upper2 = scalbn(T{1}, e2);
 
-    result = FloatDistance(upper2, b) +
+    result = UlpDistance(upper2, b) +
              scalbn(e2 - e1, std::numeric_limits<T>::digits - 1);
   }
 
@@ -168,6 +175,10 @@ constexpr auto FloatDistance(T a, T b)
     std::tie(x, y) = Fast2Sum(-mb, a2);
     e1 -= std::numeric_limits<T>::digits;
   } else {
+      // compute a - mb and its error
+      // Boost additionally compensates the error in the reverse direction.
+      // However, this is probably done because the Fast2Sum are ordered
+      // incorrectly, i.e., not by their magnatitude.
     const T mb = fmin(upper1, b);
     std::tie(x, y) = Fast2Sum(-mb, a);
   }
@@ -178,7 +189,7 @@ constexpr auto FloatDistance(T a, T b)
 }  // namespace
 
 MATCHER_P2(MaxNumUlp, b, n, "") {
-  const auto d = FloatDistance(arg, b);
+  const auto d = UlpDistance(arg, b);
   *result_listener << absl::StrFormat(
       "%g must be within %f ulp to %g but is %f", arg, n, b, d);
   return d <= n;
@@ -214,7 +225,7 @@ TYPED_TEST_SUITE(AccurateNormTest, Types);
 TYPED_TEST(AccurateNormTest, FloatDistance) {
   using Scalar = TypeParam;
 
-  EXPECT_EQ(FloatDistance(Scalar{0}, Scalar{0}), 0);
+  EXPECT_EQ(UlpDistance(Scalar{0}, Scalar{0}), 0);
   // EXPECT_EQ(
   //     boost::math::float_distance(-std::numeric_limits<Scalar>::infinity(),
   //                                 +std::numeric_limits<Scalar>::infinity()),
@@ -223,12 +234,12 @@ TYPED_TEST(AccurateNormTest, FloatDistance) {
   //                        +std::numeric_limits<Scalar>::infinity()),
   //          0);
 
-  EXPECT_EQ(FloatDistance(Scalar{0}, std::nextafter(Scalar{0}, std::numeric_limits<Scalar>::infinity())), +1);
-  EXPECT_EQ(FloatDistance(Scalar{0}, std::nextafter(Scalar{0}, -std::numeric_limits<Scalar>::infinity())), -1);
+  EXPECT_EQ(UlpDistance(Scalar{0}, std::nextafter(Scalar{0}, std::numeric_limits<Scalar>::infinity())), +1);
+  EXPECT_EQ(UlpDistance(Scalar{0}, std::nextafter(Scalar{0}, -std::numeric_limits<Scalar>::infinity())), -1);
 
-  EXPECT_EQ(FloatDistance(std::nextafter(-std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::infinity()), +std::numeric_limits<Scalar>::denorm_min()), +3);
-  EXPECT_EQ(FloatDistance(-std::numeric_limits<Scalar>::denorm_min(), +std::numeric_limits<Scalar>::denorm_min()), +2);
-  EXPECT_EQ(FloatDistance(+std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::denorm_min()), -2);
+  EXPECT_EQ(UlpDistance(std::nextafter(-std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::infinity()), +std::numeric_limits<Scalar>::denorm_min()), +3);
+  EXPECT_EQ(UlpDistance(-std::numeric_limits<Scalar>::denorm_min(), +std::numeric_limits<Scalar>::denorm_min()), +2);
+  EXPECT_EQ(UlpDistance(+std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::denorm_min()), -2);
 
   //EXPECT_EQ(FloatDistance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
   //EXPECT_EQ(boost::math::float_distance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
