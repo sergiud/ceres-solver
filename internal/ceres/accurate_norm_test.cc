@@ -34,6 +34,7 @@
 // #include <boost/math/special_functions/next.hpp>
 #include <cmath>
 #include <limits>
+#include <tuple>
 #include <type_traits>
 
 #include "absl/strings/str_format.h"
@@ -124,16 +125,15 @@ constexpr auto UlpDistance(T a, T b)
       // the sign of the operand in the direction of the operand.
     T result{0};
 
-    if (cls1 == FP_ZERO || cls2 != FP_ZERO && s1 != s2) {
-      result +=
-          T{1} + fabs(UlpDistance(
-                     copysign(std::numeric_limits<T>::denorm_min(), b), b));
-    }
-
-    if (cls2 == FP_ZERO || cls1 != FP_ZERO && s1 != s2) {
-      result +=
-          T{1} + fabs(UlpDistance(
-                     copysign(std::numeric_limits<T>::denorm_min(), a), a));
+    for (const auto [use, value] :
+         {std::make_pair(cls1 == FP_ZERO || cls2 != FP_ZERO && s1 != s2, b),
+          std::make_pair(cls2 == FP_ZERO || cls1 != FP_ZERO && s1 != s2, a)}) {
+      if (use) {
+        result +=
+            T{1} +
+            fabs(UlpDistance(
+                copysign(std::numeric_limits<T>::denorm_min(), value), value));
+      }
     }
 
     return result;
