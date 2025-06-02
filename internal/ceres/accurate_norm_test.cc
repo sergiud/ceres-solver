@@ -138,7 +138,8 @@ constexpr auto FloatDistance(T a, T b)
     return FloatDistance(-b, -a);
   }
 
-  int e1 = ilogb(cls1 == FP_SUBNORMAL ? std::numeric_limits<T>::min() : a) + 1;
+  int e1 =
+      cls1 == FP_SUBNORMAL ? std::numeric_limits<T>::min_exponent : ilogb(a) + 1;
   const T upper1 = scalbn(T{1}, e1);
 
   T result{0};
@@ -159,27 +160,16 @@ constexpr auto FloatDistance(T a, T b)
   T y;
 
   if (cls1 == FP_SUBNORMAL || cls3 == FP_SUBNORMAL) {
+    // Avoid an underflow by scaling the values to the normal range
     const T a2 = scalbn(a, std::numeric_limits<T>::digits);
     const T b2 = scalbn(b, std::numeric_limits<T>::digits);
-    const T mb = -fmin(scalbn(upper1, std::numeric_limits<T>::digits), b2);
-    // const auto [s, t] = Fast2Sum(a2, mb);
-    // x = s;
-    // //y = Fast2Sum(a2, mb - t).first;
-    // y = (a2 - (x-z)) + t;
+    const T mb = fmin(scalbn(upper1, std::numeric_limits<T>::digits), b2);
 
-    x = a2 + mb;
-    const T z = x - a2;
-    y = (a2 - (x - z)) + (mb - z);
+    std::tie(x, y) = Fast2Sum(-mb, a2);
     e1 -= std::numeric_limits<T>::digits;
   } else {
-    const T mb = -fmin(upper1, b);
-    // const auto [s, t] = Fast2Sum(a, mb);
-    // x = s;
-    // y = Fast2Sum(a, mb - t).first;
-
-    x = a + mb;
-    const T z = x - a;
-    y = (a - (x - z)) + (mb - z);
+    const T mb = fmin(upper1, b);
+    std::tie(x, y) = Fast2Sum(-mb, a);
   }
 
   return result + scalbn(fabs(x), e1) + scalbn(fabs(y), e1);
@@ -235,6 +225,10 @@ TYPED_TEST(AccurateNormTest, FloatDistance) {
 
   EXPECT_EQ(FloatDistance(Scalar{0}, std::nextafter(Scalar{0}, std::numeric_limits<Scalar>::infinity())), +1);
   EXPECT_EQ(FloatDistance(Scalar{0}, std::nextafter(Scalar{0}, -std::numeric_limits<Scalar>::infinity())), -1);
+
+  EXPECT_EQ(FloatDistance(std::nextafter(-std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::infinity()), +std::numeric_limits<Scalar>::denorm_min()), +3);
+  EXPECT_EQ(FloatDistance(-std::numeric_limits<Scalar>::denorm_min(), +std::numeric_limits<Scalar>::denorm_min()), +2);
+  EXPECT_EQ(FloatDistance(+std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::denorm_min()), -2);
 
   //EXPECT_EQ(FloatDistance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
   //EXPECT_EQ(boost::math::float_distance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);

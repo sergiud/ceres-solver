@@ -39,6 +39,7 @@
 #ifndef CERES_PUBLIC_ACCURATE_NORM_
 #define CERES_PUBLIC_ACCURATE_NORM_
 
+#include <cassert>
 #include <cmath>
 #include <limits>
 #include <type_traits>
@@ -175,6 +176,9 @@ struct AccurateNormTraits<
 template <typename T>
 constexpr auto Fast2Sum(T x, T y)
     -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
+  using std::fabs;
+  using std::isgreaterequal;
+  assert(isgreaterequal(fabs(x), fabs(y)));
   const T s = x + y;
   const T z = s - x;
   const T t = y - z;
