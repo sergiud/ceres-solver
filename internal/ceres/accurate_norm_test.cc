@@ -32,7 +32,9 @@
 
 // #include <boost/math/special_functions/math_fwd.hpp>
 // #include <boost/math/special_functions/next.hpp>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <tuple>
 #include <type_traits>
@@ -76,7 +78,57 @@ auto KahanSum(T a, T b, Ts&& ...args) -> std::enable_if_t<(std::is_same_v<T, std
 }
 #endif
 
+template<std::size_t N>
+struct MakeInteger;
+
+template<> struct MakeInteger<1> {
+    using type = std::int8_t;
+};
+
+template<> struct MakeInteger<2> {
+    using type = std::int16_t;
+};
+
+template<> struct MakeInteger<4> {
+    using type = std::int32_t;
+};
+
+template<> struct MakeInteger<8> {
+    using type = std::int64_t;
+};
+
+
+
+
 // TODO Provide base 2 C++20 std::bit_cast fast version.
+template <typename T>
+constexpr auto UlpDistance2(T a, T b)
+    -> std::enable_if_t<std::is_floating_point_v<T>, typename MakeInteger<sizeof(T)>::type> {
+  using std::isgreater;
+
+  if (isgreater(a, b)) {
+    return -UlpDistance2(b, a);
+  }
+
+  using Integer = typename MakeInteger<sizeof(T)>::type;
+
+  const auto x = std::bit_cast<Integer>(a);
+  const auto y = std::bit_cast<Integer>(b);
+
+  // a <= b
+  if ((x < 0) != (y < 0)) {
+    if (x < 0) {
+      return -(std::numeric_limits<Integer>::min() - x) + y;
+    }
+
+    // y < 0
+    return (std::numeric_limits<Integer>::min() - y) +
+        x;
+  }
+
+  return y - x;
+}
+
 template <typename T>
 constexpr auto UlpDistance(T a, T b)
     -> std::enable_if_t<std::is_floating_point_v<T>, T> {
@@ -240,6 +292,15 @@ TYPED_TEST(AccurateNormTest, FloatDistance) {
   EXPECT_EQ(UlpDistance(std::nextafter(-std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::infinity()), +std::numeric_limits<Scalar>::denorm_min()), +3);
   EXPECT_EQ(UlpDistance(-std::numeric_limits<Scalar>::denorm_min(), +std::numeric_limits<Scalar>::denorm_min()), +2);
   EXPECT_EQ(UlpDistance(+std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::denorm_min()), -2);
+
+  if constexpr (!std::is_same_v<Scalar, long double>) {
+  EXPECT_EQ(UlpDistance2(Scalar{0}, std::nextafter(Scalar{0}, std::numeric_limits<Scalar>::infinity())), +1);
+  EXPECT_EQ(UlpDistance2(Scalar{0}, std::nextafter(Scalar{0}, -std::numeric_limits<Scalar>::infinity())), -1);
+
+  EXPECT_EQ(UlpDistance2(std::nextafter(-std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::infinity()), +std::numeric_limits<Scalar>::denorm_min()), +3);
+    EXPECT_EQ(UlpDistance2(-std::numeric_limits<Scalar>::denorm_min(), +std::numeric_limits<Scalar>::denorm_min()), +2);
+    EXPECT_EQ(UlpDistance2(+std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::denorm_min()), -2);
+  }
 
   //EXPECT_EQ(FloatDistance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
   //EXPECT_EQ(boost::math::float_distance(Scalar{0}, std::numeric_limits<Scalar>::epsilon()), 1);
