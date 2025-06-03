@@ -28,6 +28,14 @@
 //
 // Author: sergiu.deitsch@gmail.com (Sergiu Deitsch)
 //
+// This header implements a function for accurately computing the 2-argument
+// hypoteneuse while avoiding under- and overflows and its reciprocal variant
+// along with their corresponding variadic versions. The latter use a
+// composition of the former 2-argument hypotenuse function.
+//
+// The implementation is derived from the following two papers with extensions
+// to floating-point types with radix other than 2.
+//
 // [1] Borges, C. F. (2021). Fast Compensated Algorithms for the Reciprocal
 //     Square Root, the Reciprocal Hypotenuse, and Givens Rotations.
 //     http://arxiv.org/abs/2103.08694
@@ -66,9 +74,24 @@ template <typename... Ts>
 using Promote_t = decltype((typename Promote<Ts>::type(0) + ... + 0));
 
 // Determines the unit in the last place (ulp) of a value x. ulp is the spacing
-// between consecutive floating-point numbers. For instance, ulp(1) = b^(1-p) =
-// ε corresponds to the machine epsilon for a floating-point type with radix b
-// and precision p.
+// between consecutive floating-point numbers. We follow Goldberg's definition
+// of the function given by
+//
+//   ulp(x) = 𝛽^(max{e,e_min}−p+1)
+//
+// for a floating-point type with radix 𝛽 and precision p where e is x's
+// (integral) exponent and e_min is the lowest negative number such that
+// 𝛽^e_min is a valid normalized value of the corresponding floating-point
+// type, or, in other words, it is the smallest positive normal number.
+//
+// For instance, ulp(1) = 𝛽^(1-p) = 𝜀 corresponds to the machine epsilon.
+//
+// More information can be found in
+//
+//   Muller, JM. et al. (2018). Definitions and Basic Notions. In: Handbook of
+//   Floating-Point Arithmetic. Birkhäuser, Cham.
+//   https://doi.org/10.1007/978-3-319-76526-6_2
+//
 template <typename T>
 constexpr auto Ulp(T x) -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   using std::fpclassify;
@@ -87,8 +110,8 @@ constexpr auto Ulp(T x) -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   }
 
   if (cls == FP_NORMAL) {
-    // Compute b^(e-p+1) = ε·b^e where e = ⌊log_b x⌋ is the logarithm to base
-    // b of x, b is the radix and p is the floating-point type precision.
+    // Compute 𝛽^(e-p+1) = 𝜀·𝛽^e where e = ⌊log_𝛽 x⌋ is the logarithm to base 𝛽
+    // of x, 𝛽 is the radix and p is the floating-point type precision.
     return scalbn(std::numeric_limits<T>::epsilon(), ilogb(x));
   }
 
@@ -152,13 +175,13 @@ struct AccurateNormTraits {
 };
 
 // Unless Ceres is compiled with extended constexpr support for cmath introduced
-// in C++26, provide a specialization for IEEE-754 double arithmetic that avoids
-// computing the thresholds at runtime.
+// in C++26, provide a specialization for IEEE-754 radix 2 double arithmetic that
+// avoids computing the thresholds at runtime.
 #if !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
 template <>
 struct AccurateNormTraits<
     double,
-    std::enable_if<std::numeric_limits<double>::is_iec559>> {
+    std::enable_if<std::numeric_limits<double>::radix == 2>> {
   // ulp(√ε/2)
   static constexpr double Varying() noexcept { return 0x1.6a09e667f3bcdp-27; }
   // √F_max/2
@@ -172,10 +195,14 @@ struct AccurateNormTraits<
 
 // Compute two values s, t that satisfy s + t = x + y exactly where s is the sum
 // nearest to x + y and t is the round-off error. The algorithm assumes the
-// round-to-nearest (RN) mode which is the default.
+// round-to-nearest (RN) mode which is the default and the exponent of x to
+// greater or equal to that of y, or, equivalently the ordering |x| ≥ |y| of the
+// magnitude of both arguments.
 template <typename T>
 constexpr auto Fast2Sum(T x, T y)
     -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
+  static_assert(std::numeric_limits<T>::radix <= 3,
+                "Fast2Sum supports only radix 2 and 3 floating-point types");
   using std::fabs;
   using std::isgreaterequal;
   assert(isgreaterequal(fabs(x), fabs(y)));
@@ -183,6 +210,34 @@ constexpr auto Fast2Sum(T x, T y)
   const T z = s - x;
   const T t = y - z;
   return std::make_pair(s, t);
+}
+
+template <typename T>
+constexpr auto TwoSum(T a, T b)
+    -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
+  const T s = a + b;
+  const T a_prime = s - b;
+  const T b_prime = s - a_prime;
+  const T delta_a = a - a_prime;
+  const T delta_b = b - b_prime;
+  const T t = delta_a + delta_b;
+  return std::make_pair(s, t);
+}
+
+template <typename T>
+constexpr auto SumWithError(T a, T b)
+    -> std::enable_if_t<std::is_floating_point_v<T> &&
+                            std::numeric_limits<T>::radix <= 3,
+                        std::pair<T, T>> {
+  return Fast2Sum(a, b);
+}
+
+template <typename T>
+constexpr auto SumWithError(T a, T b)
+    -> std::enable_if_t<std::is_floating_point_v<T> &&
+                            (std::numeric_limits<T>::radix > 3),
+                        std::pair<T, T>> {
+  return TwoSum(a, b);
 }
 
 template <typename T>
@@ -194,7 +249,7 @@ constexpr auto UnscaledAccurateNormWithError(T x, T y)
   const T x_sq = x * x;
   const T y_sq = y * y;
   // Recover the rounding error of the floating-point addition of both squares.
-  const auto [sigma, sigma_e] = Fast2Sum(x_sq, y_sq);
+  const auto [sigma, sigma_e] = SumWithError(x_sq, y_sq);
   // Use the 2MultFMA algorithm to recover the rounding error due to squaring x
   // and y.
   return std::make_pair(sigma, sigma_e + fma(y, y, -y_sq) + fma(x, x, -x_sq));

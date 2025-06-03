@@ -213,7 +213,7 @@ constexpr auto UlpDistance(T a, T b)
 
   e1 = std::numeric_limits<T>::digits - e1;
 
-  using ceres::internal::Fast2Sum;
+  using ceres::internal::SumWithError;
 
   T x;
   T y;
@@ -224,7 +224,7 @@ constexpr auto UlpDistance(T a, T b)
     const T b2 = scalbn(b, std::numeric_limits<T>::digits);
     const T mb = fmin(scalbn(upper1, std::numeric_limits<T>::digits), b2);
 
-    std::tie(x, y) = Fast2Sum(-mb, a2);
+    std::tie(x, y) = SumWithError(-mb, a2);
     e1 -= std::numeric_limits<T>::digits;
   } else {
     // compute a - mb and its error
@@ -232,7 +232,7 @@ constexpr auto UlpDistance(T a, T b)
     // However, this is probably done because the Fast2Sum are ordered
     // incorrectly, i.e., not by their magnatitude.
     const T mb = fmin(upper1, b);
-    std::tie(x, y) = Fast2Sum(-mb, a);
+    std::tie(x, y) = SumWithError(-mb, a);
   }
 
   return result + scalbn(fabs(x), e1) + scalbn(fabs(y), e1);
