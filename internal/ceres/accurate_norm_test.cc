@@ -30,6 +30,8 @@
 
 #include "ceres/accurate_norm.h"
 
+#include "ceres/internal/port.h"
+
 // #include <boost/math/special_functions/math_fwd.hpp>
 // #include <boost/math/special_functions/next.hpp>
 #include <cmath>
@@ -42,8 +44,11 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#if defined(CERES_HAS_CPP20)
+#include <version>
 #if defined(__cpp_lib_bit_cast) && (__cpp_lib_bit_cast >= 201806L)
 #include <bit>
+#endif
 #endif
 
 namespace {
