@@ -29,7 +29,7 @@
 // Author: sergiu.deitsch@gmail.com (Sergiu Deitsch)
 //
 // This header implements a function for accurately computing the 2-argument
-// hypoteneuse while avoiding under- and overflows and its reciprocal variant
+// hypotenuse while avoiding under- and overflows and its reciprocal variant
 // along with their corresponding variadic versions. The latter use a
 // composition of the former 2-argument hypotenuse function.
 //
@@ -52,6 +52,8 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
+
+#include "ceres/constants.h"
 
 namespace ceres {
 
@@ -127,10 +129,14 @@ constexpr auto Ulp(T x)
   return Ulp(static_cast<Promote_t<T>>(x));
 }
 
+#if defined(__cpp_lib_constexpr_cmath)
 // To ensure compile-time evaluation we need std::sqrt to be constexpr which is
 // the case since C++26
-#if defined(__cpp_lib_constexpr_cmath) && (__cpp_lib_constexpr_cmath >= 202306L)
+#if (__cpp_lib_constexpr_cmath >= 202306L)
 #define CERES_HAS_CONSTEXPR_CMATH26
+#elif (__cpp_lib_constexpr_cmath >= 202202L)
+#define CERES_HAS_CONSTEXPR_CMATH23
+#endif
 #endif
 
 // GCC is non-conforming in regard to constexpr support as the compiler supports
@@ -138,16 +144,26 @@ constexpr auto Ulp(T x)
 // C++26. The constexpr cmath support is available unless the code is built
 // using -fno-builtin.
 #if (defined(__GNUG__) && !defined(__clang__)) && defined(__has_builtin)
-#if __has_builtin(sqrt) && __has_builtin(scalbn) && __has_builtin(ilogb)
+#if __has_builtin(scalbn) && __has_builtin(ilogb)
+#if __has_builtin(sqrt)
+#define CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS
+#else
+#define CERES_HAS_CONSTEXPR_FOR_ULP
+#endif
+#endif
+#endif
+
+#if !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
+#if defined(CERES_HAS_CONSTEXPR_CMATH23) || \
+    defined(CERES_HAS_CONSTEXPR_FOR_ULP) || \
+    defined(CERES_HAS_CONSTEXPR_CMATH26)
 #define CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS
 #endif
 #endif
 
-#if defined(CERES_HAS_CONSTEXPR_CMATH26) && \
-    !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
-#define CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS
-#endif
-
+// Try to enforce compile-time computation of constants if possible by declaring
+// the corresponding variables constexpr either if the used language standard or
+// the compiler allows it (regardless of the standard).
 #if defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
 #define CERES_ACCURATENORM_CONSTEXPR constexpr
 #else
@@ -156,19 +172,39 @@ constexpr auto Ulp(T x)
 
 template <typename T, typename Enable = void>
 struct AccurateNormTraits {
+  // √(ε/2) <=> 1/(√2)·𝛽^((1-p)/2) <=> (√2)/2·𝛽^((1-p)/2)
   static constexpr T Varying() noexcept {
+#if defined(CERES_HAS_CONSTEXPR_FOR_ULP)
+    using std::scalbn;
+    return scalbn(constants::sqrt_2_v<T> / T{2},
+                  (1 - std::numeric_limits<T>::digits) / 2);
+#else
     using std::sqrt;
-    return sqrt(std::numeric_limits<T>::epsilon() / 2);
+    return sqrt(std::numeric_limits<T>::epsilon() / T{2});
+#endif
   }
 
+  // √(F_max/2) <=> 1/(√2)·𝛽^(e_max/2) <=> (√2)/2·𝛽^(e_max/2)
   static constexpr T Huge() noexcept {
+#if defined(CERES_HAS_CONSTEXPR_FOR_ULP)
+    using std::scalbn;
+    return scalbn(constants::sqrt_2_v<T> / T{2},
+                  std::numeric_limits<T>::max_exponent / 2);
+#else
     using std::sqrt;
-    return sqrt(std::numeric_limits<T>::max() / 2);
+    return sqrt(std::numeric_limits<T>::max() / T{2});
+#endif
   }
 
+  // √(F_min) <=> 𝛽^(e_min/2)
   static constexpr T Tiny() noexcept {
+#if defined(CERES_HAS_CONSTEXPR_FOR_ULP)
+    using std::scalbn;
+    return scalbn(T{1}, (std::numeric_limits<T>::min_exponent - 1) / 2);
+#else
     using std::sqrt;
     return sqrt(std::numeric_limits<T>::min());
+#endif
   }
 
   static constexpr T Scale() noexcept { return Ulp(Tiny()); }
@@ -182,9 +218,9 @@ template <>
 struct AccurateNormTraits<
     double,
     std::enable_if<std::numeric_limits<double>::radix == 2>> {
-  // ulp(√ε/2)
+  // √(ε/2)
   static constexpr double Varying() noexcept { return 0x1.6a09e667f3bcdp-27; }
-  // √F_max/2
+  // √(F_max/2)
   static constexpr double Huge() noexcept { return 0x1.6a09e667f3bccp+511; }
   // √F_min
   static constexpr double Tiny() noexcept { return 0x1p-511; }
@@ -240,6 +276,26 @@ constexpr auto SumWithError(T a, T b)
   return TwoSum(a, b);
 }
 
+// Computes the round-off error of the product of x and y that was precomputed
+// as xy, and returns the corresponding round-off error.
+template <typename T>
+constexpr auto TwoMultFMA(T x, T y, T xy)
+    -> std::enable_if_t<std::is_floating_point_v<T>, T> {
+  using std::fma;
+  using std::fpclassify;
+  // Since the product of both arguments is computed externally (for performance
+  // reasons) we need to ensure that the required invariant holds and indeed the
+  // product of x and y is passed and not erroneously an incorrect value.
+  assert(fpclassify((x * y) - xy) == FP_ZERO);
+  // NOTE The standard prescribes that std::fma must compute the result by
+  // rounding exactly once even if the hardware lacks support for a dedicated
+  // FMA instruction. Therefore, we generally do not need to provide a fallback,
+  // e.g., using Dekker's algorithm. We could, however, do that if the standard
+  // library's implementation is incorrect by checking the FP_FAST_FMA(F|L)
+  // define.
+  return fma(x, y, -xy);
+}
+
 template <typename T>
 constexpr auto UnscaledAccurateNormWithError(T x, T y)
     -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
@@ -252,14 +308,16 @@ constexpr auto UnscaledAccurateNormWithError(T x, T y)
   const auto [sigma, sigma_e] = SumWithError(x_sq, y_sq);
   // Use the 2MultFMA algorithm to recover the rounding error due to squaring x
   // and y.
-  return std::make_pair(sigma, sigma_e + fma(y, y, -y_sq) + fma(x, x, -x_sq));
+  return std::make_pair(
+      sigma, sigma_e + TwoMultFMA(y, y, y_sq) + TwoMultFMA(x, x, x_sq));
 }
 
 // Computes the hypotenuse of x and y without checking the arguments and
 // ensuring invariants. Not intended to be invoked by users.
 //
 // The functions assumes the arguments to be finite, scaled correctly to avoid
-// an under-/overflow and passed in the correct order ensuring |x| ≥ |y|.
+// an under-/overflow and passed in the decreasing order of magnitude, i.e.,
+// |x| ≥ |y|.
 template <typename T>
 constexpr auto UnscaledAccurateNorm(T x, T y)
     -> std::enable_if_t<std::is_floating_point_v<T>, T> {
@@ -424,9 +482,9 @@ constexpr auto AccurateRNorm(T a, T b, Args&&... args)
     -> std::enable_if_t<(sizeof...(Args) > 0 &&
                          (std::is_same_v<T, std::decay_t<Args>> && ...)),
                         T> {
-  // Note that we compose the reciprocal hypotenuse with the non-reciprocal one as this
-  // is the convention of the arguments. Additionally, this avoids division by
-  // zero in cases such AccurateRNorm(x, 0, 0).
+  // NOTE we compose the reciprocal hypotenuse with the non-reciprocal one as
+  // this is the convention of the arguments. Additionally, this avoids division
+  // by zero in cases such AccurateRNorm(x, 0, 0).
   return AccurateRNorm(a, AccurateNorm(b, std::forward<Args>(args)...));
 }
 
