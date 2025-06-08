@@ -110,6 +110,9 @@ template<> struct MakeInteger<8> {
 template <typename T>
 constexpr auto UlpDistance2(T a, T b)
     -> std::enable_if_t<std::is_floating_point_v<T>, typename MakeInteger<sizeof(T)>::type> {
+  static_assert(std::numeric_limits<T>::is_iec559,
+                "std::bit_cast based ulp distance computation requires IEC "
+                "60559 floating-point bit layout");
   using std::isgreater;
 
   if (isgreater(a, b)) {
@@ -177,16 +180,21 @@ constexpr auto UlpDistance(T a, T b)
   const bool s1 = signbit(a);
   const bool s2 = signbit(b);
 
-  if (cls1 == FP_ZERO || cls2 == FP_ZERO ||
-      cls1 != FP_ZERO && cls2 != FP_ZERO && s1 != s2) {
-    // Either of the operands is zero. Cannot compute the logarithm at zero.
-    // Split the computation and compute the distance from the denormalized
-    // minimum with the sign of the operand in the direction of the operand.
+  const bool different_signs = s1 != s2;
+  const bool nonzero1 = cls2 == FP_ZERO || (cls1 != FP_ZERO && different_signs);
+  const bool nonzero2 = cls1 == FP_ZERO || (cls2 != FP_ZERO && different_signs);
+
+  if (nonzero1 || nonzero2) {
+    // Either of the operands is zero prohibiting logarithm computation. Split
+    // the computation and compute the distance from the denormalized minimum
+    // with the sign of the operand in the direction of the operand.
     T result{0};
 
+    // Only one of the operands can be zero at this point. However, if their
+    // signs are different, we need to compute the distance in both directions
+    // starting from zero.
     for (const auto [use, value] :
-         {std::make_pair(cls1 == FP_ZERO || cls2 != FP_ZERO && s1 != s2, b),
-          std::make_pair(cls2 == FP_ZERO || cls1 != FP_ZERO && s1 != s2, a)}) {
+         {std::make_pair(nonzero1, a), std::make_pair(nonzero2, b)}) {
       if (use) {
         result +=
             T{1} +
@@ -226,19 +234,16 @@ constexpr auto UlpDistance(T a, T b)
   T y;
 
   if (cls1 == FP_SUBNORMAL || cls3 == FP_SUBNORMAL) {
-    // Avoid an underflow by scaling the values to the normal range
+    // Avoid an underflow by scaling the denormalized values to the normal range
     const T a2 = scalbn(a, std::numeric_limits<T>::digits);
     const T b2 = scalbn(b, std::numeric_limits<T>::digits);
     const T mb = fmin(scalbn(upper1, std::numeric_limits<T>::digits), b2);
-
-    std::tie(x, y) = SumWithError(-mb, a2);
+    // Account for the above scaling
     e1 -= std::numeric_limits<T>::digits;
+    std::tie(x, y) = SumWithError(-mb, a2);
   } else {
-    // compute a - mb and its error
-    // Boost additionally compensates the error in the reverse direction.
-    // However, this is probably done because the Fast2Sum are ordered
-    // incorrectly, i.e., not by their magnatitude.
     const T mb = fmin(upper1, b);
+    // compute a - mb and its error
     std::tie(x, y) = SumWithError(-mb, a);
   }
 

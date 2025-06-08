@@ -47,6 +47,7 @@
 #ifndef CERES_PUBLIC_ACCURATE_NORM_
 #define CERES_PUBLIC_ACCURATE_NORM_
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <limits>
@@ -84,7 +85,7 @@ using Promote_t = decltype((typename Promote<Ts>::type(0) + ... + 0));
 // for a floating-point type with radix 𝛽 and precision p where e is x's
 // (integral) exponent and e_min is the lowest negative number such that
 // 𝛽^e_min is a valid normalized value of the corresponding floating-point
-// type, or, in other words, it is the smallest positive normal number.
+// type, or, in other words, the smallest positive normal number.
 //
 // For instance, ulp(1) = 𝛽^(1-p) = 𝜀 corresponds to the machine epsilon.
 //
@@ -130,33 +131,25 @@ constexpr auto Ulp(T x)
 }
 
 #if defined(__cpp_lib_constexpr_cmath)
-// To ensure compile-time evaluation we need std::sqrt to be constexpr which is
-// the case since C++26
-#if (__cpp_lib_constexpr_cmath >= 202306L)
-#define CERES_HAS_CONSTEXPR_CMATH26
-#elif (__cpp_lib_constexpr_cmath >= 202202L)
+// To ensure compile-time evaluation we need std::scalbn and std::ilogb to be
+// constexpr which is the case since C++23
+#if (__cpp_lib_constexpr_cmath >= 202202L)
 #define CERES_HAS_CONSTEXPR_CMATH23
 #endif
 #endif
 
 // GCC is non-conforming in regard to constexpr support as the compiler supports
 // constexpr cmath using builtin functions without raising the C++ standard to
-// C++26. The constexpr cmath support is available unless the code is built
+// C++23. The constexpr cmath support is available unless the code is built
 // using -fno-builtin.
 #if (defined(__GNUG__) && !defined(__clang__)) && defined(__has_builtin)
 #if __has_builtin(scalbn) && __has_builtin(ilogb)
-#if __has_builtin(sqrt)
 #define CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS
-#else
-#define CERES_HAS_CONSTEXPR_FOR_ULP
-#endif
 #endif
 #endif
 
 #if !defined(CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS)
-#if defined(CERES_HAS_CONSTEXPR_CMATH23) || \
-    defined(CERES_HAS_CONSTEXPR_FOR_ULP) || \
-    defined(CERES_HAS_CONSTEXPR_CMATH26)
+#if defined(CERES_HAS_CONSTEXPR_CMATH23)
 #define CERES_HAS_CONSTEXPR_FOR_ACCURATENORMTRAITS
 #endif
 #endif
@@ -174,39 +167,25 @@ template <typename T, typename Enable = void>
 struct AccurateNormTraits {
   // √(ε/2) <=> 1/(√2)·𝛽^((1-p)/2) <=> (√2)/2·𝛽^((1-p)/2)
   static constexpr T Varying() noexcept {
-#if defined(CERES_HAS_CONSTEXPR_FOR_ULP)
     using std::scalbn;
     return scalbn(constants::sqrt_2_v<T> / T{2},
                   (1 - std::numeric_limits<T>::digits) / 2);
-#else
-    using std::sqrt;
-    return sqrt(std::numeric_limits<T>::epsilon() / T{2});
-#endif
   }
 
   // √(F_max/2) <=> 1/(√2)·𝛽^(e_max/2) <=> (√2)/2·𝛽^(e_max/2)
   static constexpr T Huge() noexcept {
-#if defined(CERES_HAS_CONSTEXPR_FOR_ULP)
     using std::scalbn;
     return scalbn(constants::sqrt_2_v<T> / T{2},
                   std::numeric_limits<T>::max_exponent / 2);
-#else
-    using std::sqrt;
-    return sqrt(std::numeric_limits<T>::max() / T{2});
-#endif
   }
 
   // √(F_min) <=> 𝛽^(e_min/2)
   static constexpr T Tiny() noexcept {
-#if defined(CERES_HAS_CONSTEXPR_FOR_ULP)
     using std::scalbn;
     return scalbn(T{1}, (std::numeric_limits<T>::min_exponent - 1) / 2);
-#else
-    using std::sqrt;
-    return sqrt(std::numeric_limits<T>::min());
-#endif
   }
 
+  // ulp(√F_min)
   static constexpr T Scale() noexcept { return Ulp(Tiny()); }
 };
 
@@ -248,6 +227,11 @@ constexpr auto Fast2Sum(T x, T y)
   return std::make_pair(s, t);
 }
 
+// Similar to Fast2Sum, compute two values s, t that satisfy s + t = x + y
+// exactly where s is the sum nearest to x + y and t is the round-off error. The
+// algorithm assumes the round-to-nearest (RN) mode which is the default.
+// Opposed to Fast2Sum, however, the algorithm is radix-independent and does not
+// require ordering the arguments by their magnitude.
 template <typename T>
 constexpr auto TwoSum(T a, T b)
     -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
@@ -287,7 +271,7 @@ constexpr auto TwoMultFMA(T x, T y, T xy)
   // reasons) we need to ensure that the required invariant holds and indeed the
   // product of x and y is passed and not erroneously an incorrect value.
   assert(fpclassify((x * y) - xy) == FP_ZERO);
-  // NOTE The standard prescribes that std::fma must compute the result by
+  // NOTE The C++ standard guarantees that std::fma computes the result by
   // rounding exactly once even if the hardware lacks support for a dedicated
   // FMA instruction. Therefore, we generally do not need to provide a fallback,
   // e.g., using Dekker's algorithm. We could, however, do that if the standard
@@ -351,9 +335,8 @@ template <typename T>
 constexpr auto AccurateNorm(T a, T b)
     -> std::enable_if_t<std::is_floating_point_v<T>, T> {
   using std::fabs;
-  using std::fmax;
-  using std::fmin;
   using std::isfinite;
+  using std::minmax;
 
   a = fabs(a);
   b = fabs(b);
@@ -366,10 +349,9 @@ constexpr auto AccurateNorm(T a, T b)
     return b;
   }
 
-  // Ensure |x| ≥ |y|. While we could have used std::minmax, we want to avoid
-  // floating point exceptions.
-  const T x = fmax(a, b);
-  const T y = fmin(a, b);
+  // Ensure |x| ≥ |y|. No exception can be raised here since the arguments are
+  // finite at this point. The same is true for the following comparisons.
+  const auto [y, x] = minmax(a, b);
 
   using internal::AccurateNormTraits;
 
@@ -418,8 +400,6 @@ constexpr auto AccurateRNorm(T a, T b)
   using std::fmax;
   using std::fmin;
   using std::fpclassify;
-  using std::isfinite;
-  using std::isnan;
 
   a = fabs(a);
   b = fabs(b);
@@ -484,7 +464,7 @@ constexpr auto AccurateRNorm(T a, T b, Args&&... args)
                         T> {
   // NOTE we compose the reciprocal hypotenuse with the non-reciprocal one as
   // this is the convention of the arguments. Additionally, this avoids division
-  // by zero in cases such AccurateRNorm(x, 0, 0).
+  // by zero in cases such as AccurateRNorm(x, 0, 0).
   return AccurateRNorm(a, AccurateNorm(b, std::forward<Args>(args)...));
 }
 
