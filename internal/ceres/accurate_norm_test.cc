@@ -327,6 +327,13 @@ TYPED_TEST(AccurateNormTest, FloatDistance) {
                                     -std::numeric_limits<Scalar>::infinity())),
         -1);
 
+    EXPECT_EQ(UlpDistance2(-std::numeric_limits<Scalar>::denorm_min(),
+                           +std::numeric_limits<Scalar>::denorm_min()),
+              +2);
+    EXPECT_EQ(UlpDistance2(+std::numeric_limits<Scalar>::denorm_min(),
+                           -std::numeric_limits<Scalar>::denorm_min()),
+              -2);
+
     EXPECT_EQ(
         UlpDistance2(std::nextafter(-std::numeric_limits<Scalar>::denorm_min(),
                                     -std::numeric_limits<Scalar>::infinity()),
