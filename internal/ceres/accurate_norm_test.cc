@@ -107,6 +107,14 @@ template<> struct MakeInteger<8> {
 
 #if defined(__cpp_lib_bit_cast) && (__cpp_lib_bit_cast >= 201806L)
 // TODO Provide base 2 C++20 std::bit_cast fast version.
+// Given two floating-point values a and b, the function computes their distance
+// in terms of the number of ulp. More formally, we want to compute
+//
+//  |a-b| ≤ d·ulp(b) => d ≥ |a-b|/ulp(b)
+//
+// For instance, the ulp distance between a value x and its successor (e.g.,
+// obtained using std::nextafter) is +1. The distance between x and its
+// predecessor is -1.
 template <typename T>
 constexpr auto UlpDistance2(T a, T b)
     -> std::enable_if_t<std::is_floating_point_v<T>, typename MakeInteger<sizeof(T)>::type> {
@@ -324,6 +332,12 @@ TYPED_TEST(AccurateNormTest, FloatDistance) {
                                     -std::numeric_limits<Scalar>::infinity()),
                      +std::numeric_limits<Scalar>::denorm_min()),
         +3);
+    EXPECT_EQ(
+        UlpDistance2(std::nextafter(+std::numeric_limits<Scalar>::denorm_min(),
+                                    +std::numeric_limits<Scalar>::infinity()),
+                     -std::numeric_limits<Scalar>::denorm_min()),
+        -3);
+
     EXPECT_EQ(UlpDistance2(-std::numeric_limits<Scalar>::denorm_min(), +std::numeric_limits<Scalar>::denorm_min()), +2);
     EXPECT_EQ(UlpDistance2(+std::numeric_limits<Scalar>::denorm_min(), -std::numeric_limits<Scalar>::denorm_min()), -2);
   }
