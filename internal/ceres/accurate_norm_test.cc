@@ -110,7 +110,7 @@ template<> struct MakeInteger<8> {
 // Given two floating-point values a and b, the function computes their distance
 // in terms of the number of ulp. More formally, we want to compute
 //
-//  |a-b| ≤ d·ulp(b) => d ≥ |a-b|/ulp(b)
+//  a-b = d·ulp(a) => d = (a-b)/ulp(a)
 //
 // For instance, the ulp distance between a value x and its successor (e.g.,
 // obtained using std::nextafter) is +1. The distance between x and its
