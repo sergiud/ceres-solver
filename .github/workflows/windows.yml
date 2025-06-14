@@ -81,7 +81,7 @@ jobs:
               --target install
 
   build-msvc:
-    name: ${{matrix.msvc}}-${{matrix.arch}}-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}
+    name: ${{matrix.msvc}}-${{matrix.build_type}}-${{matrix.lib}}-${{matrix.gpu}}
     runs-on: ${{matrix.os}}
     defaults:
       run:
@@ -93,23 +93,24 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        arch:
-          - x64
         build_type:
           - Release
         msvc:
-          - VS-17-2022
+          - VS-17-2022-x64
+          - VS-17-2022-arm
         lib:
           - shared
         gpu:
           - cuda
           - no-cuda
         include:
-          - msvc: VS-17-2022
+          - msvc: VS-17-2022-x64
+            arch: x64
             os: windows-2025
             generator: 'Visual Studio 17 2022'
             marker: vc17
           - msvc: VS-17-2022-arm
+            arch: arm64
             os: windows-11-arm
             generator: 'Visual Studio 17 2022'
             marker: vc17
@@ -120,7 +121,7 @@ jobs:
           submodules: recursive
 
       - name: Download and install CUDA toolkit
-        if: matrix.gpu == 'cuda'
+        if: matrix.gpu == 'cuda' && matrix.arch == 'x64'
         run: |
           Invoke-WebRequest https://developer.download.nvidia.com/compute/cuda/12.5.1/network_installers/cuda_12.5.1_windows_network.exe -OutFile cuda_toolkit_windows.exe
           Start-Process -Wait -FilePath .\cuda_toolkit_windows.exe -ArgumentList "-s cusolver_dev_12.5 cusparse_dev_12.5 cublas_dev_12.5 thrust_12.5 nvcc_12.5 cudart_12.5 nvrtc_dev_12.5 visual_studio_integration_12.5"
@@ -131,7 +132,7 @@ jobs:
           echo "$CUDA_PATH/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Setup cuDSS
-        if: matrix.gpu == 'cuda'
+        if: matrix.gpu == 'cuda' && matrix.arch == 'x64'
         run: |
           Invoke-WebRequest https://developer.download.nvidia.com/compute/cudss/redist/libcudss/windows-x86_64/libcudss-windows-x86_64-0.3.0.9_cuda12-archive.zip -OutFile libcudss-windows-x86_64-0.3.0.9_cuda12-archive.zip
           Expand-Archive -Path .\libcudss-windows-x86_64-0.3.0.9_cuda12-archive.zip -DestinationPath "C:/"
@@ -146,7 +147,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: suitesparse/
-          key: ${{matrix.msvc}}-suitesparse-5.13.0-cmake.3-${{matrix.arch}}-${{matrix.build_type}}-${{matrix.lib}}
+          key: ${{matrix.msvc}}-suitesparse-5.13.0-cmake.3-${{matrix.build_type}}-${{matrix.lib}}
 
       - name: Download SuiteSparse
         if: steps.cache-suitesparse.outputs.cache-hit != 'true'
@@ -170,7 +171,7 @@ jobs:
       - name: Setup Eigen
         if: steps.cache-eigen.outputs.cache-hit != 'true'
         run: |
-          cmake -S eigen-3.4.0 -B build-eigen `
+          cmake -S eigen-3.4.0 -B build-eigen -A ${{matrix.arch}} `
                 -DBUILD_TESTING=OFF `
                 -DCMAKE_Fortran_COMPILER= `
                 -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/eigen `
@@ -190,7 +191,7 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build_${{matrix.build_type}}/ `
+          cmake -S . -B build_${{matrix.build_type}}/ -A ${{matrix.arch}} `
                 -DBLAS_blas_LIBRARY=${{github.workspace}}/suitesparse/lib/libblas.lib `
                 -DBUILD_SHARED_LIBS=${{matrix.lib == 'shared'}} `
                 -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} `
