@@ -146,7 +146,7 @@ endif (NOT WITH_EIGENMETIS)
 
 find_package (AccelerateSparse)
 find_package (benchmark 1.3)
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package (Eigen3 3.3...5 REQUIRED NO_MODULE)
 find_package (gflags 2.2.1)
 find_package (LAPACK)
 find_package (METIS)
