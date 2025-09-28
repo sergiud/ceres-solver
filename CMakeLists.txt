@@ -277,7 +277,7 @@ if (NOT ng-log_FOUND)
   add_definitions("-DMAX_LOG_LEVEL=${MINIGLOG_MAX_LOG_LEVEL}")
 else (NOT ng-log_FOUND)
   unset(MINIGLOG_MAX_LOG_LEVEL CACHE)
-  set (GLOG_DEPENDENCY "find_dependency (glog ${glog_VERSION} NO_MODULE)")
+  set (GLOG_DEPENDENCY "find_dependency (ng-log ${ng-log_VERSION} NO_MODULE)")
 endif (NOT ng-log_FOUND)
 
 if (NOT WITH_SCHUR_SPECIALIZATIONS)
