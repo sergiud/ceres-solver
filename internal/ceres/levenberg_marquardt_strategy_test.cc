@@ -151,7 +151,7 @@ TEST(LevenbergMarquardtStrategy, CorrectDiagonalToLinearSolver) {
     // Use GLOG_WARNING to support MSVC if GLOG_NO_ABBREVIATED_SEVERITIES
     // is defined.
     EXPECT_CALL(log,
-                Log(GLOG_WARNING, _, HasSubstr("Failed to compute a step")));
+                Log(NGLOG_WARNING, _, HasSubstr("Failed to compute a step")));
 #else
     EXPECT_CALL(log,
                 Log(nglog::WARNING, _, HasSubstr("Failed to compute a step")));
