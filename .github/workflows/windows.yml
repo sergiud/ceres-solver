@@ -129,7 +129,7 @@ jobs:
         if: matrix.gpu == 'cuda' && steps.cache-cuda.outputs.cache-hit != 'true'
         run: |
           Invoke-WebRequest https://developer.download.nvidia.com/compute/cuda/13.3.0/network_installers/cuda_13.3.0_windows_network.exe -OutFile cuda_toolkit_windows.exe
-          Start-Process -Wait -FilePath .\cuda_toolkit_windows.exe -ArgumentList "-s crt_13.3 cusolver_dev_13.3 cusparse_dev_13.3 cublas_dev_13.3 thrust_13.3 nvcc_13.3 cudart_13.3 nvrtc_dev_13.3 visual_studio_integration_13.3"
+          Start-Process -Wait -FilePath .\cuda_toolkit_windows.exe -ArgumentList "-s crt_13.3 cusolver_dev_13.3 cusparse_dev_13.3 cublas_dev_13.3 thrust_13.3 nvcc_13.3 nvvm_13.3 cudart_13.3 nvrtc_dev_13.3 visual_studio_integration_13.3"
           Remove-Item .\cuda_toolkit_windows.exe
 
       - name: Setup CUDA environment
