@@ -115,25 +115,51 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Download and install CUDA toolkit
+      - name: Cache CUDA toolkit
         if: matrix.gpu == 'cuda'
+        id: cache-cuda
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3
+            C:/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Microsoft/VC/v180/BuildCustomizations
+          key: ${{runner.os}}-${{matrix.msvc}}-cuda-13.3.0-v1
+
+      - name: Download and install CUDA toolkit
+        if: matrix.gpu == 'cuda' && steps.cache-cuda.outputs.cache-hit != 'true'
         run: |
           Invoke-WebRequest https://developer.download.nvidia.com/compute/cuda/13.3.0/network_installers/cuda_13.3.0_windows_network.exe -OutFile cuda_toolkit_windows.exe
           Start-Process -Wait -FilePath .\cuda_toolkit_windows.exe -ArgumentList "-s cusolver_dev_13.3 cusparse_dev_13.3 cublas_dev_13.3 thrust_13.3 nvcc_13.3 cudart_13.3 nvrtc_dev_13.3 visual_studio_integration_13.3"
           Remove-Item .\cuda_toolkit_windows.exe
+
+      - name: Setup CUDA environment
+        if: matrix.gpu == 'cuda'
+        run: |
           $CUDA_PATH = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3"
           echo "CUDA_PATH=$CUDA_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CUDA_PATH_V13_3=$CUDA_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "$CUDA_PATH/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Setup cuDSS
+      - name: Cache cuDSS
+        if: matrix.gpu == 'cuda'
+        id: cache-cudss
+        uses: actions/cache@v4
+        with:
+          path: ${{github.workspace}}/libcudss-windows-x86_64-0.8.0.10_cuda13-archive
+          key: ${{runner.os}}-${{matrix.msvc}}-cudss-0.8.0.10-cuda13-v1
+
+      - name: Download and extract cuDSS
+        if: matrix.gpu == 'cuda' && steps.cache-cudss.outputs.cache-hit != 'true'
+        run: |
+          $CUDSS_ARCHIVE = "${{github.workspace}}/libcudss-windows-x86_64-0.8.0.10_cuda13-archive.zip"
+          Invoke-WebRequest https://developer.download.nvidia.com/compute/cudss/redist/libcudss/windows-x86_64/libcudss-windows-x86_64-0.8.0.10_cuda13-archive.zip -OutFile $CUDSS_ARCHIVE
+          Expand-Archive -Path $CUDSS_ARCHIVE -DestinationPath "${{github.workspace}}"
+          Remove-Item $CUDSS_ARCHIVE
+
+      - name: Setup cuDSS environment
         if: matrix.gpu == 'cuda'
         run: |
-          Invoke-WebRequest https://developer.download.nvidia.com/compute/cudss/redist/libcudss/windows-x86_64/libcudss-windows-x86_64-0.8.0.10_cuda13-archive.zip -OutFile libcudss-windows-x86_64-0.8.0.10_cuda13-archive.zip
-          Expand-Archive -Path .\libcudss-windows-x86_64-0.8.0.10_cuda13-archive.zip -DestinationPath "C:/"
-          Remove-Item .\libcudss-windows-x86_64-0.8.0.10_cuda13-archive.zip
-          $CUDSS_PATH = "C:/libcudss-windows-x86_64-0.8.0.10_cuda13-archive/"
-          $CUDSS_CMAKE_CONFIG = "$CUDSS_PATH/lib/cmake/cudss/cudss-config.cmake"
+          $CUDSS_PATH = "${{github.workspace}}/libcudss-windows-x86_64-0.8.0.10_cuda13-archive/"
           echo "cudss_DIR=$CUDSS_PATH/lib/cmake/cudss" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "$CUDSS_PATH/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
