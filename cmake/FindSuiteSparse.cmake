@@ -102,6 +102,260 @@ if (SuiteSparse_FIND_COMPONENTS)
   list(SORT SuiteSparse_FIND_COMPONENTS COMPARE STRING CASE INSENSITIVE)
 endif ()
 
+include(CMakePushCheckState)
+
+function(suitesparse_collect_link_libraries TARGET_NAME OUTPUT_VARIABLE)
+  set(_pending_targets "${TARGET_NAME}")
+  set(_visited_targets)
+  set(_link_libraries)
+
+  while (_pending_targets)
+    list(POP_FRONT _pending_targets _target)
+    list(FIND _visited_targets "${_target}" _target_index)
+    if (_target_index GREATER -1)
+      continue()
+    endif()
+
+    list(APPEND _visited_targets "${_target}")
+    if (TARGET "${_target}")
+      list(APPEND _link_libraries "${_target}")
+      get_target_property(_target_links "${_target}"
+        INTERFACE_LINK_LIBRARIES)
+      if (_target_links AND NOT _target_links MATCHES "-NOTFOUND$")
+        foreach (_target_link IN LISTS _target_links)
+          string(REGEX REPLACE "^\$<LINK_ONLY:(.*)>$" "\\1"
+            _target_link "${_target_link}")
+          if (TARGET "${_target_link}")
+            list(APPEND _pending_targets "${_target_link}")
+          elseif (NOT _target_link MATCHES "\$<")
+            list(APPEND _link_libraries "${_target_link}")
+          endif()
+        endforeach()
+      endif()
+    endif()
+  endwhile()
+
+  set(${OUTPUT_VARIABLE} "${_link_libraries}" PARENT_SCOPE)
+endfunction()
+
+function(suitesparse_check_blas_interface REQUIRED_INCLUDES OUTPUT_VARIABLE
+    REASON_VARIABLE)
+  if (NOT DEFINED MKL_INTERFACE_FULL OR MKL_INTERFACE_FULL STREQUAL "")
+    set(${OUTPUT_VARIABLE} TRUE PARENT_SCOPE)
+    return()
+  endif()
+
+  string(TOLOWER "${MKL_INTERFACE_FULL}" _mkl_interface)
+  set(_lp64_integer_size 4)
+  set(_lp64_integer_bits 32)
+  set(_ilp64_integer_size 8)
+  set(_ilp64_integer_bits 64)
+  if (_mkl_interface MATCHES "ilp64")
+    set(_expected_integer_size ${_ilp64_integer_size})
+    set(_expected_integer_bits ${_ilp64_integer_bits})
+  elseif (_mkl_interface MATCHES "lp64")
+    set(_expected_integer_size ${_lp64_integer_size})
+    set(_expected_integer_bits ${_lp64_integer_bits})
+  else()
+    message(WARNING
+      "Cannot determine the BLAS/LAPACK integer size for MKL_INTERFACE_FULL="
+      "${MKL_INTERFACE_FULL}. The SuiteSparse compatibility check will not "
+      "verify this interface.")
+    set(${OUTPUT_VARIABLE} TRUE PARENT_SCOPE)
+    return()
+  endif()
+
+  include(CheckCXXSourceCompiles)
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_QUIET TRUE)
+  set(CMAKE_REQUIRED_INCLUDES ${REQUIRED_INCLUDES})
+  set(_has_blas_integer_source [=[
+#include <SuiteSparse_config.h>
+
+#ifndef SUITESPARSE_BLAS_INT
+#error SUITESPARSE_BLAS_INT is unavailable
+#endif
+
+int main() { return 0; }
+]=])
+  unset(SuiteSparse_HAS_BLAS_INTEGER CACHE)
+  unset(SuiteSparse_HAS_BLAS_INTEGER)
+  check_cxx_source_compiles("${_has_blas_integer_source}"
+    SuiteSparse_HAS_BLAS_INTEGER)
+
+  if (SuiteSparse_HAS_BLAS_INTEGER)
+    set(_supported_integer_sizes
+      ${_lp64_integer_size} ${_ilp64_integer_size})
+    foreach(_integer_size IN LISTS _supported_integer_sizes)
+      set(_matching_blas_integer_source [=[
+#include <SuiteSparse_config.h>
+
+#ifndef SUITESPARSE_BLAS_INT
+#error SUITESPARSE_BLAS_INT is unavailable
+#endif
+
+static_assert(sizeof(SUITESPARSE_BLAS_INT) == @_integer_size@,
+              "SuiteSparse BLAS/LAPACK integer size does not match MKL");
+
+int main() { return 0; }
+]=])
+      string(CONFIGURE "${_matching_blas_integer_source}"
+        _matching_blas_integer_source @ONLY)
+      set(_result_variable SuiteSparse_BLAS_INTEGER_IS_${_integer_size}_BYTES)
+      unset(${_result_variable} CACHE)
+      unset(${_result_variable})
+      check_cxx_source_compiles("${_matching_blas_integer_source}"
+        ${_result_variable})
+      if (${_result_variable})
+        set(_actual_integer_size ${_integer_size})
+      endif()
+    endforeach()
+  endif()
+  cmake_pop_check_state()
+
+  if (NOT SuiteSparse_HAS_BLAS_INTEGER)
+    string(CONCAT _reason
+      "SuiteSparse does not expose SUITESPARSE_BLAS_INT. The BLAS/LAPACK "
+      "integer interface cannot be checked against MKL_INTERFACE_FULL="
+      "${MKL_INTERFACE_FULL}.")
+    set(${REASON_VARIABLE} "${_reason}" PARENT_SCOPE)
+    set(${OUTPUT_VARIABLE} FALSE PARENT_SCOPE)
+  elseif (_actual_integer_size EQUAL _expected_integer_size)
+    set(${OUTPUT_VARIABLE} TRUE PARENT_SCOPE)
+  elseif (_actual_integer_size GREATER 0)
+    if (_actual_integer_size EQUAL _lp64_integer_size)
+      set(_actual_integer_bits ${_lp64_integer_bits})
+      set(_suggested_mkl_interface intel_lp64)
+    else()
+      set(_actual_integer_bits ${_ilp64_integer_bits})
+      set(_suggested_mkl_interface intel_ilp64)
+    endif()
+    string(CONCAT _reason
+      "SuiteSparse BLAS/LAPACK integer interface mismatch: SuiteSparse "
+      "uses ${_actual_integer_bits}-bit integers, but "
+      "MKL_INTERFACE_FULL=${MKL_INTERFACE_FULL} requires "
+      "${_expected_integer_bits}-bit integers. Reconfigure Ceres with "
+      "-DMKL_INTERFACE_FULL=${_suggested_mkl_interface}, or rebuild "
+      "SuiteSparse with a matching BLAS/LAPACK interface.")
+    set(${REASON_VARIABLE} "${_reason}" PARENT_SCOPE)
+    set(${OUTPUT_VARIABLE} FALSE PARENT_SCOPE)
+  else()
+    string(CONCAT _reason
+      "Could not determine the SuiteSparse BLAS/LAPACK integer interface. "
+      "MKL_INTERFACE_FULL=${MKL_INTERFACE_FULL} requires "
+      "${_expected_integer_bits}-bit integers.")
+    set(${REASON_VARIABLE} "${_reason}" PARENT_SCOPE)
+    set(${OUTPUT_VARIABLE} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(suitesparse_check_cholmod_compatibility)
+  if (NOT TARGET SuiteSparse::CHOLMOD)
+    set(SuiteSparse_CHOLMOD_COMPATIBLE FALSE PARENT_SCOPE)
+    return()
+  endif()
+  # Without oneMKL, Ceres does not change the BLAS and LAPACK libraries
+  # SuiteSparse uses, so there is nothing to check.
+  if (NOT TARGET MKL::MKL)
+    set(SuiteSparse_CHOLMOD_COMPATIBLE TRUE PARENT_SCOPE)
+    return()
+  endif()
+
+  get_target_property(_cholmod_includes SuiteSparse::CHOLMOD
+    INTERFACE_INCLUDE_DIRECTORIES)
+  if (TARGET SuiteSparse::Config)
+    get_target_property(_config_includes SuiteSparse::Config
+      INTERFACE_INCLUDE_DIRECTORIES)
+  endif()
+  set(_required_includes ${_cholmod_includes} ${_config_includes})
+  list(REMOVE_DUPLICATES _required_includes)
+
+  suitesparse_check_blas_interface(
+    "${_required_includes}" _blas_interface_compatible
+    _blas_interface_reason)
+  if (NOT _blas_interface_compatible)
+    set(SuiteSparse_CHOLMOD_COMPATIBLE FALSE PARENT_SCOPE)
+    set(SuiteSparse_CHOLMOD_INCOMPATIBILITY_REASON
+      "${_blas_interface_reason}" PARENT_SCOPE)
+    return()
+  endif()
+
+  if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
+    message(WARNING
+      "Cannot run the SuiteSparse CHOLMOD compatibility check while "
+      "cross compiling. Set CMAKE_CROSSCOMPILING_EMULATOR to enable it.")
+    set(SuiteSparse_CHOLMOD_COMPATIBLE TRUE PARENT_SCOPE)
+    return()
+  endif()
+
+  suitesparse_collect_link_libraries(SuiteSparse::CHOLMOD
+    _required_libraries)
+
+  include(CheckCXXSourceRuns)
+  set(_source [=[
+#include <cholmod.h>
+
+int main() {
+  cholmod_common common;
+  if (!cholmod_start(&common)) {
+    return 1;
+  }
+  common.print = 0;
+
+  cholmod_sparse* matrix = cholmod_allocate_sparse(
+      2, 2, 3, 1, 1, 1, CHOLMOD_REAL, &common);
+  if (matrix == nullptr) {
+    cholmod_finish(&common);
+    return 1;
+  }
+
+  auto* column_pointers = static_cast<int*>(matrix->p);
+  auto* row_indices = static_cast<int*>(matrix->i);
+  auto* values = static_cast<double*>(matrix->x);
+  column_pointers[0] = 0;
+  column_pointers[1] = 2;
+  column_pointers[2] = 3;
+  row_indices[0] = 0;
+  row_indices[1] = 1;
+  row_indices[2] = 1;
+  values[0] = 2.0;
+  values[1] = 1.0;
+  values[2] = 2.0;
+
+  cholmod_factor* factor = cholmod_analyze(matrix, &common);
+  const bool success = factor != nullptr &&
+                       cholmod_factorize(matrix, factor, &common) != 0 &&
+                       common.status == CHOLMOD_OK;
+  if (factor != nullptr) {
+    cholmod_free_factor(&factor, &common);
+  }
+  cholmod_free_sparse(&matrix, &common);
+  cholmod_finish(&common);
+  return success ? 0 : 1;
+}
+]=])
+
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_QUIET TRUE)
+  set(CMAKE_REQUIRED_INCLUDES ${_required_includes})
+  set(CMAKE_REQUIRED_LIBRARIES ${_required_libraries})
+  unset(SuiteSparse_CHOLMOD_FACTORIZATION_WORKS CACHE)
+  unset(SuiteSparse_CHOLMOD_FACTORIZATION_WORKS)
+  check_cxx_source_runs("${_source}" SuiteSparse_CHOLMOD_FACTORIZATION_WORKS)
+  cmake_pop_check_state()
+
+  if (SuiteSparse_CHOLMOD_FACTORIZATION_WORKS)
+    set(SuiteSparse_CHOLMOD_COMPATIBLE TRUE PARENT_SCOPE)
+  else()
+    set(SuiteSparse_CHOLMOD_COMPATIBLE FALSE PARENT_SCOPE)
+    string(CONCAT _reason
+      "CHOLMOD factorization check failed. SuiteSparse may have been "
+      "compiled against a BLAS/LAPACK interface incompatible with the "
+      "selected libraries.")
+    set(SuiteSparse_CHOLMOD_INCOMPATIBILITY_REASON "${_reason}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 if (NOT SuiteSparse_NO_CMAKE)
   find_package (SuiteSparse NO_MODULE QUIET)
   if (SuiteSparse_FOUND)
@@ -112,10 +366,22 @@ if (NOT SuiteSparse_NO_CMAKE)
     if (SuiteSparse_INCLUDE_DIR)
       list(GET SuiteSparse_INCLUDE_DIR -1 SuiteSparse_INCLUDE_DIR)
     endif ()
+    set (SuiteSparse_REQUIRED_VARS SuiteSparse_INCLUDE_DIR)
+    set (CMAKE_FIND_PACKAGE_REASON)
+    suitesparse_check_cholmod_compatibility()
+    if (NOT SuiteSparse_CHOLMOD_COMPATIBLE)
+      # SuiteSparseQR depends on CHOLMOD.
+      set (SuiteSparse_CHOLMOD_FOUND FALSE)
+      set (SuiteSparse_SPQR_FOUND FALSE)
+      list (APPEND SuiteSparse_REQUIRED_VARS SuiteSparse_CHOLMOD_COMPATIBLE)
+      set (CMAKE_FIND_PACKAGE_REASON
+        "${SuiteSparse_CHOLMOD_INCOMPATIBILITY_REASON}")
+    endif ()
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(SuiteSparse
-      REQUIRED_VARS SuiteSparse_INCLUDE_DIR
+      REQUIRED_VARS ${SuiteSparse_REQUIRED_VARS}
       VERSION_VAR SuiteSparse_VERSION
+      REASON_FAILURE_MESSAGE "${CMAKE_FIND_PACKAGE_REASON}"
       HANDLE_COMPONENTS)
     return ()
   endif (SuiteSparse_FOUND)
@@ -643,6 +909,18 @@ else (TARGET SuiteSparse::Partition)
 endif (TARGET SuiteSparse::Partition)
 
 suitesparse_reset_find_library_prefix()
+
+if (SuiteSparse_FOUND AND TARGET SuiteSparse::CHOLMOD)
+  suitesparse_check_cholmod_compatibility()
+  if (NOT SuiteSparse_CHOLMOD_COMPATIBLE)
+    # SuiteSparseQR depends on CHOLMOD.
+    set (SuiteSparse_CHOLMOD_FOUND FALSE)
+    set (SuiteSparse_SPQR_FOUND FALSE)
+    list (APPEND SuiteSparse_REQUIRED_VARS SuiteSparse_CHOLMOD_COMPATIBLE)
+    suitesparse_report_not_found(
+      "${SuiteSparse_CHOLMOD_INCOMPATIBILITY_REASON}")
+  endif ()
+endif ()
 
 list(REMOVE_DUPLICATES SuiteSparse_REQUIRED_VARS)
 

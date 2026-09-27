@@ -14,6 +14,11 @@ Version History
 Unreleased
 ==========
 
+New Features
+------------
+
+#. Added Intel oneMKL Sparse QR covariance estimation.
+
 Bug Fixes & Minor Changes
 -------------------------
 
