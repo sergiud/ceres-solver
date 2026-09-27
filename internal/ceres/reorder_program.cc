@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2023 Google Inc. All rights reserved.
+// Copyright 2026 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,12 +37,14 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "Eigen/SparseCore"
 #include "absl/strings/str_format.h"
 #include "ceres/internal/config.h"
 #include "ceres/internal/export.h"
+#include "ceres/mkl_ordering.h"
 #include "ceres/ordered_groups.h"
 #include "ceres/parameter_block.h"
 #include "ceres/parameter_block_ordering.h"
@@ -210,6 +212,66 @@ void OrderingForSparseNormalCholeskyUsingEigenSparse(
     ordering[i] = perm.indices()[i];
   }
 #endif  // CERES_USE_EIGEN_SPARSE
+}
+
+std::pair<TripletSparseMatrix, TripletSparseMatrix> SplitBlockJacobian(
+    const TripletSparseMatrix& block_jacobian_transpose, const int split_at) {
+  constexpr double kStructureValue = 1.0;
+  const int num_nonzeros = block_jacobian_transpose.num_nonzeros();
+  const int num_rows = block_jacobian_transpose.num_cols();
+  const int num_cols = block_jacobian_transpose.num_rows();
+  int left_nonzeros = 0;
+  for (int nonzero = 0; nonzero < num_nonzeros; ++nonzero) {
+    if (block_jacobian_transpose.rows()[nonzero] < split_at) {
+      ++left_nonzeros;
+    }
+  }
+  const int right_capacity = num_nonzeros - left_nonzeros;
+  TripletSparseMatrix left(num_rows, split_at, left_nonzeros);
+  TripletSparseMatrix right(num_rows, num_cols - split_at, right_capacity);
+  left_nonzeros = 0;
+  int right_nonzeros = 0;
+  for (int nonzero = 0; nonzero < num_nonzeros; ++nonzero) {
+    const int column = block_jacobian_transpose.rows()[nonzero];
+    const int row = block_jacobian_transpose.cols()[nonzero];
+    if (column < split_at) {
+      left.mutable_rows()[left_nonzeros] = row;
+      left.mutable_cols()[left_nonzeros] = column;
+      left.mutable_values()[left_nonzeros] = kStructureValue;
+      ++left_nonzeros;
+    } else {
+      right.mutable_rows()[right_nonzeros] = row;
+      right.mutable_cols()[right_nonzeros] = column - split_at;
+      right.mutable_values()[right_nonzeros] = kStructureValue;
+      ++right_nonzeros;
+    }
+  }
+  left.set_num_nonzeros(left_nonzeros);
+  right.set_num_nonzeros(right_nonzeros);
+  return std::make_pair(std::move(left), std::move(right));
+}
+
+bool OrderingForSparseNormalCholeskyUsingMkl(
+    const LinearSolverOrderingType ordering_type,
+    const TripletSparseMatrix& block_jacobian_transpose,
+    const int max_num_threads,
+    int* ordering,
+    std::string* error) {
+#ifdef CERES_NO_MKL
+  (void)ordering_type;
+  (void)block_jacobian_transpose;
+  (void)max_num_threads;
+  (void)ordering;
+  *error = "Ceres was compiled without MKL support.";
+  return false;
+#else
+  // MklComputeOrdering forms J'J, so it needs the block jacobian itself. The
+  // block sparsity structure already carries unit values.
+  auto matrix = CompressedRowSparseMatrix::FromTripletSparseMatrixTransposed(
+      block_jacobian_transpose);
+  return MklComputeOrdering(
+      *matrix, ordering_type, max_num_threads, ordering, error);
+#endif
 }
 
 }  // namespace
@@ -465,11 +527,67 @@ static void ReorderSchurComplementColumnsUsingEigen(
 #endif
 }
 
+static bool ReorderSchurComplementColumnsUsingMkl(
+    const LinearSolverOrderingType ordering_type,
+    const int size_of_first_elimination_group,
+    const int max_num_threads,
+    Program* program,
+    std::string* error) {
+#ifdef CERES_NO_MKL
+  (void)ordering_type;
+  (void)size_of_first_elimination_group;
+  (void)max_num_threads;
+  (void)program;
+  *error = "Ceres was compiled without MKL support.";
+  return false;
+#else
+  // There is nothing to order when every parameter block is eliminated.
+  // oneMKL also rejects the resulting matrix without columns.
+  if (size_of_first_elimination_group == program->NumParameterBlocks()) {
+    return true;
+  }
+
+  auto block_jacobian_transpose =
+      program->CreateJacobianBlockSparsityTranspose();
+  auto [e_matrix, f_matrix] = SplitBlockJacobian(
+      *block_jacobian_transpose, size_of_first_elimination_group);
+  auto e_matrix_crs =
+      CompressedRowSparseMatrix::FromTripletSparseMatrix(e_matrix);
+  auto f_matrix_crs =
+      CompressedRowSparseMatrix::FromTripletSparseMatrix(f_matrix);
+  std::vector<int> schur_ordering(f_matrix.num_cols());
+  if (!MklComputeSchurOrdering(*e_matrix_crs,
+                               *f_matrix_crs,
+                               ordering_type,
+                               max_num_threads,
+                               schur_ordering.data(),
+                               error)) {
+    return false;
+  }
+
+  const std::vector<ParameterBlock*>& parameter_blocks =
+      program->parameter_blocks();
+  std::vector<ParameterBlock*> ordering(parameter_blocks.size());
+  std::copy_n(parameter_blocks.begin(),
+              size_of_first_elimination_group,
+              ordering.begin());
+  for (int index = 0; index < f_matrix.num_cols(); ++index) {
+    ordering[size_of_first_elimination_group + index] =
+        parameter_blocks[size_of_first_elimination_group +
+                         schur_ordering[index]];
+  }
+  swap(*program->mutable_parameter_blocks(), ordering);
+  program->SetParameterOffsetsAndIndex();
+  return true;
+#endif
+}
+
 bool ReorderProgramForSchurTypeLinearSolver(
     const LinearSolverType linear_solver_type,
     const SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
     const LinearSolverOrderingType linear_solver_ordering_type,
     const ProblemImpl::ParameterMap& parameter_map,
+    const int max_num_threads,
     ParameterBlockOrdering* parameter_block_ordering,
     Program* program,
     std::string* error) {
@@ -552,6 +670,15 @@ bool ReorderProgramForSchurTypeLinearSolver(
                                               size_of_first_elimination_group,
                                               parameter_map,
                                               program);
+    } else if (sparse_linear_algebra_library_type == MKL_SPARSE) {
+      if (!ReorderSchurComplementColumnsUsingMkl(
+              linear_solver_ordering_type,
+              size_of_first_elimination_group,
+              max_num_threads,
+              program,
+              error)) {
+        return false;
+      }
     }
   }
 
@@ -565,7 +692,8 @@ bool ReorderProgramForSparseCholesky(
     const SparseLinearAlgebraLibraryType sparse_linear_algebra_library_type,
     const LinearSolverOrderingType linear_solver_ordering_type,
     const ParameterBlockOrdering& parameter_block_ordering,
-    int start_row_block,
+    const int start_row_block,
+    const int max_num_threads,
     Program* program,
     std::string* error) {
   if (parameter_block_ordering.NumElements() != program->NumParameterBlocks()) {
@@ -608,6 +736,14 @@ bool ReorderProgramForSparseCholesky(
         linear_solver_ordering_type,
         *tsm_block_jacobian_transpose,
         ordering.data());
+  } else if (sparse_linear_algebra_library_type == MKL_SPARSE) {
+    if (!OrderingForSparseNormalCholeskyUsingMkl(linear_solver_ordering_type,
+                                                 *tsm_block_jacobian_transpose,
+                                                 max_num_threads,
+                                                 ordering.data(),
+                                                 error)) {
+      return false;
+    }
   }
 
   // Apply ordering.
@@ -649,7 +785,11 @@ bool AreJacobianColumnsOrdered(
     return false;
   }
 
-  if (sparse_linear_algebra_library_type == ceres::EIGEN_SPARSE) {
+  // The fill reducing orderings of PARDISO cannot honor general ordering
+  // groups. Like Eigen, the MKL backend therefore ignores the ordering groups
+  // beyond the elimination group and always preorders the columns.
+  if (sparse_linear_algebra_library_type == ceres::EIGEN_SPARSE ||
+      sparse_linear_algebra_library_type == ceres::MKL_SPARSE) {
     if (linear_solver_type == SPARSE_NORMAL_CHOLESKY ||
         linear_solver_type == SPARSE_SCHUR ||
         (linear_solver_type == CGNR && preconditioner_type == SUBSET)) {

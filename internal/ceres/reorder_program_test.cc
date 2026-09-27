@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2023 Google Inc. All rights reserved.
+// Copyright 2026 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,9 @@
 #include <unordered_set>
 #include <vector>
 
+#include "ceres/compressed_row_sparse_matrix.h"
 #include "ceres/internal/config.h"
+#include "ceres/mkl_ordering.h"
 #include "ceres/ordered_groups.h"
 #include "ceres/parameter_block.h"
 #include "ceres/problem.h"
@@ -262,6 +264,7 @@ class ReorderProgramForSparseCholeskyUsingSuiteSparseTest
                                                 ceres::AMD,
                                                 linear_solver_ordering,
                                                 0, /* use all rows */
+                                                1,
                                                 program,
                                                 &error));
     const std::vector<ParameterBlock*>& ordered_parameter_blocks =
@@ -317,6 +320,205 @@ TEST_F(ReorderProgramForSparseCholeskyUsingSuiteSparseTest,
   ComputeAndValidateOrdering(linear_solver_ordering);
 }
 #endif  // CERES_NO_SUITESPARSE
+
+#ifndef CERES_NO_MKL
+static CompressedRowSparseMatrix MakeCrsMatrix(
+    int num_rows,
+    int num_cols,
+    const std::vector<int>& row_offsets,
+    const std::vector<int>& columns) {
+  CompressedRowSparseMatrix matrix(
+      num_rows, num_cols, static_cast<int>(columns.size()));
+  std::copy(row_offsets.begin(), row_offsets.end(), matrix.mutable_rows());
+  std::copy(columns.begin(), columns.end(), matrix.mutable_cols());
+  std::fill_n(matrix.mutable_values(), columns.size(), 1.0);
+  return matrix;
+}
+
+static void ExpectMklSchurOrdering(const int num_schur_groups) {
+  constexpr int kNumEliminationBlocks = 4;
+  constexpr int kNumSchurBlocks = 4;
+  constexpr int kNumResidualBlocks = 8;
+
+  const std::vector<int> elimination_columns{0, 0, 1, 1, 2, 2, 3, 3};
+  const std::vector<int> schur_columns{0, 1, 1, 2, 2, 3, 3, 0};
+  const CompressedRowSparseMatrix e_matrix =
+      MakeCrsMatrix(kNumResidualBlocks,
+                    kNumEliminationBlocks,
+                    {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    elimination_columns);
+  const CompressedRowSparseMatrix f_matrix =
+      MakeCrsMatrix(kNumResidualBlocks,
+                    kNumSchurBlocks,
+                    {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    schur_columns);
+  std::vector<int> expected_schur_ordering(kNumSchurBlocks);
+  std::string error;
+  ASSERT_TRUE(MklComputeSchurOrdering(
+      e_matrix, f_matrix, AMD, 1, expected_schur_ordering.data(), &error))
+      << error;
+  ASSERT_THAT(expected_schur_ordering,
+              ::testing::Not(::testing::ElementsAre(0, 1, 2, 3)));
+
+  ProblemImpl problem;
+  double e[kNumEliminationBlocks];
+  double f[kNumSchurBlocks];
+  for (int i = 0; i < kNumEliminationBlocks; ++i) {
+    problem.AddParameterBlock(&e[i], 1);
+  }
+  for (int i = 0; i < kNumSchurBlocks; ++i) {
+    problem.AddParameterBlock(&f[i], 1);
+  }
+  for (int i = 0; i < kNumSchurBlocks; ++i) {
+    const int next = (i + 1) % kNumSchurBlocks;
+    problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &e[i], &f[i]);
+    problem.AddResidualBlock(
+        new BinaryCostFunction(), nullptr, &e[i], &f[next]);
+  }
+
+  // Without Schur groups all blocks share group 0 and Ceres chooses the
+  // elimination group itself. Otherwise the Schur blocks are distributed over
+  // num_schur_groups consecutive groups in program order.
+  ParameterBlockOrdering ordering;
+  for (int i = 0; i < kNumEliminationBlocks; ++i) {
+    ordering.AddElementToGroup(&e[i], 0);
+  }
+  for (int i = 0; i < kNumSchurBlocks; ++i) {
+    const int group =
+        num_schur_groups == 0 ? 0 : 1 + i * num_schur_groups / kNumSchurBlocks;
+    ordering.AddElementToGroup(&f[i], group);
+  }
+
+  Program* program = problem.mutable_program();
+  ASSERT_TRUE(ReorderProgramForSchurTypeLinearSolver(SPARSE_SCHUR,
+                                                     MKL_SPARSE,
+                                                     AMD,
+                                                     problem.parameter_map(),
+                                                     1,
+                                                     &ordering,
+                                                     program,
+                                                     &error))
+      << error;
+
+  const std::vector<ParameterBlock*>& parameter_blocks =
+      program->parameter_blocks();
+  for (int i = 0; i < kNumSchurBlocks; ++i) {
+    EXPECT_EQ(parameter_blocks[kNumEliminationBlocks + i]->user_state(),
+              &f[expected_schur_ordering[i]]);
+  }
+}
+
+class MklSchurOrderingTest : public ::testing::TestWithParam<int> {};
+
+TEST_P(MklSchurOrderingTest, UsesMklSchurOrdering) {
+  ExpectMklSchurOrdering(GetParam());
+}
+
+INSTANTIATE_TEST_SUITE_P(DefaultAndUserGroupOrderings,
+                         MklSchurOrderingTest,
+                         ::testing::Values(0, 1, 2));
+
+TEST(_, MklSchurOrderingWithoutSchurBlocks) {
+  ProblemImpl problem;
+  double x = 0.0;
+  double y = 0.0;
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &x);
+  problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &y);
+
+  ParameterBlockOrdering ordering;
+  ordering.AddElementToGroup(&x, 0);
+  ordering.AddElementToGroup(&y, 0);
+
+  std::string error;
+  EXPECT_TRUE(ReorderProgramForSchurTypeLinearSolver(SPARSE_SCHUR,
+                                                     MKL_SPARSE,
+                                                     AMD,
+                                                     problem.parameter_map(),
+                                                     1,
+                                                     &ordering,
+                                                     problem.mutable_program(),
+                                                     &error))
+      << error;
+}
+
+static void AddMklSparseCholeskyTestProblem(ProblemImpl* problem,
+                                            double* x,
+                                            double* y,
+                                            double* z) {
+  problem->AddResidualBlock(new UnaryCostFunction(), nullptr, x);
+  problem->AddResidualBlock(new BinaryCostFunction(), nullptr, z, x);
+  problem->AddResidualBlock(new BinaryCostFunction(), nullptr, z, y);
+  problem->AddResidualBlock(new UnaryCostFunction(), nullptr, z);
+  problem->AddResidualBlock(new BinaryCostFunction(), nullptr, x, y);
+  problem->AddResidualBlock(new UnaryCostFunction(), nullptr, y);
+}
+
+// Returns the position of each of x, y and z in the reordered program.
+static std::vector<int> ReorderForMklSparseCholesky(
+    const std::vector<int>& groups) {
+  ProblemImpl problem;
+  double parameters[3] = {0.0, 0.0, 0.0};
+  AddMklSparseCholeskyTestProblem(
+      &problem, &parameters[0], &parameters[1], &parameters[2]);
+
+  ParameterBlockOrdering linear_solver_ordering;
+  for (int i = 0; i < 3; ++i) {
+    linear_solver_ordering.AddElementToGroup(&parameters[i], groups[i]);
+  }
+
+  Program* program = problem.mutable_program();
+  std::string error;
+  EXPECT_TRUE(ReorderProgramForSparseCholesky(
+      MKL_SPARSE, AMD, linear_solver_ordering, 0, 1, program, &error))
+      << error;
+
+  std::vector<int> positions(3, -1);
+  const std::vector<ParameterBlock*>& parameter_blocks =
+      program->parameter_blocks();
+  for (int position = 0; position < static_cast<int>(parameter_blocks.size());
+       ++position) {
+    positions[parameter_blocks[position]->user_state() - parameters] = position;
+  }
+  return positions;
+}
+
+// The fill reducing orderings of PARDISO cannot honor general ordering groups,
+// so like Eigen and Accelerate the MKL backend ignores them.
+TEST(_, MklSparseCholeskyIgnoresUserOrderingGroups) {
+  const std::vector<int> expected = ReorderForMklSparseCholesky({0, 0, 0});
+  EXPECT_EQ(ReorderForMklSparseCholesky({1, 0, 0}), expected);
+  EXPECT_EQ(ReorderForMklSparseCholesky({0, 0, 1}), expected);
+  EXPECT_EQ(ReorderForMklSparseCholesky({2, 1, 0}), expected);
+}
+
+TEST(_, MklSparseCholeskyIgnoresUserOrderingReferencingBlockNotInProgram) {
+  ProblemImpl problem;
+  double x = 0.0;
+  double y = 0.0;
+  double z = 0.0;
+  AddMklSparseCholeskyTestProblem(&problem, &x, &y, &z);
+
+  // w is absent from the problem but matches the block count, so
+  // NumElements() does not catch it.
+  double w = 0.0;
+  ParameterBlockOrdering linear_solver_ordering;
+  linear_solver_ordering.AddElementToGroup(&x, 1);
+  linear_solver_ordering.AddElementToGroup(&y, 0);
+  linear_solver_ordering.AddElementToGroup(&w, 0);
+
+  Program* program = problem.mutable_program();
+  std::string error;
+  ASSERT_TRUE(ReorderProgramForSparseCholesky(
+      MKL_SPARSE, AMD, linear_solver_ordering, 0, 1, program, &error))
+      << error;
+
+  std::vector<double*> states;
+  for (ParameterBlock* parameter_block : program->parameter_blocks()) {
+    states.push_back(parameter_block->mutable_user_state());
+  }
+  EXPECT_THAT(states, ::testing::UnorderedElementsAre(&x, &y, &z));
+}
+#endif  // CERES_NO_MKL
 
 TEST(_, ReorderResidualBlocksbyPartition) {
   ProblemImpl problem;

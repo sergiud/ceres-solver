@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2023 Google Inc. All rights reserved.
+// Copyright 2026 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -384,6 +384,8 @@ class CERES_EXPORT Solver {
         ACCELERATE_SPARSE;
 #elif defined(CERES_USE_EIGEN_SPARSE)
         EIGEN_SPARSE;
+#elif !defined(CERES_NO_MKL)
+        MKL_SPARSE;
 #else
         NO_SPARSE;
 #endif
@@ -568,6 +570,15 @@ class CERES_EXPORT Solver {
 
     // This settings only affects the SPARSE_NORMAL_CHOLESKY solver.
     bool dynamic_sparsity = false;
+
+    // Use the two-level parallel factorization algorithm of oneMKL PARDISO
+    // instead of the classic one. Whether this is faster depends on the
+    // processor, the number of threads and the problem.
+    //
+    // This option requires sparse_linear_algebra_library_type = MKL_SPARSE and
+    // a linear solver or preconditioner that uses a sparse Cholesky
+    // factorization.
+    bool use_two_level_factorization = false;
 
     // If use_mixed_precision_solves is true, the Gauss-Newton matrix is
     // computed in double precision, but its factorization is computed in single

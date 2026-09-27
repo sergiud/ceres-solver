@@ -43,9 +43,73 @@
 #include "ceres/problem.h"
 #include "ceres/problem_impl.h"
 #include "ceres/sized_cost_function.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace ceres::internal {
+
+TEST(SolverOptions, MklSparseNormalCholesky) {
+  Solver::Options options;
+  options.linear_solver_type = SPARSE_NORMAL_CHOLESKY;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  std::string message;
+  if (IsSparseLinearAlgebraLibraryTypeAvailable(MKL_SPARSE)) {
+    EXPECT_TRUE(options.IsValid(&message));
+
+    options.use_mixed_precision_solves = true;
+    EXPECT_FALSE(options.IsValid(&message));
+  } else {
+    EXPECT_FALSE(options.IsValid(&message));
+  }
+}
+
+TEST(SolverOptions, TwoLevelFactorizationRequiresMklSparse) {
+  Solver::Options options;
+  options.linear_solver_type = SPARSE_NORMAL_CHOLESKY;
+  options.sparse_linear_algebra_library_type = EIGEN_SPARSE;
+  options.use_two_level_factorization = true;
+  std::string message;
+  EXPECT_FALSE(options.IsValid(&message));
+  EXPECT_THAT(message, ::testing::HasSubstr("use_two_level_factorization"));
+  EXPECT_THAT(message, ::testing::HasSubstr("EIGEN_SPARSE"));
+}
+
+TEST(SolverOptions, TwoLevelFactorizationRequiresSparseCholesky) {
+  Solver::Options options;
+  options.linear_solver_type = DENSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  options.use_two_level_factorization = true;
+  std::string message;
+  EXPECT_FALSE(options.IsValid(&message));
+  EXPECT_THAT(message, ::testing::HasSubstr("use_two_level_factorization"));
+  EXPECT_THAT(message, ::testing::HasSubstr("DENSE_QR"));
+
+  options.linear_solver_type = ITERATIVE_SCHUR;
+  options.preconditioner_type = SCHUR_JACOBI;
+  EXPECT_FALSE(options.IsValid(&message));
+  EXPECT_THAT(message, ::testing::HasSubstr("use_two_level_factorization"));
+  EXPECT_THAT(message, ::testing::HasSubstr("SCHUR_JACOBI"));
+}
+
+TEST(SolverOptions, TwoLevelFactorizationWithMklSparse) {
+  if (!IsSparseLinearAlgebraLibraryTypeAvailable(MKL_SPARSE)) {
+    GTEST_SKIP() << "MKL sparse support is not enabled.";
+  }
+  Solver::Options options;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  options.use_two_level_factorization = true;
+  std::string message;
+
+  options.linear_solver_type = SPARSE_NORMAL_CHOLESKY;
+  EXPECT_TRUE(options.IsValid(&message)) << message;
+
+  options.linear_solver_type = SPARSE_SCHUR;
+  EXPECT_TRUE(options.IsValid(&message)) << message;
+
+  options.linear_solver_type = ITERATIVE_SCHUR;
+  options.preconditioner_type = CLUSTER_JACOBI;
+  EXPECT_TRUE(options.IsValid(&message)) << message;
+}
 
 TEST(SolverOptions, DefaultTrustRegionOptionsAreValid) {
   Solver::Options options;

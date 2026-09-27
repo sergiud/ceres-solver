@@ -606,6 +606,25 @@ support for at least one of:
  3. `Eigen's sparse linear solvers
     <https://eigen.tuxfamily.org/dox/group__SparseCholesky__Module.html>`_
     (``EIGEN_SPARSE``).
+ 4. Intel oneMKL's PARDISO solver (``MKL_SPARSE``).
+
+PARDISO uses up to :member:`Solver::Options::num_threads` threads, limited by
+the maximum number of threads configured for oneMKL. By default, oneMKL chooses
+this maximum based on the processor, and the ``MKL_NUM_THREADS`` and
+``MKL_DYNAMIC`` environment variables change it. Using more threads than this
+default can slow down the factorization. After a oneMKL call returns, its idle
+OpenMP threads can keep waiting actively for new work and compete with the
+threads Ceres uses, which can slow down small problems. Setting
+``OMP_WAIT_POLICY=PASSIVE`` lets idle OpenMP threads release the processor.
+Running with ``--v=3`` prints PARDISO status and factorization statistics.
+
+If both ``MKL_SPARSE`` and SuiteSparse are enabled, SuiteSparse must use the
+same oneMKL threading layer as Ceres. For example, do not combine a
+SuiteSparse linked against ``libmkl_gnu_thread`` with a Ceres linked against
+``libmkl_intel_thread``. Loading two threading layers and their OpenMP
+runtimes into one process can crash threaded BLAS or LAPACK calls. Ceres
+cannot detect this, because SuiteSparse selects its BLAS and LAPACK libraries
+when it is built.
 
 SuiteSparse and Accelerate offer high performance sparse Cholesky
 factorization routines as they level-3 BLAS routines
@@ -1171,8 +1190,8 @@ b. ``linear_solver_type = SPARSE_SCHUR/DENSE_SCHUR/ITERATIVE_SCHUR``
    Nested Dissection is used to compute a fill reducing ordering for
    the Schur Complement (or its preconditioner).
 
-``sparse_linear_algebra_library_type = EIGEN_SPARSE/ACCELERATE_SPARSE``
------------------------------------------------------------------------
+``sparse_linear_algebra_library_type = EIGEN_SPARSE/ACCELERATE_SPARSE/MKL_SPARSE``
+----------------------------------------------------------------------------------
 
 a. ``linear_solver_type = SPARSE_NORMAL_CHOLESKY`` or
    ``linear_solver_type = CGNR`` and ``preconditioner_type = SUBSET``
@@ -1187,6 +1206,8 @@ b. ``linear_solver_type = SPARSE_SCHUR/DENSE_SCHUR/ITERATIVE_SCHUR``
    ``AMD`` or ``NESID`` is used to compute a fill reducing ordering
    for the Schur Complement (or its preconditioner) as requested by
    the user.
+
+With ``MKL_SPARSE``, ``AMD`` selects the minimum degree ordering of PARDISO.
 
 
 .. _section-solver-options:
@@ -1478,6 +1499,8 @@ b. ``linear_solver_type = SPARSE_SCHUR/DENSE_SCHUR/ITERATIVE_SCHUR``
 
    Number of threads used by Ceres to evaluate the Jacobian.
 
+   With ``MKL_SPARSE``, this also bounds the number of threads used by oneMKL.
+
 .. member::  double Solver::Options::initial_trust_region_radius
 
    Default: ``1e4``
@@ -1575,8 +1598,8 @@ b. ``linear_solver_type = SPARSE_SCHUR/DENSE_SCHUR/ITERATIVE_SCHUR``
 
    Type of linear solver used to compute the solution to the linear
    least squares problem in each iteration of the Levenberg-Marquardt
-   algorithm. If Ceres is built with support for ``SuiteSparse`` or
-   ``Accelerate`` or ``Eigen``'s sparse Cholesky factorization, the
+   algorithm. If Ceres is built with support for ``SuiteSparse``,
+   ``Accelerate``, ``Eigen``'s sparse Cholesky factorization or oneMKL, the
    default is ``SPARSE_NORMAL_CHOLESKY``, it is ``DENSE_QR``
    otherwise.
 
@@ -1656,13 +1679,14 @@ b. ``linear_solver_type = SPARSE_SCHUR/DENSE_SCHUR/ITERATIVE_SCHUR``
 .. member:: SparseLinearAlgebraLibrary Solver::Options::sparse_linear_algebra_library_type
 
    Default: The highest available according to: ``SUITE_SPARSE`` >
-   ``ACCELERATE_SPARSE`` > ``EIGEN_SPARSE`` > ``NO_SPARSE``
+   ``ACCELERATE_SPARSE`` > ``EIGEN_SPARSE`` > ``MKL_SPARSE`` > ``NO_SPARSE``
 
-   Ceres supports the use of three sparse linear algebra libraries,
+   Ceres supports the use of four sparse linear algebra libraries,
    ``SuiteSparse``, which is enabled by setting this parameter to
    ``SUITE_SPARSE``, ``Acclerate``, which can be selected by setting
-   this parameter to ``ACCELERATE_SPARSE`` and ``Eigen`` which is
-   enabled by setting this parameter to ``EIGEN_SPARSE``.  Lastly,
+   this parameter to ``ACCELERATE_SPARSE``, ``Eigen`` which is
+   enabled by setting this parameter to ``EIGEN_SPARSE``, and Intel oneMKL,
+   which is enabled by setting this parameter to ``MKL_SPARSE``. Lastly,
    ``NO_SPARSE`` means that no sparse linear solver should be used;
    note that this is irrespective of whether Ceres was compiled with
    support for one.
@@ -1754,6 +1778,20 @@ b. ``linear_solver_type = SPARSE_SCHUR/DENSE_SCHUR/ITERATIVE_SCHUR``
    likely lead to worse performance.
 
    This setting only affects the `SPARSE_NORMAL_CHOLESKY` solver.
+
+.. member:: bool Solver::Options::use_two_level_factorization
+
+   Default: ``false``
+
+   Use the two-level parallel factorization algorithm of oneMKL PARDISO
+   instead of the classic one. Whether this is faster depends on the
+   processor, the number of threads and the problem.
+
+   This option requires ``sparse_linear_algebra_library_type = MKL_SPARSE``
+   and a linear solver or preconditioner that uses a sparse Cholesky
+   factorization, i.e., ``SPARSE_NORMAL_CHOLESKY``, ``SPARSE_SCHUR``,
+   ``ITERATIVE_SCHUR`` with ``CLUSTER_JACOBI`` or ``CLUSTER_TRIDIAGONAL``, or
+   ``CGNR`` with ``SUBSET``.
 
 .. member:: bool Solver::Options::use_mixed_precision_solves
 

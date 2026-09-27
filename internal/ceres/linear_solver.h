@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2023 Google Inc. All rights reserved.
+// Copyright 2026 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -158,6 +158,9 @@ class CERES_NO_EXPORT LinearSolver {
 
     // See solver.h for information about these flags.
     bool dynamic_sparsity = false;
+
+    // Use the two-level parallel factorization of oneMKL PARDISO.
+    bool use_two_level_factorization = false;
     bool use_explicit_schur_complement = false;
 
     // Number of internal iterations that the solver uses. This

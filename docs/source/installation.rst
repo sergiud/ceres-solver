@@ -60,9 +60,9 @@ optional. For details on customizing the build process, see
   <https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2026-0/using-the-ilp64-interface-vs-lp64-interface.html>`_.
 
 - `Intel oneMKL <https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html>`_
-  (**Optional**). oneMKL provides the Sparse QR covariance estimation selected
-  by ``MKL_SPARSE``. If enabled, oneMKL also replaces the BLAS and LAPACK
-  libraries.
+  (**Optional**). oneMKL provides the PARDISO sparse Cholesky factorization and
+  the Sparse QR covariance estimation selected by ``MKL_SPARSE``. If enabled,
+  oneMKL also replaces the BLAS and LAPACK libraries.
 
 - `Apple's Accelerate sparse solvers
   <https://developer.apple.com/documentation/accelerate/sparse_solvers>`_. (**Optional**)
@@ -723,10 +723,10 @@ An unavailable optional package does not change the corresponding cache option.
 
 #. ``WITH_MKL [Default: ON]``: Use Intel oneMKL if its CMake package
    configuration ``MKLConfig.cmake`` is found. oneMKL provides it since
-   version 2021.3. This enables ``MKL_SPARSE`` for covariance estimation, and
-   Ceres then also uses oneMKL for BLAS and LAPACK. If oneMKL is not found,
-   set ``MKL_DIR`` to the directory containing ``MKLConfig.cmake`` or add the
-   oneMKL installation prefix to ``CMAKE_PREFIX_PATH``.
+   version 2021.3. This enables ``MKL_SPARSE``, and Ceres then also uses
+   oneMKL for BLAS and LAPACK. If oneMKL is not found, set ``MKL_DIR`` to the
+   directory containing ``MKLConfig.cmake`` or add the oneMKL installation
+   prefix to ``CMAKE_PREFIX_PATH``.
 
    ``MKL_INTERFACE_FULL`` selects the integer interface. If it is not set,
    oneMKL chooses its own default, which is ILP64 in oneMKL 2026.0. Set
@@ -916,7 +916,8 @@ The Ceres components which can be specified are:
 
 #. ``SparseLinearAlgebraLibrary``: Ceres built with *at least one*
    sparse linear algebra library.  This is equivalent to
-   ``SuiteSparse`` **OR** ``AccelerateSparse`` **OR** ``EigenSparse``.
+   ``SuiteSparse`` **OR** ``AccelerateSparse`` **OR** ``EigenSparse`` **OR**
+   ``MKL``.
 
 #. ``SchurSpecializations``: Ceres built with Schur specializations.
 
