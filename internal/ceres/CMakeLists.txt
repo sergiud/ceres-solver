@@ -105,6 +105,12 @@ if (_Ceres_FEATURE_SUITESPARSE)
   # environment. CHOLMOD and METIS are linked explicitly instead.
 endif (_Ceres_FEATURE_SUITESPARSE)
 
+if (_Ceres_FEATURE_MKL)
+  # Define version information for use in Solver::FullReport.
+  add_compile_definitions(CERES_MKL_VERSION="${MKL_VERSION}")
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES MKL::MKL)
+endif (_Ceres_FEATURE_MKL)
+
 if (_Ceres_FEATURE_CHOLMOD_PARTITION OR _Ceres_FEATURE_EIGEN_METIS)
   # Define version information for use in Solver::FullReport.
   add_definitions(-DCERES_METIS_VERSION="${METIS_VERSION}")
@@ -206,6 +212,9 @@ add_library(ceres_internal OBJECT
     linear_solver.cc
     low_rank_inverse_hessian.cc
     minimizer.cc
+    mkl_covariance.cc
+    mkl_diagnostics.cc
+    mkl_sparse_matrix.cc
     parallel_invoke.cc
     parallel_utils.cc
     parallel_vector_ops.cc
@@ -450,6 +459,7 @@ if (BUILD_TESTING)
   ceres_test(loss_function)
   ceres_test(manifold)
   ceres_test(minimizer)
+  ceres_test(mkl_sparse_matrix)
   ceres_test(normal_prior)
   ceres_test(numeric_diff_cost_function)
   ceres_test(numeric_diff_first_order_function)

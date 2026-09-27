@@ -115,6 +115,7 @@ option(WITH_EIGENSPARSE
 # that contain it.
 cmake_dependent_option(WITH_LAPACK
   "Enable use of LAPACK directly within Ceres." ON "NOT IOS" OFF)
+option(WITH_MKL "Enable use of Intel oneMKL." ON)
 set(WITH_SANITIZERS "" CACHE STRING
   "Semicolon-separated list of sanitizers to use (e.g address, memory, thread)")
 option(WITH_SCHUR_SPECIALIZATIONS
@@ -135,8 +136,34 @@ endif()
 find_package(AccelerateSparse)
 # Version 1.3 was first to provide import targets.
 find_package(benchmark 1.3)
-find_package(BLAS)
-find_package(LAPACK)
+# Intel's package version file only considers the same major version compatible,
+# so passing the minimum version would reject newer oneMKL releases.
+# MKLConfig.cmake was introduced in oneMKL 2021.3. The package is only searched
+# for when requested because finding it replaces the BLAS and LAPACK libraries
+# and enables the SuiteSparse compatibility check.
+find_package(MKL NO_MODULE)
+if (WITH_MKL AND MKL_FOUND)
+  set(BLAS_FOUND TRUE)
+  set(BLAS_LIBRARIES MKL::MKL)
+  set(LAPACK_FOUND TRUE)
+  set(LAPACK_LIBRARIES MKL::MKL)
+  # Use MKL for SuiteSparse BLAS dependencies.
+  if (NOT TARGET BLAS::BLAS)
+    add_library(BLAS::BLAS INTERFACE IMPORTED)
+    set_property(TARGET BLAS::BLAS
+      PROPERTY INTERFACE_LINK_LIBRARIES MKL::MKL)
+  endif()
+  if (NOT TARGET LAPACK::LAPACK)
+    add_library(LAPACK::LAPACK INTERFACE IMPORTED)
+    set_property(TARGET LAPACK::LAPACK
+      PROPERTY INTERFACE_LINK_LIBRARIES MKL::MKL)
+  endif()
+  ceres_register_found_package(BLAS)
+  ceres_register_found_package(LAPACK)
+else()
+  find_package(BLAS)
+  find_package(LAPACK)
+endif()
 find_package(CUDAToolkit)
 find_package(cudss NO_MODULE)
 
@@ -334,6 +361,11 @@ if (WITH_LAPACK AND LAPACK_FOUND)
   set(_Ceres_FEATURE_LAPACK ON)
 endif()
 
+set(_Ceres_FEATURE_MKL OFF)
+if (WITH_MKL AND MKL_FOUND)
+  set(_Ceres_FEATURE_MKL ON)
+endif()
+
 set(_Ceres_FEATURE_SUITESPARSE OFF)
 if (WITH_SUITESPARSE AND SuiteSparse_FOUND)
   set(_Ceres_FEATURE_SUITESPARSE ON)
@@ -425,6 +457,12 @@ endif()
 
 if (NOT _Ceres_FEATURE_LAPACK)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
+endif()
+
+if (_Ceres_FEATURE_MKL)
+  set(MKL_DEPENDENCY "ceres_find_mkl_dependency(${MKL_INTERFACE_FULL})")
+else()
+  list(APPEND CERES_COMPILE_OPTIONS CERES_NO_MKL)
 endif()
 
 # Set the install path for the installed CeresConfig.cmake configuration file
@@ -768,6 +806,8 @@ add_feature_info("Accelerate sparse solvers" _Ceres_FEATURE_ACCELERATE
   "Sparse solvers from Apple's Accelerate framework")
 add_feature_info("Eigen sparse solvers" _Ceres_FEATURE_EIGEN_SPARSE
   "Sparse linear solvers using Eigen")
+add_feature_info("oneMKL" _Ceres_FEATURE_MKL
+  "Sparse QR covariance estimation, BLAS and LAPACK from Intel oneMKL")
 add_feature_info("Eigen METIS ordering" _Ceres_FEATURE_EIGEN_METIS
   "METIS ordering for Eigen sparse solvers")
 add_feature_info("CHOLMOD partitioning" _Ceres_FEATURE_CHOLMOD_PARTITION
@@ -816,6 +856,8 @@ ceres_dependency_description(CERES_GTEST_DESCRIPTION
 ceres_dependency_description(CERES_METIS_DESCRIPTION
   "Serial graph partitioning and fill-reducing matrix ordering"
   "${METIS_VERSION}")
+ceres_dependency_description(CERES_MKL_DESCRIPTION
+  "Intel oneAPI Math Kernel Library" "${MKL_VERSION}")
 ceres_dependency_description(CERES_PYTHON_DESCRIPTION
   "Python interpreter" "${Python_VERSION}")
 ceres_dependency_description(CERES_SPHINX_DESCRIPTION
@@ -864,6 +906,10 @@ set_package_properties(LAPACK PROPERTIES
 set_package_properties(METIS PROPERTIES
   DESCRIPTION "${CERES_METIS_DESCRIPTION}"
   TYPE RECOMMENDED)
+set_package_properties(MKL PROPERTIES
+  DESCRIPTION "${CERES_MKL_DESCRIPTION}"
+  URL "https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html"
+  PURPOSE "Covariance estimation, BLAS and LAPACK")
 set_package_properties(Python PROPERTIES
   DESCRIPTION "${CERES_PYTHON_DESCRIPTION}"
   URL "https://www.python.org"

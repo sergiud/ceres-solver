@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2023 Google Inc. All rights reserved.
+// Copyright 2026 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -632,6 +632,11 @@ TEST_F(CovarianceTest, NormalBehavior) {
   ComputeAndCompareCovarianceBlocks(options, expected_covariance);
 #endif
 
+#ifndef CERES_NO_MKL
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  ComputeAndCompareCovarianceBlocks(options, expected_covariance);
+#endif
+
   options.algorithm_type = DENSE_SVD;
   ComputeAndCompareCovarianceBlocks(options, expected_covariance);
 
@@ -1193,6 +1198,169 @@ TEST_F(RankDeficientCovarianceTest, AutomaticTruncation) {
   options.null_space_rank = -1;
   ComputeAndCompareCovarianceBlocks(options, expected_covariance);
 }
+
+#ifndef CERES_NO_MKL
+TEST_F(RankDeficientCovarianceTest, MKLSparseQrRejectsRankDeficientJacobian) {
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  Covariance covariance(options);
+  EXPECT_FALSE(covariance.Compute(all_covariance_blocks_, &problem_));
+}
+
+TEST_F(RankDeficientCovarianceTest,
+       MKLSparseQrChecksRankUsingUnrequestedColumns) {
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  Covariance covariance(options);
+  std::vector<std::pair<const double*, const double*>> covariance_blocks = {
+      {parameters_, parameters_}};
+  EXPECT_FALSE(covariance.Compute(covariance_blocks, &problem_));
+}
+
+// The columns differ by far less than the default column pivot threshold
+// 20 (m + n) eps max ||J e_j||, which SuiteSparseQR treats as rank deficient.
+TEST(Covariance, MKLSparseQrRejectsNumericallyRankDeficientJacobian) {
+  constexpr int kNumResiduals = 3;
+  constexpr int kNumParameters = 2;
+  constexpr double kPerturbation = 2 * std::numeric_limits<double>::epsilon();
+  double parameters[kNumParameters] = {0.0, 0.0};
+  const double jacobian[] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0 + kPerturbation};
+  ProblemImpl problem;
+  problem.AddResidualBlock(
+      new UnaryCostFunction(kNumResiduals, kNumParameters, jacobian),
+      nullptr,
+      parameters);
+
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  CovarianceImpl covariance(options);
+  const std::vector<std::pair<const double*, const double*>> blocks = {
+      {parameters, parameters}};
+  EXPECT_FALSE(covariance.Compute(blocks, &problem));
+}
+
+TEST(Covariance, MKLSparseQrRejectsUnsupportedColumnPivotThreshold) {
+  constexpr double kSmallSingularValue = 1e-8;
+  constexpr double kPivotThreshold = 1e-4;
+  double parameters[2] = {1.0, 1.0};
+  const double jacobian[] = {1.0, 0.0, 0.0, kSmallSingularValue};
+  ProblemImpl problem;
+  problem.AddResidualBlock(
+      new UnaryCostFunction(2, 2, jacobian), nullptr, parameters);
+
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  options.column_pivot_threshold = kPivotThreshold;
+  CovarianceImpl covariance(options);
+  std::vector<std::pair<const double*, const double*>> covariance_blocks = {
+      {parameters, parameters}};
+  EXPECT_FALSE(covariance.Compute(covariance_blocks, &problem));
+}
+
+TEST(Covariance, MKLSparseQrAcceptsIllConditionedFullRankJacobian) {
+  constexpr int kNumResiduals = 2;
+  constexpr int kNumParameters = 2;
+  constexpr double kPerturbation = 1e-6;
+  double parameters[kNumParameters] = {0.0, 0.0};
+  const double jacobian[] = {1.0, 1.0, 1.0, 1.0 + kPerturbation};
+  ProblemImpl problem;
+  problem.AddResidualBlock(
+      new UnaryCostFunction(kNumResiduals, kNumParameters, jacobian),
+      nullptr,
+      parameters);
+
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  CovarianceImpl covariance(options);
+  std::vector<std::pair<const double*, const double*>> covariance_blocks = {
+      {parameters, parameters}};
+  EXPECT_TRUE(covariance.Compute(covariance_blocks, &problem));
+}
+
+TEST(Covariance, MKLSparseQrAcceptsLargeFullRankJacobian) {
+  constexpr int kNumResiduals = 2;
+  constexpr int kNumParameters = 2;
+  constexpr double kScale = 1e155;
+  double parameters[kNumParameters] = {0.0, 0.0};
+  const double jacobian[] = {kScale, 0.0, 0.0, kScale};
+  ProblemImpl problem;
+  problem.AddResidualBlock(
+      new UnaryCostFunction(kNumResiduals, kNumParameters, jacobian),
+      nullptr,
+      parameters);
+
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  CovarianceImpl covariance(options);
+  std::vector<std::pair<const double*, const double*>> covariance_blocks = {
+      {parameters, parameters}};
+  EXPECT_TRUE(covariance.Compute(covariance_blocks, &problem));
+}
+
+TEST(Covariance, MKLSparseQrRejectsOverflowingCovariance) {
+  constexpr int kNumResiduals = 2;
+  constexpr int kNumParameters = 2;
+  // The covariance of a full rank Jacobian with this scale exceeds the largest
+  // finite double.
+  constexpr double kScale = 1e-160;
+  double parameters[kNumParameters] = {0.0, 0.0};
+  const double jacobian[] = {kScale, 0.0, 0.0, kScale};
+  ProblemImpl problem;
+  problem.AddResidualBlock(
+      new UnaryCostFunction(kNumResiduals, kNumParameters, jacobian),
+      nullptr,
+      parameters);
+
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  CovarianceImpl covariance(options);
+  std::vector<std::pair<const double*, const double*>> covariance_blocks = {
+      {parameters, parameters}};
+  EXPECT_FALSE(covariance.Compute(covariance_blocks, &problem));
+}
+
+TEST(Covariance, MKLSparseQrHandlesColumnPivoting) {
+  constexpr int kNumResiduals = 3;
+  constexpr int kNumParameters = 2;
+  double parameters[kNumParameters] = {0.0, 0.0};
+  const double jacobian[] = {
+      1e-8,
+      1.0,
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+  };
+  ProblemImpl problem;
+  problem.AddResidualBlock(
+      new UnaryCostFunction(kNumResiduals, kNumParameters, jacobian),
+      nullptr,
+      parameters);
+
+  Covariance::Options options;
+  options.algorithm_type = SPARSE_QR;
+  options.sparse_linear_algebra_library_type = MKL_SPARSE;
+  CovarianceImpl covariance(options);
+  const std::vector<std::pair<const double*, const double*>> blocks = {
+      {parameters, parameters}};
+  ASSERT_TRUE(covariance.Compute(blocks, &problem));
+
+  double values[kNumParameters * kNumParameters];
+  ASSERT_TRUE(covariance.GetCovarianceBlockInTangentOrAmbientSpace(
+      parameters, parameters, false, values));
+  EXPECT_NEAR(values[0], 1.0, 1e-10);
+  EXPECT_NEAR(values[1], -5e-9, 1e-10);
+  EXPECT_NEAR(values[2], -5e-9, 1e-10);
+  EXPECT_NEAR(values[3], 0.5, 1e-10);
+}
+#endif
 
 struct LinearCostFunction {
   template <typename T>
