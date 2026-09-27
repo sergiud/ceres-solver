@@ -56,6 +56,9 @@ New Features
    libraries it links against when using CMake 4.3 or later. The SBOM is not
    generated if a static Abseil requires whole archive linkage. (Sergiu
    Deitsch)
+#. Added Intel oneMKL Sparse QR covariance estimation. If oneMKL is enabled,
+   it also provides BLAS and LAPACK, and SuiteSparse is disabled if its BLAS
+   integer interface does not match the one of oneMKL. (Sergiu Deitsch)
 
 
 Backward Incompatible API Changes
