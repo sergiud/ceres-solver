@@ -260,6 +260,19 @@ TEST(AccurateNorm, CompensatedSumReportsRoundoffCorrection) {
   EXPECT_EQ(error, 1.0);
 }
 
+TEST(AccurateNorm, CompensatedSumKeepsCorrectionAcrossCancellation) {
+  // The small value is absorbed by the large one and must survive in the
+  // correction term after the large values cancel.
+  constexpr double kLarge = 1.0;
+  constexpr double kSmall = 1.0e-16;
+
+  const auto [sum, error] =
+      ceres::internal::KahanBabuskaNeumaierSum({kLarge, kSmall, -kLarge});
+
+  EXPECT_EQ(sum, 0.0);
+  EXPECT_EQ(error, kSmall);
+}
+
 #if GTEST_HAS_TYPED_TEST
 
 template <typename T>

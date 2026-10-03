@@ -54,6 +54,10 @@ constexpr auto TwoSum(T a, T b)
 // Computes a compensated sum of values. The returned pair contains the rounded
 // sum and its accumulated correction term. Their sum is a more accurate
 // approximation to the sum of the input values.
+//
+// The rounding error of every addition is accumulated separately instead of
+// being added to the next value where it would be lost whenever the value is
+// much larger than the error.
 template <typename T>
 constexpr auto KahanBabuskaNeumaierSum(std::initializer_list<T> values)
     -> std::enable_if_t<std::is_floating_point_v<T>, std::pair<T, T>> {
@@ -61,7 +65,9 @@ constexpr auto KahanBabuskaNeumaierSum(std::initializer_list<T> values)
   T error{0};
 
   for (T value : values) {
-    std::tie(sum, error) = TwoSum(sum, value + error);
+    T rounding_error;
+    std::tie(sum, rounding_error) = TwoSum(sum, value);
+    error += rounding_error;
   }
 
   return std::make_pair(sum, error);
