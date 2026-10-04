@@ -32,21 +32,19 @@
 // of two or more arguments and its reciprocal while avoiding underflow and
 // overflow.
 //
-// Both functions accumulate the squares of the arguments as an unevaluated sum
-// of the rounded sum and its rounding error, and correct the square root of
-// the rounded sum, or its reciprocal, by a single Newton step that accounts for
-// the rounding errors. They share the same implementation for any number of
-// arguments: the result is computed without rescaling if the largest magnitude
-// is within a range where rescaling cannot change the result, and otherwise
-// after rescaling all arguments by a fixed radix power.
+// The 2-argument functions accumulate the squares of the arguments as an
+// unevaluated sum of the rounded sum and its rounding error, and correct the
+// square root of the rounded sum, or its reciprocal, by a single Newton step
+// that accounts for the rounding errors. The result is computed without
+// rescaling if the larger magnitude is within a range where rescaling cannot
+// change the result, and otherwise after rescaling both arguments by a fixed
+// radix power.
 //
-// Unlike the 2-argument algorithm in [1], the functions do not return the
-// larger argument if the smaller one is negligible. Neglecting arguments does
-// not generalize to more arguments since the errors of several neglected
-// squares accumulate, and the reciprocal of the larger argument can differ from
-// the correctly rounded reciprocal norm.
+// The variadic functions compose the 2-argument functions [3]. They combine
+// the norm of all but the last argument with the last argument using the
+// 2-argument norm, or its reciprocal.
 //
-// The implementation is derived from the following two papers:
+// The implementation is derived from the following papers:
 //
 // [1] Borges, C. F. (2021). Algorithm 1014: An Improved Algorithm for
 //     hypot(x,y). ACM Transactions on Mathematical Software, 47(1), 1–12.
@@ -55,11 +53,15 @@
 // [2] Borges, C. F. (2021). Fast Compensated Algorithms for the Reciprocal
 //     Square Root, the Reciprocal Hypotenuse, and Givens Rotations.
 //     http://arxiv.org/abs/2103.08694
+//
+// [3] Novaković, V. (2025). Recursive vectorized computation of the vector
+//     p-norm. https://arxiv.org/abs/2509.06220
 
 #ifndef CERES_PUBLIC_ACCURATE_NORM_H_
 #define CERES_PUBLIC_ACCURATE_NORM_H_
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <type_traits>
@@ -370,6 +372,26 @@ inline auto AccurateNorm(T a, T b)
   return internal::AccurateNormImpl(a, b);
 }
 
+namespace internal {
+
+// Computes the Euclidean norm of the first Count values by combining the norm
+// of all but the last value with the last value using the 2-argument norm
+// [3].
+template <std::size_t Begin, std::size_t Count, typename T, std::size_t N>
+T ComposedNorm(const std::array<T, N>& values) {
+  static_assert(Begin == 0 && Count >= 2 && Count <= N);
+
+  T norm = AccurateNorm(values[0], values[1]);
+
+  for (std::size_t i = 2; i < Count; ++i) {
+    norm = AccurateNorm(norm, values[i]);
+  }
+
+  return norm;
+}
+
+}  // namespace internal
+
 // Computes the Euclidean norm of three or more values of the same type while
 // avoiding intermediate underflow and overflow. An infinite argument produces
 // positive infinity, even if another argument is NaN. Otherwise, a NaN
@@ -380,7 +402,13 @@ inline auto AccurateNorm(T a, T b, Args... args)
     -> std::enable_if_t<(sizeof...(Args) > 0 &&
                          (std::is_same_v<T, Args> && ...)),
                         internal::Promote_t<T>> {
-  return internal::AccurateNormImpl(a, b, args...);
+  using PromotedType = internal::Promote_t<T>;
+
+  constexpr std::size_t kCount = 2 + sizeof...(Args);
+  const std::array<PromotedType, kCount> values{
+      PromotedType(a), PromotedType(b), PromotedType(args)...};
+
+  return internal::ComposedNorm<0, kCount>(values);
 }
 
 // Computes the Euclidean norm of two or more arithmetic values after promoting
@@ -482,7 +510,16 @@ inline auto AccurateRNorm(T a, T b, Args... args)
     -> std::enable_if_t<(sizeof...(Args) > 0 &&
                          (std::is_same_v<T, Args> && ...)),
                         internal::Promote_t<T>> {
-  return internal::AccurateRNormImpl(a, b, args...);
+  using PromotedType = internal::Promote_t<T>;
+
+  constexpr std::size_t kCount = 2 + sizeof...(Args);
+  const std::array<PromotedType, kCount> values{
+      PromotedType(a), PromotedType(b), PromotedType(args)...};
+
+  // Combine the norm of all but the last value with the last value using the
+  // 2-argument reciprocal norm.
+  return AccurateRNorm(internal::ComposedNorm<0, kCount - 1>(values),
+                       values[kCount - 1]);
 }
 
 // Computes the reciprocal of the Euclidean norm of two or more arithmetic
