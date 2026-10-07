@@ -806,10 +806,24 @@ if (_Ceres_SBOM_SUPPORTED)
       PACKAGE_URL https://github.com/ceres-solver/ceres-solver)
   endif (CMAKE_VERSION VERSION_GREATER_EQUAL 4.4)
 
-  install(SBOM Ceres
-    ${_Ceres_SBOM_EXPORT_ARGUMENTS}
-    ${_Ceres_SBOM_ARGUMENTS}
-  )
+  if (CMAKE_VERSION VERSION_GREATER_EQUAL 4.4)
+    # The experimental SBOM support is enabled deliberately. Silence the
+    # corresponding warning for this command only.
+    block(SCOPE_FOR DIAGNOSTICS)
+      cmake_diagnostic(SET CMD_EXPERIMENTAL IGNORE)
+      install(SBOM Ceres
+        ${_Ceres_SBOM_EXPORT_ARGUMENTS}
+        ${_Ceres_SBOM_ARGUMENTS}
+      )
+    endblock()
+  else (CMAKE_VERSION VERSION_GREATER_EQUAL 4.4)
+    # CMake 4.3 provides no means to silence the warning from within the
+    # project. Users can pass -Wno-dev instead.
+    install(SBOM Ceres
+      ${_Ceres_SBOM_EXPORT_ARGUMENTS}
+      ${_Ceres_SBOM_ARGUMENTS}
+    )
+  endif (CMAKE_VERSION VERSION_GREATER_EQUAL 4.4)
 
   unset(_Ceres_SBOM_ARGUMENTS)
   unset(_Ceres_SBOM_EXPORT_ARGUMENTS)
