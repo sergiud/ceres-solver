@@ -656,8 +656,6 @@ set(_Ceres_FIND_MODULES
   "${Ceres_SOURCE_DIR}/cmake/FindMETIS.cmake"
   "${Ceres_SOURCE_DIR}/cmake/FindSphinx.cmake"
   "${Ceres_SOURCE_DIR}/cmake/FindSuiteSparse.cmake")
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-  ${_Ceres_FIND_MODULES})
 set(_Ceres_FIND_MODULES_LINK "${Ceres_BINARY_DIR}/CeresFindModules")
 if (IS_SYMLINK "${_Ceres_FIND_MODULES_LINK}")
   file(REMOVE "${_Ceres_FIND_MODULES_LINK}")
