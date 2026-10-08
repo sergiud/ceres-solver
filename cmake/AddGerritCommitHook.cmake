@@ -70,16 +70,29 @@ function(ADD_GERRIT_COMMIT_HOOK SOURCE_DIR BINARY_DIR)
       message(DEBUG "Detected Ceres being used as a git submodule, adding "
         "commit hook for Gerrit to: ${LOCAL_GIT_DIRECTORY}")
       # Download the hook only if it is not already present.
-      file(DOWNLOAD https://ceres-solver-review.googlesource.com/tools/hooks/commit-msg
-        ${BINARY_DIR}/commit-msg)
+      set(COMMIT_HOOK_URL
+        https://ceres-solver-review.googlesource.com/tools/hooks/commit-msg)
+      file(DOWNLOAD ${COMMIT_HOOK_URL} ${BINARY_DIR}/commit-msg
+        STATUS COMMIT_HOOK_DOWNLOAD_STATUS)
+      list(GET COMMIT_HOOK_DOWNLOAD_STATUS 0 COMMIT_HOOK_DOWNLOAD_ERROR)
 
-      # Make the downloaded file executable, since it is not by default.
-      file(COPY ${BINARY_DIR}/commit-msg
-        DESTINATION ${LOCAL_GIT_DIRECTORY}/hooks/
-        FILE_PERMISSIONS
-        OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_WRITE GROUP_EXECUTE
-        WORLD_READ WORLD_EXECUTE)
+      # An incomplete hook must not be installed since its presence prevents
+      # the download from being retried.
+      if (COMMIT_HOOK_DOWNLOAD_ERROR EQUAL 0)
+        # Make the downloaded file executable, since it is not by default.
+        file(COPY ${BINARY_DIR}/commit-msg
+          DESTINATION ${LOCAL_GIT_DIRECTORY}/hooks/
+          FILE_PERMISSIONS
+          OWNER_READ OWNER_WRITE OWNER_EXECUTE
+          GROUP_READ GROUP_WRITE GROUP_EXECUTE
+          WORLD_READ WORLD_EXECUTE)
+      else()
+        list(GET COMMIT_HOOK_DOWNLOAD_STATUS 1 COMMIT_HOOK_DOWNLOAD_MESSAGE)
+        message(WARNING "Downloading the Gerrit commit hook from "
+          "${COMMIT_HOOK_URL} failed with status "
+          "${COMMIT_HOOK_DOWNLOAD_ERROR} (${COMMIT_HOOK_DOWNLOAD_MESSAGE}), "
+          "expected 0. The hook was not installed.")
+      endif()
     endif (NOT EXISTS ${LOCAL_GIT_DIRECTORY}/hooks/commit-msg)
   endif (EXISTS ${LOCAL_GIT_DIRECTORY})
 endfunction()
