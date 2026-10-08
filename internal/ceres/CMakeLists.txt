@@ -32,17 +32,19 @@
 
 list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES Threads::Threads)
 
-# Generator expressions were introduced in CMake version 3.24. Without
-# them including absl::log_flags as an internal dependency causes
-# linking problems on some platforms. So for platforms with an older
-# CMake version we make absl::log_flags a public dependency.
+# The Abseil logging flags register themselves using static initializers. The
+# linker omits them from a static absl::log_flags because nothing references
+# them, unless the library is linked as a whole archive. The corresponding
+# $<LINK_LIBRARY:WHOLE_ARCHIVE,...> generator expression requires CMake 3.24.
+# Older versions make absl::log_flags a public dependency instead.
 if(CMAKE_VERSION VERSION_LESS "3.24.0")
   list(APPEND CERES_LIBRARY_PUBLIC_DEPENDENCIES  absl::log_flags)
 else()
   # Apply $<LINK_LIBRARY:...> generator expression only if the corresponding
   # target is a static library. Otherwise link only to the target. The library
-  # type is determined at configure time because SBOM generation does not
-  # support generator expressions in link libraries.
+  # type is determined at configure time so that the link libraries contain a
+  # generator expression, which SBOM generation does not support, only if whole
+  # archive linkage is required.
   get_target_property(_Ceres_ABSL_LOG_FLAGS_TYPE absl::log_flags TYPE)
   if (_Ceres_ABSL_LOG_FLAGS_TYPE STREQUAL STATIC_LIBRARY)
     list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES
