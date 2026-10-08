@@ -77,6 +77,25 @@ project(Ceres
   VERSION ${CERES_VERSION}
 )
 
+# Default to an optimized build on single-configuration generators while still
+# supporting overriding the build type. project() creates an empty cache entry
+# for the build type, which must therefore be replaced forcibly.
+get_property(_Ceres_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if (NOT _Ceres_IS_MULTI_CONFIG)
+  if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "No build type specified; defaulting to CMAKE_BUILD_TYPE=Release.")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
+  elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "\n=================================================================================")
+    message(STATUS "\nBuild type: Debug. Performance will be terrible!")
+    message(STATUS "Add -DCMAKE_BUILD_TYPE=Release to the CMake command line to get an optimized build.")
+    message(STATUS "\n=================================================================================")
+  endif()
+endif()
+unset(_Ceres_IS_MULTI_CONFIG)
+
 # Build position-independent code (PIC) by default, even when building Ceres as
 # a static library so that shared libraries can link against it, not just
 # executables (PIC does not apply on Windows). Unlike a target property, the
@@ -522,25 +541,6 @@ endif (NOT WITH_SCHUR_SPECIALIZATIONS)
 if (NOT WITH_CUSTOM_BLAS)
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CUSTOM_BLAS)
 endif (NOT WITH_CUSTOM_BLAS)
-
-# Change the default build type from Debug to Release, while still
-# supporting overriding the build type.
-#
-# The CACHE STRING logic here and elsewhere is needed to force CMake
-# to pay attention to the value of these variables.
-if (NOT CMAKE_BUILD_TYPE)
-  message(STATUS "No build type specified; defaulting to CMAKE_BUILD_TYPE=Release.")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-    FORCE)
-else (NOT CMAKE_BUILD_TYPE)
-  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS "\n=================================================================================")
-    message(STATUS "\nBuild type: Debug. Performance will be terrible!")
-    message(STATUS "Add -DCMAKE_BUILD_TYPE=Release to the CMake command line to get an optimized build.")
-    message(STATUS "\n=================================================================================")
-  endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
-endif (NOT CMAKE_BUILD_TYPE)
 
 # After the tweaks for the compile settings, disable some warnings on MSVC.
 if (MSVC)
