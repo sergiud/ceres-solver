@@ -617,18 +617,14 @@ if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif (BUILD_EXAMPLES)
 
-# Setup installation of Ceres public headers.
-file(GLOB CERES_HDRS ${Ceres_SOURCE_DIR}/include/ceres/*.h)
-install(FILES ${CERES_HDRS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ceres)
-
-file(GLOB CERES_PUBLIC_INTERNAL_HDRS ${Ceres_SOURCE_DIR}/include/ceres/internal/*.h)
-install(FILES ${CERES_PUBLIC_INTERNAL_HDRS} DESTINATION
-  ${CMAKE_INSTALL_INCLUDEDIR}/ceres/internal)
-
-# Also setup installation of Ceres config.h configured with the current
-# build options and export.h into the installed headers directory.
-install(DIRECTORY ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+# Install the public headers together with config.h configured with the current
+# build options and export.h. The headers are collected at installation time,
+# which also covers headers added after configuring.
+install(DIRECTORY
+          ${Ceres_SOURCE_DIR}/include/
+          ${Ceres_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING PATTERN "*.h")
 
 # Ceres supports two mechanisms by which it can be detected & imported into
 # client code which uses CMake via find_package(Ceres):
