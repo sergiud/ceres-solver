@@ -140,7 +140,7 @@ if (_Ceres_FEATURE_CUDA)
   set_source_files_properties(cuda_kernels_vector_ops.cu.cc PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(cuda_kernels_bsm_to_crs.cu.cc PROPERTIES LANGUAGE CUDA)
   add_library(ceres_cuda_kernels STATIC cuda_kernels_vector_ops.cu.cc cuda_kernels_bsm_to_crs.cu.cc)
-  target_compile_features(ceres_cuda_kernels PRIVATE cxx_std_14)
+  target_compile_features(ceres_cuda_kernels PRIVATE cuda_std_17)
   target_compile_definitions(ceres_cuda_kernels PRIVATE CERES_STATIC_DEFINE)
   # Enable __host__ / __device__ annotations in lambda declarations
   target_compile_options(ceres_cuda_kernels PRIVATE --expt-extended-lambda)
