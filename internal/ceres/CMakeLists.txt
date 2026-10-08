@@ -117,7 +117,8 @@ set_source_files_properties(${CERES_INTERNAL_SCHUR_FILES} PROPERTIES
 
 if (_Ceres_FEATURE_SUITESPARSE)
   # Define version information for use in Solver::FullReport.
-  add_definitions(-DCERES_SUITESPARSE_VERSION="${SuiteSparse_VERSION}")
+  set_property(SOURCE solver_utils.cc APPEND PROPERTY COMPILE_DEFINITIONS
+    "CERES_SUITESPARSE_VERSION=\"${SuiteSparse_VERSION}\"")
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES SuiteSparse::CHOLMOD
     SuiteSparse::SPQR)
   # SuiteSparse::Partition only signals METIS support in CHOLMOD. Linking it
@@ -127,7 +128,8 @@ endif (_Ceres_FEATURE_SUITESPARSE)
 
 if (_Ceres_FEATURE_CHOLMOD_PARTITION OR _Ceres_FEATURE_EIGEN_METIS)
   # Define version information for use in Solver::FullReport.
-  add_definitions(-DCERES_METIS_VERSION="${METIS_VERSION}")
+  set_property(SOURCE solver_utils.cc APPEND PROPERTY COMPILE_DEFINITIONS
+    "CERES_METIS_VERSION=\"${METIS_VERSION}\"")
   list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES METIS::METIS)
 endif (_Ceres_FEATURE_CHOLMOD_PARTITION OR _Ceres_FEATURE_EIGEN_METIS)
 
