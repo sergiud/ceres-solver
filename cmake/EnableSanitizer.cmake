@@ -75,13 +75,17 @@ macro(enable_sanitizer)
   unset(ADDED_SANITIZER)
   foreach(REQUESTED_SANITIZER ${ARGN})
     set(SANITIZER_FLAG -fsanitize=${REQUESTED_SANITIZER})
+    # The check caches its result. Each sanitizer therefore requires its own
+    # result variable.
+    string(MAKE_C_IDENTIFIER "HAVE_SANITIZER_${REQUESTED_SANITIZER}"
+      HAVE_SANITIZER)
     # Save the current CMAKE_EXE_LINKER_FLAGS before modifying it to test for
     # the existence of the sanitizer flag so that we can revert after the test.
     set(INITIAL_CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZER_FLAG}")
-    check_cxx_compiler_flag(${SANITIZER_FLAG} HAVE_SANITIZER)
+    check_cxx_compiler_flag(${SANITIZER_FLAG} ${HAVE_SANITIZER})
     set(CMAKE_EXE_LINKER_FLAGS "${INITIAL_CMAKE_EXE_LINKER_FLAGS}")
-    if (NOT HAVE_SANITIZER)
+    if (NOT ${HAVE_SANITIZER})
       message(FATAL_ERROR "Specified sanitizer: ${REQUESTED_SANITIZER} is not "
         "supported by the compiler.")
     endif()
