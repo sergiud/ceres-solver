@@ -84,6 +84,7 @@ CERES_TESTS = [
     "concurrent_queue",
     "conditioned_cost_function",
     "conjugate_gradients_solver",
+    "constants",
     "corrector",
     "cost_function_to_functor",
     "covariance",

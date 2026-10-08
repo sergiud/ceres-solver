@@ -25,40 +25,27 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-//
-// Author: hellston20a@gmail.com (H S Helson Go)
 
-#ifndef CERES_PUBLIC_CONSTANTS_H_
-#define CERES_PUBLIC_CONSTANTS_H_
+#include "ceres/constants.h"
 
-// TODO(HSHelson): This header should no longer be necessary once C++20's
-// <numbers> (e.g. std::numbers::pi_v) becomes usable
+#include <cmath>
 
-// The constants are computed using mpmath by the following shell command:
-//
-// python3 - <<EOF
-// from mpmath import mp
-// mp.dps = 64
-// print(mp.pi)
-// print(mp.sqrt(2))
-// print(mp.sqrt(3))
-// EOF
-namespace ceres::constants {
-// π
-template <typename T>
-inline constexpr T pi_v(
-    3.141592653589793238462643383279502884197169399375105820974944592L);
-inline constexpr double pi = pi_v<double>;
-// √2
-template <typename T>
-inline constexpr T sqrt_2_v(
-    1.414213562373095048801688724209698078569671875376948073176679738L);
-inline constexpr double sqrt_2 = sqrt_2_v<double>;
-// √3
-template <typename T>
-inline constexpr T sqrt_3_v(
-    1.732050807568877293527446341505872366942805253810380628055806979L);
-inline constexpr double sqrt_3 = sqrt_3_v<double>;
-}  // namespace ceres::constants
+#include "gtest/gtest.h"
 
-#endif  // CERES_PUBLIC_CONSTANTS_H_
+namespace ceres::internal {
+namespace {
+
+// IEEE 754 requires the square root to be correctly rounded. The constants must
+// therefore be equal to the computed square roots.
+TEST(Constants, Sqrt2IsCorrectlyRounded) {
+  EXPECT_EQ(constants::sqrt_2, std::sqrt(2.0));
+  EXPECT_EQ(constants::sqrt_2_v<float>, std::sqrt(2.0F));
+}
+
+TEST(Constants, Sqrt3IsCorrectlyRounded) {
+  EXPECT_EQ(constants::sqrt_3, std::sqrt(3.0));
+  EXPECT_EQ(constants::sqrt_3_v<float>, std::sqrt(3.0F));
+}
+
+}  // namespace
+}  // namespace ceres::internal
