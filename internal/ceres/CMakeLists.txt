@@ -375,12 +375,6 @@ if (BUILD_TESTING)
   macro (CERES_TEST NAME)
     add_executable(${NAME}_test ${NAME}_test.cc)
 
-    # Pull in local headers from the generated test directories when ceres_test()
-    # is invoked there, as well as the private headers in this directory which
-    # may be referenced without the 'ceres' path prefix.
-    target_include_directories(${NAME}_test
-      PRIVATE ${Ceres_SOURCE_DIR}/internal/ceres)
-
     # Some tests include direct references/includes of private dependency
     # headers which are not propagated via the ceres targets, so link them
     # explicitly.
