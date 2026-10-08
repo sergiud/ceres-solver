@@ -852,36 +852,38 @@ add_feature_info("Benchmarks" _Ceres_FEATURE_BENCHMARKS
   "Build Ceres microbenchmark programs")
 add_feature_info("Tests" BUILD_TESTING "Build Ceres unit and integration tests")
 
-function(ceres_dependency_description OUTPUT DESCRIPTION VERSION)
-  if (VERSION)
-    set(DESCRIPTION "${DESCRIPTION} (version ${VERSION})")
+# The version is passed by variable name since the variable is undefined if
+# the dependency was not found.
+function(ceres_dependency_description OUTPUT DESCRIPTION VERSION_VARIABLE)
+  if (${VERSION_VARIABLE})
+    set(DESCRIPTION "${DESCRIPTION} (version ${${VERSION_VARIABLE}})")
   endif()
   set(${OUTPUT} "${DESCRIPTION}" PARENT_SCOPE)
 endfunction()
 
 ceres_dependency_description(CERES_ABSL_DESCRIPTION
-  "C++ common libraries from Google" "${absl_VERSION}")
+  "C++ common libraries from Google" absl_VERSION)
 ceres_dependency_description(CERES_BENCHMARK_DESCRIPTION
-  "A microbenchmark support library" "${benchmark_VERSION}")
+  "A microbenchmark support library" benchmark_VERSION)
 ceres_dependency_description(CERES_CUDA_DESCRIPTION
-  "NVIDIA CUDA toolkit" "${CUDAToolkit_VERSION}")
+  "NVIDIA CUDA toolkit" CUDAToolkit_VERSION)
 ceres_dependency_description(CERES_CUDSS_DESCRIPTION
-  "NVIDIA CUDA sparse solver library" "${cudss_VERSION}")
+  "NVIDIA CUDA sparse solver library" cudss_VERSION)
 ceres_dependency_description(CERES_EIGEN3_DESCRIPTION
-  "C++ template library for linear algebra" "${Eigen3_VERSION}")
+  "C++ template library for linear algebra" Eigen3_VERSION)
 ceres_dependency_description(CERES_GTEST_DESCRIPTION
-  "Google's C++ testing framework" "${GOOGLETEST_VERSION}")
+  "Google's C++ testing framework" GOOGLETEST_VERSION)
 ceres_dependency_description(CERES_METIS_DESCRIPTION
   "Serial graph partitioning and fill-reducing matrix ordering"
-  "${METIS_VERSION}")
+  METIS_VERSION)
 ceres_dependency_description(CERES_PYTHON_DESCRIPTION
-  "Python interpreter" "${Python_VERSION}")
+  "Python interpreter" Python_VERSION)
 ceres_dependency_description(CERES_SPHINX_DESCRIPTION
-  "Documentation generator" "${Sphinx_VERSION}")
+  "Documentation generator" Sphinx_VERSION)
 ceres_dependency_description(CERES_SUITESPARSE_DESCRIPTION
-  "A suite of sparse matrix algorithms" "${SuiteSparse_VERSION}")
+  "A suite of sparse matrix algorithms" SuiteSparse_VERSION)
 ceres_dependency_description(CERES_TBB_DESCRIPTION
-  "Threading Building Blocks" "${TBB_VERSION}")
+  "Threading Building Blocks" TBB_VERSION)
 
 set_package_properties(absl PROPERTIES
   DESCRIPTION "${CERES_ABSL_DESCRIPTION}"
