@@ -368,10 +368,12 @@ if (BUILD_TESTING)
 
   # GoogleTest built as part of Ceres provides the definition only to consumers
   # of its installed package. Imported targets already provide it.
+  get_target_property(_Ceres_GTEST_IMPORTED GTest::gtest IMPORTED)
   get_target_property(_Ceres_GTEST_TYPE GTest::gtest TYPE)
-  if (_Ceres_GTEST_TYPE STREQUAL SHARED_LIBRARY)
+  if (NOT _Ceres_GTEST_IMPORTED AND _Ceres_GTEST_TYPE STREQUAL SHARED_LIBRARY)
     target_compile_definitions(test_util PUBLIC GTEST_LINKED_AS_SHARED_LIBRARY=1)
-  endif (_Ceres_GTEST_TYPE STREQUAL SHARED_LIBRARY)
+  endif()
+  unset(_Ceres_GTEST_IMPORTED)
   unset(_Ceres_GTEST_TYPE)
 
   function(ceres_test NAME)
