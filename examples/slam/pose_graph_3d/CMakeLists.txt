@@ -29,4 +29,4 @@
 # Author: vitus@google.com (Michael Vitus)
 
 add_executable(pose_graph_3d pose_graph_3d.cc)
-target_link_libraries(pose_graph_3d PRIVATE absl::flags absl::flags_parse absl::log absl::check absl::log_initialize Ceres::ceres)
+target_link_libraries(pose_graph_3d PRIVATE slam_common absl::flags absl::flags_parse absl::log absl::check absl::log_initialize Ceres::ceres)

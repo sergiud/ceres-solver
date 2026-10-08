@@ -34,4 +34,4 @@ add_executable(pose_graph_2d
   pose_graph_2d.cc
   pose_graph_2d_error_term.h
   types.h)
-target_link_libraries(pose_graph_2d PRIVATE absl::flags absl::flags_parse absl::log absl::check absl::log_initialize Ceres::ceres)
+target_link_libraries(pose_graph_2d PRIVATE slam_common absl::flags absl::flags_parse absl::log absl::check absl::log_initialize Ceres::ceres)

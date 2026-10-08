@@ -27,7 +27,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # Author: vitus@google.com (Michael Vitus)
-include_directories(./)
+
+# Header-only utilities shared by the SLAM examples.
+add_library(slam_common INTERFACE)
+target_include_directories(slam_common INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(pose_graph_2d)
 add_subdirectory(pose_graph_3d)
