@@ -407,7 +407,7 @@ unset(CERES_COMPILE_OPTIONS)
 if (_Ceres_FEATURE_EIGEN_SPARSE)
   list(APPEND CERES_COMPILE_OPTIONS CERES_USE_EIGEN_SPARSE)
 else()
-  add_definitions(-DEIGEN_MPL2_ONLY)
+  add_compile_definitions(EIGEN_MPL2_ONLY)
 endif()
 
 if (_Ceres_FEATURE_CUDA)
