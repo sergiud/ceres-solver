@@ -29,15 +29,15 @@
 # Author: alexs.mac@gmail.com (Alex Stewart)
 
 # Usage: enable_sanitizer(REQUIRED_SANITIZERS) where REQUIRED_SANITIZERS should
-# contain the list of sanitizers to enable by updating CMAKE_CXX_FLAGS and
-# CMAKE_EXE_LINKER_FLAGS.
+# contain the list of sanitizers to enable by adding the corresponding compile
+# and link options to the current directory.
 #
 # The specified sanitizers will be checked both for compatibility with the
 # current compiler and with each other as some sanitizers are mutually
 # exclusive.
-macro(enable_sanitizer)
+function(enable_sanitizer)
   # According to the Clang documentation [1] the following sanitizers are
-  # mututally exclusive.
+  # mutually exclusive.
   # [1]: https://clang.llvm.org/docs/UsersManual.html#controlling-code-generation
   set(INCOMPATIBLE_SANITIZERS address thread memory)
   # Set the recommended additional common compile flags for any sanitizer to
@@ -67,38 +67,33 @@ macro(enable_sanitizer)
       "exclusive: ${PRETTY_INCOMPATIBLE_SANITIZERS}")
   endif()
 
-  # Until CMake 3.14 and CMAKE_REQUIRED_LINK_OPTIONS there was no equivalent to
-  # CMAKE_REQUIRED_FLAGS for try_compile() for linker flags. However, in CMake
-  # 3.2 CMP0056 was introduced that when enabled passes CMAKE_EXE_LINKER_FLAGS
-  # to try_compile() which allows us to achieve the same effect.
-  cmake_policy(SET CMP0056 NEW)
   include(CheckCXXCompilerFlag)
 
-  unset(ADDED_SANITIZER)
-  foreach(REQUESTED_SANITIZER ${ARGN})
+  set(SANITIZER_FLAGS)
+  foreach(REQUESTED_SANITIZER IN LISTS ARGN)
     set(SANITIZER_FLAG -fsanitize=${REQUESTED_SANITIZER})
     # The check caches its result. Each sanitizer therefore requires its own
     # result variable.
     string(MAKE_C_IDENTIFIER "HAVE_SANITIZER_${REQUESTED_SANITIZER}"
       HAVE_SANITIZER)
-    # Save the current CMAKE_EXE_LINKER_FLAGS before modifying it to test for
-    # the existence of the sanitizer flag so that we can revert after the test.
-    set(INITIAL_CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZER_FLAG}")
+    # The sanitizer flag must be passed to the linker as well.
+    set(CMAKE_REQUIRED_LINK_OPTIONS ${SANITIZER_FLAG})
     check_cxx_compiler_flag(${SANITIZER_FLAG} ${HAVE_SANITIZER})
-    set(CMAKE_EXE_LINKER_FLAGS "${INITIAL_CMAKE_EXE_LINKER_FLAGS}")
     if (NOT ${HAVE_SANITIZER})
       message(FATAL_ERROR "Specified sanitizer: ${REQUESTED_SANITIZER} is not "
         "supported by the compiler.")
     endif()
     message(DEBUG "Enabling sanitizer: ${REQUESTED_SANITIZER}")
-    set(ADDED_SANITIZER TRUE)
+    list(APPEND SANITIZER_FLAGS ${SANITIZER_FLAG})
+  endforeach()
+
+  if (SANITIZER_FLAGS)
+    separate_arguments(COMMON_SANITIZER_COMPILE_OPTIONS NATIVE_COMMAND
+      "${COMMON_SANITIZER_COMPILE_OPTIONS}")
     # As per the Clang documentation, the sanitizer flags must be added to both
     # the compiler and linker flags.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZER_FLAG}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZER_FLAG}")
-  endforeach()
-  if (ADDED_SANITIZER)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_SANITIZER_COMPILE_OPTIONS}")
+    add_compile_options(
+      "$<$<COMPILE_LANGUAGE:C,CXX>:${SANITIZER_FLAGS};${COMMON_SANITIZER_COMPILE_OPTIONS}>")
+    add_link_options(${SANITIZER_FLAGS})
   endif()
-endmacro()
+endfunction()
