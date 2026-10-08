@@ -117,7 +117,6 @@ set(CMAKE_DEBUG_POSTFIX -debug CACHE STRING
 include(AddCompileFlagsIfSupported)
 include(AddGerritCommitHook)
 include(CeresCompileOptionsToComponents)
-include(CheckCXXCompilerFlag)
 include(CheckLibraryExists)
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
@@ -213,7 +212,6 @@ find_package(Threads REQUIRED)
 set_property(GLOBAL PROPERTY FeatureSummary_PKG_TYPES
   REQUIRED RECOMMENDED OPTIONAL)
 
-check_cxx_compiler_flag(/bigobj HAVE_BIGOBJ)
 check_library_exists(m pow "" HAVE_LIBM)
 
 detect_broken_stack_check_macos_xcode_pairing()

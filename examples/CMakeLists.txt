@@ -87,9 +87,6 @@ target_link_libraries(powell PRIVATE absl::log_initialize absl::flags absl::flag
 
 add_executable(nist nist.cc)
 target_link_libraries(nist PRIVATE absl::log_initialize absl::flags absl::flags_parse Ceres::ceres)
-if (HAVE_BIGOBJ)
-  target_compile_options(nist PRIVATE /bigobj)
-endif()
 
 add_executable(more_garbow_hillstrom more_garbow_hillstrom.cc)
 target_link_libraries(more_garbow_hillstrom PRIVATE absl::log_initialize absl::flags absl::flags_parse Ceres::ceres)
