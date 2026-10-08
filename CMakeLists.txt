@@ -979,4 +979,6 @@ feature_summary(WHAT
   OPTIONAL_PACKAGES_NOT_FOUND
   ENABLED_FEATURES
   DISABLED_FEATURES
-  DESCRIPTION "Ceres ${CERES_VERSION} configuration summary")
+  DESCRIPTION "Ceres ${CERES_VERSION} configuration summary"
+  # Dependencies may find packages quietly that Ceres found before.
+  INCLUDE_QUIET_PACKAGES)
