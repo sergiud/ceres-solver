@@ -4,8 +4,7 @@ set(SPHINX_HTML_DIR "${Ceres_BINARY_DIR}/docs/html")
 # Install documentation
 install(DIRECTORY ${SPHINX_HTML_DIR}
         DESTINATION ${CMAKE_INSTALL_DOCDIR}
-        COMPONENT Doc
-        PATTERN "${SPHINX_HTML_DIR}/*")
+        COMPONENT Doc)
 
 # Find python
 find_package(Python REQUIRED COMPONENTS Interpreter)
