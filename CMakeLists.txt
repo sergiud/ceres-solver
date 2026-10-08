@@ -519,13 +519,10 @@ if (NOT _Ceres_FEATURE_ACCELERATE)
                          AccelerateSparse_LIBRARY)
 endif()
 
-# ANDROID define is set by the Android CMake toolchain file.
-if (ANDROID)
-  if (WITH_STRIPPED_DEBUG_SYMBOLS)
-    # Strip debug information unconditionally to avoid +200MB library file sizes.
-    set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -s" )
-    set( CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} -s" )
-  endif()
+# The option is available only for Android builds.
+if (WITH_STRIPPED_DEBUG_SYMBOLS)
+  # Strip debug information to avoid +200MB library file sizes.
+  add_link_options(-s)
 endif()
 
 if (NOT WITH_SCHUR_SPECIALIZATIONS)
