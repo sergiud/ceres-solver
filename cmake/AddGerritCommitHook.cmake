@@ -39,60 +39,57 @@ function(ADD_GERRIT_COMMIT_HOOK SOURCE_DIR BINARY_DIR)
     message(FATAL_ERROR "Specified BINARY_DIR: ${BINARY_DIR} does not exist, "
       "or is not a directory, cannot add Gerrit commit hook.")
   endif()
-  unset (LOCAL_GIT_DIRECTORY)
-  if (EXISTS ${SOURCE_DIR}/.git)
-    if (IS_DIRECTORY ${SOURCE_DIR}/.git)
-      # .git directory can be found on Unix based system, or on Windows with
-      # Git Bash (shipped with msysgit).
-      set (LOCAL_GIT_DIRECTORY ${SOURCE_DIR}/.git)
-    else(IS_DIRECTORY ${SOURCE_DIR}/.git)
-      # .git is a file, this means Ceres is a git submodule of another project
-      # and our .git file contains the path to the git directory which manages
-      # Ceres, so we should add the gerrit hook there.
-      file(READ ${SOURCE_DIR}/.git GIT_SUBMODULE_FILE_CONTENTS)
-      # Strip any trailing newline characters, s/t we get a valid path.
-      string(REGEX REPLACE "gitdir:[ ]*([^$].*)[\n].*" "${SOURCE_DIR}/\\1"
-        GIT_SUBMODULE_GIT_DIRECTORY_PATH "${GIT_SUBMODULE_FILE_CONTENTS}")
-      get_filename_component(GIT_SUBMODULE_GIT_DIRECTORY_PATH
-        "${GIT_SUBMODULE_GIT_DIRECTORY_PATH}" ABSOLUTE)
-      if (EXISTS ${GIT_SUBMODULE_GIT_DIRECTORY_PATH}
-          AND IS_DIRECTORY ${GIT_SUBMODULE_GIT_DIRECTORY_PATH})
-        set(LOCAL_GIT_DIRECTORY "${GIT_SUBMODULE_GIT_DIRECTORY_PATH}")
-      endif()
+  # Only a Git checkout of Ceres itself receives the hook. A copy of Ceres
+  # inside the source tree of another repository must not modify its hooks.
+  if (NOT EXISTS ${SOURCE_DIR}/.git)
+    return()
+  endif()
+
+  find_package(Git QUIET)
+  if (NOT Git_FOUND)
+    return()
+  endif()
+
+  # Let Git locate the hooks directory, which also accounts for submodules,
+  # worktrees and a custom core.hooksPath.
+  execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --git-path hooks
+    WORKING_DIRECTORY ${SOURCE_DIR}
+    RESULT_VARIABLE GIT_RESULT
+    OUTPUT_VARIABLE GIT_HOOKS_DIRECTORY
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if (NOT GIT_RESULT EQUAL 0)
+    return()
+  endif()
+  get_filename_component(GIT_HOOKS_DIRECTORY "${GIT_HOOKS_DIRECTORY}" ABSOLUTE
+    BASE_DIR ${SOURCE_DIR})
+
+  if (NOT EXISTS ${GIT_HOOKS_DIRECTORY}/commit-msg)
+    # Hook installation is an internal setup detail.
+    message(DEBUG "Adding commit hook for Gerrit to: ${GIT_HOOKS_DIRECTORY}")
+    # Download the hook only if it is not already present.
+    set(COMMIT_HOOK_URL
+      https://ceres-solver-review.googlesource.com/tools/hooks/commit-msg)
+    file(DOWNLOAD ${COMMIT_HOOK_URL} ${BINARY_DIR}/commit-msg
+      STATUS COMMIT_HOOK_DOWNLOAD_STATUS)
+    list(GET COMMIT_HOOK_DOWNLOAD_STATUS 0 COMMIT_HOOK_DOWNLOAD_ERROR)
+
+    # An incomplete hook must not be installed since its presence prevents
+    # the download from being retried.
+    if (COMMIT_HOOK_DOWNLOAD_ERROR EQUAL 0)
+      # Make the downloaded file executable, since it is not by default.
+      file(COPY ${BINARY_DIR}/commit-msg
+        DESTINATION ${GIT_HOOKS_DIRECTORY}/
+        FILE_PERMISSIONS
+        OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_WRITE GROUP_EXECUTE
+        WORLD_READ WORLD_EXECUTE)
+    else()
+      list(GET COMMIT_HOOK_DOWNLOAD_STATUS 1 COMMIT_HOOK_DOWNLOAD_MESSAGE)
+      message(WARNING "Downloading the Gerrit commit hook from "
+        "${COMMIT_HOOK_URL} failed with status "
+        "${COMMIT_HOOK_DOWNLOAD_ERROR} (${COMMIT_HOOK_DOWNLOAD_MESSAGE}), "
+        "expected 0. The hook was not installed.")
     endif()
-  else (EXISTS ${SOURCE_DIR}/.git)
-    # TODO(keir) Add proper Windows support.
-  endif (EXISTS ${SOURCE_DIR}/.git)
-
-  if (EXISTS ${LOCAL_GIT_DIRECTORY})
-    if (NOT EXISTS ${LOCAL_GIT_DIRECTORY}/hooks/commit-msg)
-      # Hook installation is an internal setup detail.
-      message(DEBUG "Detected Ceres being used as a git submodule, adding "
-        "commit hook for Gerrit to: ${LOCAL_GIT_DIRECTORY}")
-      # Download the hook only if it is not already present.
-      set(COMMIT_HOOK_URL
-        https://ceres-solver-review.googlesource.com/tools/hooks/commit-msg)
-      file(DOWNLOAD ${COMMIT_HOOK_URL} ${BINARY_DIR}/commit-msg
-        STATUS COMMIT_HOOK_DOWNLOAD_STATUS)
-      list(GET COMMIT_HOOK_DOWNLOAD_STATUS 0 COMMIT_HOOK_DOWNLOAD_ERROR)
-
-      # An incomplete hook must not be installed since its presence prevents
-      # the download from being retried.
-      if (COMMIT_HOOK_DOWNLOAD_ERROR EQUAL 0)
-        # Make the downloaded file executable, since it is not by default.
-        file(COPY ${BINARY_DIR}/commit-msg
-          DESTINATION ${LOCAL_GIT_DIRECTORY}/hooks/
-          FILE_PERMISSIONS
-          OWNER_READ OWNER_WRITE OWNER_EXECUTE
-          GROUP_READ GROUP_WRITE GROUP_EXECUTE
-          WORLD_READ WORLD_EXECUTE)
-      else()
-        list(GET COMMIT_HOOK_DOWNLOAD_STATUS 1 COMMIT_HOOK_DOWNLOAD_MESSAGE)
-        message(WARNING "Downloading the Gerrit commit hook from "
-          "${COMMIT_HOOK_URL} failed with status "
-          "${COMMIT_HOOK_DOWNLOAD_ERROR} (${COMMIT_HOOK_DOWNLOAD_MESSAGE}), "
-          "expected 0. The hook was not installed.")
-      endif()
-    endif (NOT EXISTS ${LOCAL_GIT_DIRECTORY}/hooks/commit-msg)
-  endif (EXISTS ${LOCAL_GIT_DIRECTORY})
+  endif()
 endfunction()
