@@ -83,12 +83,16 @@ project(Ceres
 # option can be overridden by the user.
 option(CMAKE_POSITION_INDEPENDENT_CODE
   "Build position-independent code" ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib)
-# Set postfixes for generated libraries based on buildtype.
-set(CMAKE_RELEASE_POSTFIX "")
-set(CMAKE_DEBUG_POSTFIX "-debug")
+# Cached defaults for the build tree layout yield to values provided by the
+# user or a parent project.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/bin CACHE PATH
+  "Output directory of executables and DLLs")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib CACHE PATH
+  "Output directory of shared libraries")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib CACHE PATH
+  "Output directory of static and import libraries")
+set(CMAKE_DEBUG_POSTFIX -debug CACHE STRING
+  "Postfix of library file names in Debug builds")
 
 # Configure CMake checks and helper includes.
 include(AddCompileFlagsIfSupported)
