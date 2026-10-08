@@ -842,7 +842,7 @@ endif (TARGET ceres_cuda_kernels)
 export(TARGETS ${Ceres_EXPORT_TARGETS}
        NAMESPACE Ceres::
        FILE ${Ceres_BINARY_DIR}/CeresTargets.cmake)
-export(PACKAGE ${CMAKE_PROJECT_NAME})
+export(PACKAGE ${PROJECT_NAME})
 
 unset (Ceres_EXPORT_TARGETS)
 
