@@ -829,20 +829,10 @@ endif()
 # The package files are always generated in the build tree. CMake's
 # CMAKE_EXPORT_PACKAGE_REGISTRY variable controls whether export(PACKAGE)
 # registers the package in the user package registry.
-set (Ceres_EXPORT_TARGETS ceres)
-
-if (TARGET ceres_cuda_kernels)
-  # The target ceres depends on ceres_cuda_kernels requiring the latter to be
-  # exported as part of the same export set.
-  list (APPEND Ceres_EXPORT_TARGETS ceres_cuda_kernels)
-endif (TARGET ceres_cuda_kernels)
-
-export(TARGETS ${Ceres_EXPORT_TARGETS}
+export(EXPORT CeresExport
        NAMESPACE Ceres::
        FILE ${Ceres_BINARY_DIR}/CeresTargets.cmake)
 export(PACKAGE ${PROJECT_NAME})
-
-unset (Ceres_EXPORT_TARGETS)
 
 add_feature_info("SuiteSparse solvers" _Ceres_FEATURE_SUITESPARSE
   "Sparse solvers from SuiteSparse")
