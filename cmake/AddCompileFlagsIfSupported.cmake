@@ -28,24 +28,19 @@
 #
 # Author: sergey.vfx@gmail.com (Sergey Sharybin)
 
-function(add_cxx_compiler_flag_if_supported
-    AGGREGATED_CXX_FLAGS_VAR
-    FLAG_TO_ADD_IF_SUPPORTED)
+# Add the C++ compile option to the current directory if the compiler supports
+# it.
+function(add_cxx_compile_option_if_supported OPTION)
   include(CheckCXXCompilerFlag)
-  # Use of whitespace or '-' in variable names (used by CheckCXXSourceCompiles
-  # as #defines) will trigger errors.
-  string(STRIP "${FLAG_TO_ADD_IF_SUPPORTED}" FLAG_TO_ADD_IF_SUPPORTED)
   # Build an informatively named test result variable so that it will be evident
   # which tests were performed/succeeded in the CMake output, e.g for -Wall:
   #
   # -- Performing Test CHECK_CXX_FLAG_Wall - Success
   #
   # NOTE: This variable is also used to cache test result.
-  string(REPLACE "-" "_" CHECK_CXX_FLAG
-    "CHECK_CXX_FLAG${FLAG_TO_ADD_IF_SUPPORTED}")
-  check_cxx_compiler_flag(${FLAG_TO_ADD_IF_SUPPORTED} ${CHECK_CXX_FLAG})
+  string(MAKE_C_IDENTIFIER "CHECK_CXX_FLAG${OPTION}" CHECK_CXX_FLAG)
+  check_cxx_compiler_flag(${OPTION} ${CHECK_CXX_FLAG})
   if (${CHECK_CXX_FLAG})
-    set(${AGGREGATED_CXX_FLAGS_VAR}
-      "${${AGGREGATED_CXX_FLAGS_VAR}} ${FLAG_TO_ADD_IF_SUPPORTED}" PARENT_SCOPE)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:${OPTION}>)
   endif()
 endfunction()

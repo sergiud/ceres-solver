@@ -214,10 +214,6 @@ set_property(GLOBAL PROPERTY FeatureSummary_PKG_TYPES
   REQUIRED RECOMMENDED OPTIONAL)
 
 check_cxx_compiler_flag(/bigobj HAVE_BIGOBJ)
-# Older versions of Clang (<= 2.9) do not support the 'return-type-c-linkage'
-# option, so check for its presence before adding it to the default flags set.
-check_cxx_compiler_flag("-Wno-return-type-c-linkage"
-                        HAVE_RETURN_TYPE_C_LINKAGE)
 check_library_exists(m pow "" HAVE_LIBM)
 
 detect_broken_stack_check_macos_xcode_pairing()
@@ -575,37 +571,28 @@ endif (MSVC)
 if (UNIX)
   # Flags which we add to GCC to make it more picky about stuff
   # we do care about,
-  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
-                                     -Wmissing-declarations)
+  add_cxx_compile_option_if_supported(-Wmissing-declarations)
   # Flags which we add to GCC to silence lots of annoying false-positives.
-  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
-                                     -Wno-unknown-pragmas)
-  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
-                                     -Wno-sign-compare)
-  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
-                                     -Wno-unused-parameter)
-  add_cxx_compiler_flag_if_supported(CERES_STRICT_CXX_FLAGS
-                                     -Wno-missing-field-initializers)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CERES_STRICT_CXX_FLAGS}")
+  add_cxx_compile_option_if_supported(-Wno-unknown-pragmas)
+  add_cxx_compile_option_if_supported(-Wno-sign-compare)
+  add_cxx_compile_option_if_supported(-Wno-unused-parameter)
+  add_cxx_compile_option_if_supported(-Wno-missing-field-initializers)
 endif (UNIX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang") # Matches Clang & AppleClang.
   # Optimize for Eigen OR enable bitcode; you cannot do both since bitcode is an
   # intermediate representation.
   if (WITH_BITCODE)
-    set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -fembed-bitcode")
+    # The linker must embed the bitcode as well.
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fembed-bitcode>)
+    add_link_options(-fembed-bitcode)
   else ()
     # Use a larger inlining threshold for Clang, since it hobbles Eigen,
-    # resulting in an unreasonably slow version of the blas routines. The
-    # -Qunused-arguments is needed because CMake passes the inline
-    # threshold to the linker and clang complains about it and dies.
-    set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -Qunused-arguments -mllvm -inline-threshold=600")
+    # resulting in an unreasonably slow version of the blas routines.
+    add_compile_options(
+      "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-mllvm -inline-threshold=600>")
   endif ()
-  if (HAVE_RETURN_TYPE_C_LINKAGE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-return-type-c-linkage")
-  endif(HAVE_RETURN_TYPE_C_LINKAGE)
+  add_cxx_compile_option_if_supported(-Wno-return-type-c-linkage)
 endif ()
 
 add_compile_definitions($<$<BOOL:${WIN32}>:NOMINMAX>)
