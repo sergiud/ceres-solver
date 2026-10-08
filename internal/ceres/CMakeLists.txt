@@ -372,7 +372,7 @@ if (BUILD_TESTING)
   endif (_Ceres_GTEST_TYPE STREQUAL SHARED_LIBRARY)
   unset(_Ceres_GTEST_TYPE)
 
-  macro (CERES_TEST NAME)
+  function(ceres_test NAME)
     add_executable(${NAME}_test ${NAME}_test.cc)
 
     # Some tests include direct references/includes of private dependency
@@ -382,7 +382,7 @@ if (BUILD_TESTING)
       ${CERES_LIBRARY_PRIVATE_DEPENDENCIES} GTest::gmock_main)
 
     add_test(NAME ${NAME}_test COMMAND ${NAME}_test)
-  endmacro (CERES_TEST)
+  endfunction()
 
   ceres_test(accurate_norm)
   ceres_test(array_utils)
@@ -492,7 +492,7 @@ if (BUILD_TESTING)
 
 endif (BUILD_TESTING)
 
-macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
+function(add_dependencies_to_benchmark BENCHMARK_TARGET)
   target_include_directories(${BENCHMARK_TARGET}
     PRIVATE ${Ceres_SOURCE_DIR}/internal)
   # Benchmarks include direct references/includes of private
@@ -501,7 +501,7 @@ macro(add_dependencies_to_benchmark BENCHMARK_TARGET)
   target_link_libraries(${BENCHMARK_TARGET}
     PRIVATE ceres_static benchmark::benchmark
             ${CERES_LIBRARY_PRIVATE_DEPENDENCIES})
-endmacro()
+endfunction()
 
 if (_Ceres_FEATURE_BENCHMARKS)
   add_executable(evaluation_benchmark evaluation_benchmark.cc)
