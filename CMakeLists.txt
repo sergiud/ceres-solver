@@ -229,7 +229,7 @@ if (EXISTS "${Ceres_SOURCE_DIR}/third_party/abseil-cpp/CMakeLists.txt")
   # extract submodule absl_VERSION
   file(STRINGS "${Ceres_SOURCE_DIR}/third_party/abseil-cpp/CMakeLists.txt" project_calls REGEX "[ \t]*project\\([ \t]*absl")
   foreach(project_call IN LISTS project_calls)
-    string(REGEX MATCH "VERSION[ ]+([0-9]+(\.(rc)?[0-9]+)?)" version_param "${project_call}")
+    string(REGEX MATCH "VERSION[ ]+([0-9]+(\\.(rc)?[0-9]+)?)" version_param "${project_call}")
       if (version_param)
         set(absl_VERSION "${CMAKE_MATCH_1}")
         break ()
