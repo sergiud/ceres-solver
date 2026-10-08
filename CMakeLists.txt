@@ -466,7 +466,9 @@ else()
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_CUDA)
 endif()
 
-if (NOT _Ceres_FEATURE_LAPACK)
+if (_Ceres_FEATURE_LAPACK)
+  set(LAPACK_DEPENDENCY "find_dependency(LAPACK)")
+else()
   list(APPEND CERES_COMPILE_OPTIONS CERES_NO_LAPACK)
 endif()
 

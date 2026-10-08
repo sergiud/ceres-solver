@@ -106,6 +106,7 @@ set(CERES_VERSION @CERES_VERSION@)
 find_dependency(Threads)
 
 # Optional dependencies
+@LAPACK_DEPENDENCY@
 @METIS_DEPENDENCY@
 @SuiteSparse_DEPENDENCY@
 @CUDAToolkit_DEPENDENCY@

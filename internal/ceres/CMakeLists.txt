@@ -153,7 +153,7 @@ if (_Ceres_FEATURE_CUDA)
 endif (_Ceres_FEATURE_CUDA)
 
 if (_Ceres_FEATURE_LAPACK)
-  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES ${LAPACK_LIBRARIES})
+  list(APPEND CERES_LIBRARY_PRIVATE_DEPENDENCIES LAPACK::LAPACK)
 endif ()
 
 # Source files that contain private symbols and live in the ceres::internal
