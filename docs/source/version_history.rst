@@ -158,6 +158,21 @@ Bug Fixes & Minor Changes
 #. Fix shared library builds, MSVC builds, CTest build configuration
    parameters, and bundle adjuster perturbation assertions in debug mode.
    (Sergiu Deitsch)
+#. Respect user-provided ``CMAKE_POSITION_INDEPENDENT_CODE``,
+   ``CMAKE_CUDA_ARCHITECTURES`` (or ``CUDAARCHS``), ``CMAKE_DEBUG_POSTFIX``,
+   and output directories, default ``CMAKE_BUILD_TYPE`` only for
+   single-configuration generators, and register the build tree under the
+   ``Ceres`` package name when Ceres is a subproject. (Sergiu Deitsch)
+#. Reject unsupported sanitizers in ``WITH_SANITIZERS`` instead of checking
+   only the first one, accept repeated sanitizers, and link shared libraries
+   with the sanitizers. (Sergiu Deitsch)
+#. Keep compiler warning and optimization flags off the link command line,
+   compile the CUDA kernels as C++17, install headers added after
+   configuring, and do not install an empty Gerrit commit hook after a
+   failed download. (Sergiu Deitsch)
+#. Link LAPACK through its imported target so that static installations no
+   longer export the LAPACK library paths of the build machine. (Sergiu
+   Deitsch)
 #. Fix Clang 16 compiler warnings (Johannes Schönberger), CUDA set-but-unused
    variable warnings (Sergiu Deitsch), and missing ``std`` qualifiers and
    header includes (Yuriy Chernyshov, Sergiu Deitsch & Sameer Agarwal).
