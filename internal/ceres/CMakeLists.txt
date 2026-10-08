@@ -385,13 +385,6 @@ if (BUILD_TESTING)
     target_link_libraries(${NAME}_test PRIVATE test_util ceres_static
       ${CERES_LIBRARY_PRIVATE_DEPENDENCIES} GTest::gmock_main)
 
-    # covariance_test uses SuiteSparseQR.hpp. However, since SuiteSparse import
-    # targets are private (link only) dependencies not propagated to consumers,
-    # we need to link against the target explicitly here.
-    if (TARGET SuiteSparse::SPQR)
-      target_link_libraries (${NAME}_test PRIVATE SuiteSparse::SPQR)
-    endif (TARGET SuiteSparse::SPQR)
-
     add_test(NAME ${NAME}_test COMMAND ${NAME}_test)
   endmacro (CERES_TEST)
 
