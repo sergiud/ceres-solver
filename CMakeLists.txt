@@ -147,11 +147,10 @@ set(WITH_CUDA "default" CACHE STRING
   "Enable use of CUDA linear algebra solvers.")
 option(WITH_CUSTOM_BLAS
   "Use handcoded BLAS routines (usually faster) instead of Eigen." ON)
-cmake_dependent_option(WITH_EIGENMETIS "Enable Eigen METIS support." ON
-  "NOT DEFINED WITH_EIGENSPARSE OR WITH_EIGENSPARSE" OFF)
-# The controlling option is declared later and defaults to ON.
 option(WITH_EIGENSPARSE
   "Enable Eigen as a sparse linear algebra library." ON)
+cmake_dependent_option(WITH_EIGENMETIS "Enable Eigen METIS support." ON
+  WITH_EIGENSPARSE OFF)
 # Apple considers the BLAS dsyrk_ symbol a private API and rejects iOS apps
 # that contain it.
 cmake_dependent_option(WITH_LAPACK
