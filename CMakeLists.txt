@@ -77,11 +77,12 @@ project(Ceres
   VERSION ${CERES_VERSION}
 )
 
-# Always build position-independent code (PIC), even when building Ceres as a
-# static library so that shared libraries can link against it, not just
-# executables (PIC does not apply on Windows). Global variable can be overridden
-# by the user whereas target properties can be not.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# Build position-independent code (PIC) by default, even when building Ceres as
+# a static library so that shared libraries can link against it, not just
+# executables (PIC does not apply on Windows). Unlike a target property, the
+# option can be overridden by the user.
+option(CMAKE_POSITION_INDEPENDENT_CODE
+  "Build position-independent code" ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${Ceres_BINARY_DIR}/lib)
